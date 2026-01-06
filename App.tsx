@@ -93,7 +93,6 @@ const App: React.FC = () => {
     }
   }, [sessions]);
 
-  // Use the dynamic daily session from the library state if it exists
   const currentDailySession = sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION;
 
   const handleMoodSelection = useCallback(async (selectedMood: string) => {
@@ -344,7 +343,6 @@ const App: React.FC = () => {
                 <div className="text-5xl mb-6">🔐</div>
                 <h2 className="text-2xl font-black text-stone-800">Administrator Access Only</h2>
                 <p className="text-stone-500 mt-2">Current user: <span className="font-bold text-red-500">{user.email}</span></p>
-                <p className="text-stone-400 text-xs mt-1">Please login as <span className="text-emerald-600 font-bold">vvkkoo4816@gmail.com</span></p>
                 <button onClick={handleLogout} className="mt-8 px-6 py-2 bg-stone-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Sign Out</button>
               </div>
             ) : (
@@ -424,6 +422,15 @@ const App: React.FC = () => {
                       {wizardStep === 1 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
                           <h4 className="text-3xl font-black text-emerald-400">Stage 1: AI Branding Assets</h4>
+                          
+                          {/* IMPORTANT: GITHUB RAW TIP */}
+                          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl mb-4">
+                            <p className="text-emerald-300 font-bold text-xs mb-1">💡 Pro-Tip: GitHub Icon Links</p>
+                            <p className="text-stone-400 text-[10px] leading-relaxed">
+                              Bubblewrap needs raw image data. If hosting on GitHub, change <b>"github.com/.../blob/..."</b> to <b>"raw.githubusercontent.com/.../..."</b> (and remove the /blob/ part) in your metadata.json.
+                            </p>
+                          </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
                               <p className="text-[10px] font-black uppercase text-stone-500">App Icon (512x512)</p>
@@ -448,7 +455,6 @@ const App: React.FC = () => {
                               <p className="text-red-200 font-bold mb-1">Fixing "refspec main does not match any" Error:</p>
                               <p className="text-stone-400 text-[10px] leading-relaxed">This happens if your branch is named 'master'. Use the command <code>git branch -M main</code> to fix it.</p>
                             </div>
-                            <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">Correct Command Sequence:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 leading-loose break-all border border-emerald-500/20">
                               git init<br />
                               git add .<br />
@@ -486,45 +492,40 @@ const App: React.FC = () => {
                         <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-4">
                           <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Stage 4: Fixing Build Errors</h4>
                           
-                          {/* CRITICAL SEQUENCE FIX */}
-                          <div className="p-6 bg-red-600/20 border-2 border-red-500 rounded-[32px] mb-8 shadow-lg">
-                            <h5 className="text-lg font-black text-white mb-2 flex items-center">
-                              <span className="mr-2">🚨</span> Fix: missing "twa-manifest.json"
-                            </h5>
-                            <p className="text-xs text-stone-200 mb-4 leading-relaxed font-medium">
-                              If you see "no such file or directory, open twa-manifest.json", it means <b>init failed</b>. 
-                              You cannot run <code>build</code> until you fix the corrupted JDK and finish <code>init</code>.
+                          {/* THE ENOENT FIX SECTION */}
+                          <div className="p-6 bg-red-600/30 border-2 border-red-500 rounded-[32px] mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                            <div className="flex items-center space-x-3 mb-4">
+                               <span className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-black">!</span>
+                               <h5 className="text-lg font-black text-white">Critical Fix: Missing 'twa-manifest.json'</h5>
+                            </div>
+                            <p className="text-xs text-stone-200 mb-6 leading-relaxed">
+                              This error (ENOENT) happens because <b>init failed</b> due to a corrupted JDK download. 
+                              The manifest is only created AFTER a successful initialization. Follow this sequence exactly:
                             </p>
                             
                             <div className="space-y-4">
-                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
-                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">1. Manual Environment Setup</p>
+                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
+                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">1. Manual Environment Reset</p>
                                 <ul className="text-[11px] text-stone-300 list-disc pl-4 space-y-1">
-                                  <li>Download/Run: <a href="https://adoptium.net/temurin/releases/?version=17" target="_blank" className="text-white underline font-bold">JDK 17 MSI Installer</a></li>
-                                  <li>Delete this broken folder: <br/><code className="text-white">C:\Users\YOUR_NAME\.bubblewrap\jdk</code></li>
+                                  <li>Download & install: <a href="https://adoptium.net/temurin/releases/?version=17" target="_blank" className="text-white underline font-bold">JDK 17 (Windows x64 MSI)</a></li>
+                                  <li>Delete this broken folder: <br/><code className="text-white bg-black/50 px-1">C:\Users\YOUR_NAME\.bubblewrap\jdk</code></li>
                                 </ul>
                               </div>
 
-                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
-                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">2. RE-RUN INIT (Essential)</p>
-                                <p className="text-[11px] text-stone-300 mb-2">You must regenerate the manifest. Run this exact command:</p>
-                                <code className="block bg-black p-2 rounded text-emerald-400 text-[9px] mb-2">npx @bubblewrap/cli init --manifest={productionUrl || 'https://YOUR_PRODUCTION_URL'}/metadata.json</code>
-                                <p className="text-[11px] text-stone-300 italic">When asked "Do you want Bubblewrap to install the JDK?", type <b>N</b> and press Enter. Then paste your local JDK path.</p>
+                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
+                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">2. RE-RUN INIT (Required)</p>
+                                <p className="text-[11px] text-stone-300 mb-2">You cannot run "build" until you finish "init" successfully. Run:</p>
+                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px] mb-2 border border-emerald-500/20">npx @bubblewrap/cli init --manifest={productionUrl || 'YOUR_PRODUCTION_URL'}/metadata.json</code>
+                                <p className="text-[10px] text-stone-400 italic">When asked to install JDK, type <b>"N"</b> (No). It will ask for a path; point it to where you installed JDK 17 (e.g., C:\Program Files\Eclipse Adoptium\jdk-17...).</p>
                               </div>
 
-                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
-                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">3. FINAL BUILD</p>
-                                <p className="text-[11px] text-stone-300">Only after Step 2 finishes, run: <br/><code className="text-white">npx @bubblewrap/cli build</code></p>
+                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
+                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">3. THE BUILD</p>
+                                <p className="text-[11px] text-stone-300">Once Stage 2 finishes without errors, then run: <br/><code className="text-white font-black">npx @bubblewrap/cli build</code></p>
                               </div>
                             </div>
                           </div>
 
-                          <div className="space-y-6 opacity-40 grayscale">
-                            <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl">
-                              <p className="text-sm font-bold text-blue-400 mb-2">Step C: Domain Proof (Assetlinks)</p>
-                              <p className="text-xs text-stone-400 mb-4">Bubblewrap creates <code>assetlinks.json</code> in your folder. Copy the fingerprint from it into your code's <code>public/.well-known/assetlinks.json</code> and re-deploy.</p>
-                            </div>
-                          </div>
                           <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Steps</button></div>
                         </div>
                       )}
@@ -538,11 +539,11 @@ const App: React.FC = () => {
                           <div className="space-y-8">
                             <div className="space-y-3">
                               <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Play Console Upload</h5>
-                              <p className="text-sm text-stone-400">Upload your <code>app-release-bundle.aab</code> (located in your local folder) to the Google Play Console Internal Testing track.</p>
+                              <p className="text-sm text-stone-400">Upload your <code>app-release-bundle.aab</code> (found in your local project folder) to the Google Play Console Internal Testing track.</p>
                             </div>
                             <div className="space-y-3">
                               <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Address Bar Removal</h5>
-                              <p className="text-sm text-stone-400">Once your updated <code>assetlinks.json</code> is live on your website and Google Play recognizes the app, the address bar will automatically vanish!</p>
+                              <p className="text-sm text-stone-400">Once your updated <code>assetlinks.json</code> is live on your website and Google Play recognizes the app, the browser address bar will automatically vanish, providing a full-screen experience.</p>
                             </div>
                           </div>
                           <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase">Start Over</button>

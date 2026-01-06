@@ -19,13 +19,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=192",
-      "sizes": "192x192",
+      "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=512",
+      "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,7 +41,7 @@
       "url": "/?view=today",
       "icons": [
         {
-          "src": "https://www.google.com/favicon.ico",
+          "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
           "sizes": "192x192"
         }
       ]
