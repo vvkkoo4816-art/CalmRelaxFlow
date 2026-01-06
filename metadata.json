@@ -19,13 +19,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,7 +41,7 @@
       "url": "/?view=today",
       "icons": [
         {
-          "src": "https://raw.githubusercontent.com/vvkkoo4816-art/CalmRelaxFlow/main/icon.png",
+          "src": "/icon.png",
           "sizes": "192x192"
         }
       ]

@@ -37,7 +37,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       } else {
         audioRef.current.play().catch(e => {
           console.error("Playback failed:", e);
-          setError("Audio unavailable. Check your connection.");
+          setError("Browser blocked audio. Click again to play.");
         });
       }
       setIsPlaying(!isPlaying);
@@ -59,8 +59,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   };
 
   const handleError = () => {
-    setError("Source not found. Please try another track.");
+    setError("Unable to stream music. The link might be blocked or broken.");
     setIsPlaying(false);
+    setIsLoaded(false);
   };
 
   const handleCanPlay = () => {
@@ -70,10 +71,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
   return (
     <div className="fixed bottom-[100px] md:bottom-8 left-4 right-4 md:left-auto md:w-96 bg-white/95 backdrop-blur-xl android-card android-shadow p-6 border border-white/20 z-[100] animate-in slide-in-from-bottom-10 duration-500 overflow-hidden">
-      {/* Background Pulse Effect */}
       {isPlaying && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 bg-emerald-400 rounded-full blur-[100px] pulse-bg"></div>
+          <div className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 bg-emerald-400 rounded-full blur-[100px] pulse-bg opacity-30"></div>
         </div>
       )}
 
@@ -84,7 +84,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         onEnded={() => setIsPlaying(false)}
         onError={handleError}
         onCanPlay={handleCanPlay}
-        preload="metadata"
+        preload="auto"
         crossOrigin="anonymous"
       />
       
@@ -102,18 +102,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         </div>
 
         {error ? (
-          <div className="bg-red-50 text-red-500 text-xs p-3 rounded-xl mb-4 flex items-center">
+          <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse">
             <span className="mr-2">⚠️</span> {error}
           </div>
         ) : (
           <div className="flex items-center space-x-4 mb-5">
             <button 
               onClick={togglePlay}
-              disabled={!isLoaded}
-              className={`w-14 h-14 ${isLoaded ? 'bg-stone-900 shadow-xl shadow-stone-200' : 'bg-stone-200'} rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-50`}
+              disabled={!isLoaded && !error}
+              className={`w-14 h-14 ${isLoaded ? 'bg-stone-900 shadow-xl shadow-stone-200' : 'bg-stone-100'} rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-50`}
             >
-              {!isLoaded ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              {!isLoaded && !error ? (
+                <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin"></div>
               ) : isPlaying ? (
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
               ) : (
@@ -128,7 +128,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                 step="0.1"
                 value={progress} 
                 onChange={handleSeek}
-                className="w-full accent-emerald-500 h-1.5 rounded-full cursor-pointer bg-stone-100 appearance-none transition-all"
+                className="w-full accent-emerald-500 h-1.5 rounded-full cursor-pointer bg-stone-100 appearance-none"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 text-stone-400">
-            <span className="text-sm">🔈</span>
+            <span className="text-xs">VOL</span>
             <input 
               type="range" 
               min="0" 
@@ -146,11 +146,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
               onChange={(e) => setVolume(parseFloat(e.target.value))}
               className="w-20 accent-stone-300 h-1 rounded-full bg-stone-100 appearance-none"
             />
-          </div>
-          <div className="flex space-x-4">
-             <button className="text-stone-300 hover:text-emerald-500 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-             </button>
           </div>
         </div>
       </div>

@@ -32,11 +32,10 @@ const App: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Release Wizard State
-  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardStep, setWizardStep] = useState(0); 
   const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
   const [generatedFeature, setGeneratedFeature] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<'icon' | 'feature' | null>(null);
-  const [productionUrl, setProductionUrl] = useState('');
 
   // Content Management State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,16 +150,6 @@ const App: React.FC = () => {
     setIsLoggedIn(false);
     setUser(null);
     setView('today');
-  };
-
-  const handleGenerateAsset = async (type: 'icon' | 'feature') => {
-    setIsGenerating(type);
-    const result = await generateAppAsset(type);
-    if (result) {
-      if (type === 'icon') setGeneratedIcon(result);
-      else setGeneratedFeature(result);
-    }
-    setIsGenerating(null);
   };
 
   const processAudioFile = (file: File, sessionId: string | 'new') => {
@@ -412,141 +401,186 @@ const App: React.FC = () => {
                 ) : (
                   <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl min-h-[600px]">
                     <div className="flex flex-col h-full">
-                      <div className="flex justify-between mb-12 relative">
+                      <div className="flex justify-between mb-12 relative overflow-x-auto pb-4">
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2"></div>
-                        {[1, 2, 3, 4, 5].map(s => (
-                          <button key={s} onClick={() => setWizardStep(s)} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black transition-all ${wizardStep >= s ? 'bg-emerald-500 text-white scale-110 shadow-lg' : 'bg-stone-800 text-stone-500'}`}>{s}</button>
+                        {[0, 1, 1.5, 2, 3, 3.5, 4, 5].map(s => (
+                          <button key={s} onClick={() => setWizardStep(s)} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black transition-all shrink-0 ${wizardStep >= s ? 'bg-emerald-500 text-white scale-110 shadow-lg' : 'bg-stone-800 text-stone-500'}`}>
+                            {s === 0 ? '🛠️' : s === 1.5 ? '⬇️' : s === 3.5 ? '⚠️' : s}
+                          </button>
                         ))}
                       </div>
 
-                      {wizardStep === 1 && (
+                      {wizardStep === 0 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 1: AI Branding Assets</h4>
-                          
-                          {/* IMPORTANT: GITHUB RAW TIP */}
-                          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl mb-4">
-                            <p className="text-emerald-300 font-bold text-xs mb-1">💡 Pro-Tip: GitHub Icon Links</p>
-                            <p className="text-stone-400 text-[10px] leading-relaxed">
-                              Bubblewrap needs raw image data. If hosting on GitHub, change <b>"github.com/.../blob/..."</b> to <b>"raw.githubusercontent.com/.../..."</b> (and remove the /blob/ part) in your metadata.json.
-                            </p>
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Step 0: Prerequisites (Critical)</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">To build for Android, you must have these tools installed and configured correctly:</p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <a href="https://code.visualstudio.com/" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
+                               <p className="text-xs font-black uppercase text-blue-400 mb-2 flex items-center">Visual Studio Code <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
+                               <p className="text-[10px] text-stone-400">Professional code editor.</p>
+                            </a>
+                            <a href="https://nodejs.org/" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
+                               <p className="text-xs font-black uppercase text-green-400 mb-2 flex items-center">Node.js (LTS) <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
+                               <p className="text-[10px] text-stone-400">Required to run 'npx'.</p>
+                            </a>
+                            <a href="https://git-scm.com/downloads" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
+                               <p className="text-xs font-black uppercase text-amber-400 mb-2 flex items-center">Git <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
+                               <p className="text-[10px] text-stone-400">Syncs code with GitHub.</p>
+                            </a>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-red-400">⚠️ PowerShell Troubleshooting: "npx not recognized"</p>
+                             <p className="text-[11px] text-stone-300">If PowerShell doesn't see your Node.js installation:</p>
+                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-2">
+                                <li><b>Restart VS Code:</b> This is mandatory after installing Node.js so PowerShell can update its path.</li>
+                                <li><b>Check in PowerShell:</b> Type <code>node -v</code>. If it shows a version number, you're good.</li>
+                                <li><b>Refresh Path:</b> Run this command in your VS Code PowerShell terminal to force a refresh: <br/><code>$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")</code></li>
+                                <li><b>Verify:</b> Type <code>Get-Command npx</code>. If it returns a path, the error is fixed!</li>
+                             </ol>
+                          </div>
+
+                          <button onClick={() => setWizardStep(1)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">PowerShell is Ready, Next</button>
+                        </div>
+                      )}
+
+                      {wizardStep === 1 && (
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 1: Your GitHub Project</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">
+                            Every time you click <b>"Save to GitHub"</b> in this online IDE, your progress is stored on the web.
+                            Now we need to download (Clone) it to your computer using VS Code.
+                          </p>
+                          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
+                             <p className="text-xs font-bold text-white mb-2 uppercase">Your Project URL:</p>
+                             <div className="bg-black/50 p-3 rounded-xl font-mono text-emerald-400 text-[11px] break-all">
+                                https://github.com/vvkkoo4816/clamrelaxflow-app
+                             </div>
+                             <p className="text-[10px] text-stone-500 mt-2 italic">Copy this URL. You will need it in the next step.</p>
+                          </div>
+                          <button onClick={() => setWizardStep(1.5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Next: How to Download</button>
+                        </div>
+                      )}
+
+                      {wizardStep === 1.5 && (
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 1.5: How to "Drag" (Clone) in VS Code</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                              <p className="text-[10px] font-black uppercase text-stone-500">App Icon (512x512)</p>
-                              <div className="w-40 h-40 bg-stone-800 rounded-[40px] border border-white/10 flex items-center justify-center overflow-hidden">{generatedIcon ? <img src={generatedIcon} className="w-full h-full object-cover" /> : <span className="text-4xl">🧘</span>}</div>
-                              <button onClick={() => handleGenerateAsset('icon')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase">{isGenerating === 'icon' ? 'Panting...' : 'Generate AI Icon'}</button>
+                              <p className="text-sm text-stone-300">Open <b>VS Code</b> on your computer and follow this:</p>
+                              <ol className="text-xs text-stone-400 space-y-4 list-decimal pl-5">
+                                 <li>Click the <b>Source Control</b> icon in the left sidebar (it looks like a branch <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 9a3 3 0 11-6 0 3 3 0 016 0zM5.07 19.29c.09.63.59 1.15 1.21 1.29l.1.02.1-.02c.62-.14 1.12-.66 1.21-1.29L7.7 18H11v-1H7.7l-.01-.01c-.09-.63-.59-1.15-1.21-1.29L6.38 15.68l-.1.02c-.62.14-1.12.66-1.21 1.29L5.06 17H2v1h3.06l.01.29zM12 11h1v7h-1v-7z"/></svg>).</li>
+                                 <li>Click the <b>Clone Repository</b> button.</li>
+                                 <li><b>Paste the URL</b> from Step 1 into the box that appears at the top.</li>
+                                 <li>Press <b>Enter</b> and choose a folder on your computer to save the app.</li>
+                                 <li>Click <b>Open</b> when it asks if you want to open the cloned folder.</li>
+                              </ol>
                             </div>
-                            <div className="space-y-4">
-                              <p className="text-[10px] font-black uppercase text-stone-500">Store Graphic (1024x500)</p>
-                              <div className="aspect-video w-full bg-stone-800 rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden">{generatedFeature ? <img src={generatedFeature} className="w-full h-full object-cover" /> : <span className="text-4xl">🌄</span>}</div>
-                              <button onClick={() => handleGenerateAsset('feature')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase">{isGenerating === 'feature' ? 'Painting...' : 'Generate AI Graphic'}</button>
+                            <div className="bg-white/5 border border-white/10 rounded-[40px] p-6 flex flex-col items-center justify-center text-center">
+                              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4"><svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg></div>
+                              <p className="text-xs font-bold text-white mb-2">Login Required</p>
+                              <p className="text-[10px] text-stone-500">VS Code will ask you to "Sign in to GitHub" in your browser. This is safe! It proves you are the owner.</p>
                             </div>
                           </div>
-                          <button onClick={() => setWizardStep(2)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6 shadow-lg shadow-emerald-500/20">Continue to Setup</button>
+                          <button onClick={() => setWizardStep(2)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Project Cloned, Next</button>
                         </div>
                       )}
 
                       {wizardStep === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 2: Linking GitHub</h4>
-                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4 font-mono text-xs">
-                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4">
-                              <p className="text-red-200 font-bold mb-1">Fixing "refspec main does not match any" Error:</p>
-                              <p className="text-stone-400 text-[10px] leading-relaxed">This happens if your branch is named 'master'. Use the command <code>git branch -M main</code> to fix it.</p>
-                            </div>
-                            <code className="block bg-black p-4 rounded-xl text-emerald-400 leading-loose break-all border border-emerald-500/20">
-                              git init<br />
-                              git add .<br />
-                              git commit -m "Initial release"<br />
-                              git branch -M main<br />
-                              git remote add origin YOUR_GITHUB_URL<br />
-                              git push -u origin main
-                            </code>
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 2: Updating Your Computer</h4>
+                          <div className="bg-emerald-500/10 p-5 rounded-3xl border border-emerald-500/20 mb-4">
+                             <p className="text-xs font-bold text-emerald-300">How to open the Terminal in VS Code:</p>
+                             <p className="text-[11px] text-stone-400 mt-2">
+                                Look at the top menu bar in VS Code: Click <b>Terminal</b> &gt; <b>New Terminal</b>. 
+                                <br/>Alternatively, press <b>Ctrl + `</b> (the key next to 1).
+                             </p>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Deploy to Web</button></div>
+                          <p className="text-sm text-stone-300 leading-relaxed">
+                            Once your terminal is open at the bottom of VS Code, run this command:
+                          </p>
+                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4">
+                            <code className="block bg-black/50 p-4 rounded-xl text-emerald-400 font-mono text-[12px]">
+                              git pull origin main
+                            </code>
+                            <p className="text-[10px] text-stone-500 italic">This "pulls" the new work you did in the browser into your local VS Code project.</p>
+                          </div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Build APK</button></div>
                         </div>
                       )}
 
                       {wizardStep === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 3: Deploy to Vercel</h4>
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 3: The Build Process</h4>
+                          <div className="bg-amber-500/10 p-5 rounded-3xl border border-amber-500/20 mb-4">
+                             <p className="text-xs font-bold text-amber-300">Terminal Check (PowerShell):</p>
+                             <p className="text-[11px] text-stone-400 mt-2">
+                                If you get a <b>'drawable/splash not found'</b> error, click the <b>⚠️ Fix</b> step next.
+                             </p>
+                          </div>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
-                            <div className="space-y-3">
-                              <h5 className="font-bold text-white text-sm">Step 1: Deployment Method</h5>
-                              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
-                                <p className="text-stone-400 text-xs font-bold uppercase tracking-widest text-emerald-400">Option A: Easy (No Git Needed)</p>
-                                <p className="text-stone-400 text-[11px] leading-relaxed">Go to <a href="https://vercel.com/new" target="_blank" className="text-white underline">vercel.com/new</a> and find the "Drag and Drop" area. Drag your <b>project folder</b> there. Done!</p>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              <h5 className="font-bold text-white text-sm">Step 2: Production URL</h5>
-                              <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none" placeholder="https://clamrelaxflow.vercel.app" />
+                            <p className="text-sm text-stone-300">Run this in your **VS Code Terminal** to create the file for Google Play:</p>
+                            <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-sm border border-emerald-500/20">npx @bubblewrap/cli build</code>
+                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                               <p className="text-[10px] font-black uppercase text-emerald-400 mb-1">Look for this file in your computer folder:</p>
+                               <p className="text-xs text-white font-bold">app-release-bundle.aab</p>
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Build Error Fix</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3.5)} className="bg-amber-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">⚠️ Fix Build Errors</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button></div>
+                        </div>
+                      )}
+
+                      {wizardStep === 3.5 && (
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Fixing Resource Errors (AAPT)</h4>
+                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-red-400">Error: "resource drawable/splash not found"</p>
+                             <p className="text-[11px] text-stone-300">This means your Android project is missing the icon files. Follow these steps exactly:</p>
+                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3">
+                                <li>Make sure you have a file named <b>icon.png</b> in your project folder on your computer.</li>
+                                <li>In the terminal, run this command: <br/><code className="bg-black p-2 rounded text-emerald-400">npx @bubblewrap/cli update</code></li>
+                                <li>When it asks: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
+                                <li>It will prompt you for passwords again. Once finished, run <b>npx @bubblewrap/cli build</b> again.</li>
+                             </ol>
+                          </div>
+                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Back to Build</button></div>
                         </div>
                       )}
 
                       {wizardStep === 4 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-4">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Stage 4: Fixing Build Errors</h4>
-                          
-                          {/* THE ENOENT FIX SECTION */}
-                          <div className="p-6 bg-red-600/30 border-2 border-red-500 rounded-[32px] mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                            <div className="flex items-center space-x-3 mb-4">
-                               <span className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-black">!</span>
-                               <h5 className="text-lg font-black text-white">Critical Fix: Missing 'twa-manifest.json'</h5>
-                            </div>
-                            <p className="text-xs text-stone-200 mb-6 leading-relaxed">
-                              This error (ENOENT) happens because <b>init failed</b> due to a corrupted JDK download. 
-                              The manifest is only created AFTER a successful initialization. Follow this sequence exactly:
-                            </p>
-                            
-                            <div className="space-y-4">
-                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">1. Manual Environment Reset</p>
-                                <ul className="text-[11px] text-stone-300 list-disc pl-4 space-y-1">
-                                  <li>Download & install: <a href="https://adoptium.net/temurin/releases/?version=17" target="_blank" className="text-white underline font-bold">JDK 17 (Windows x64 MSI)</a></li>
-                                  <li>Delete this broken folder: <br/><code className="text-white bg-black/50 px-1">C:\Users\YOUR_NAME\.bubblewrap\jdk</code></li>
-                                </ul>
-                              </div>
-
-                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">2. RE-RUN INIT (Required)</p>
-                                <p className="text-[11px] text-stone-300 mb-2">You cannot run "build" until you finish "init" successfully. Run:</p>
-                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px] mb-2 border border-emerald-500/20">npx @bubblewrap/cli init --manifest={productionUrl || 'YOUR_PRODUCTION_URL'}/metadata.json</code>
-                                <p className="text-[10px] text-stone-400 italic">When asked to install JDK, type <b>"N"</b> (No). It will ask for a path; point it to where you installed JDK 17 (e.g., C:\Program Files\Eclipse Adoptium\jdk-17...).</p>
-                              </div>
-
-                              <div className="bg-black/40 p-4 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-black uppercase text-emerald-400 mb-2">3. THE BUILD</p>
-                                <p className="text-[11px] text-stone-300">Once Stage 2 finishes without errors, then run: <br/><code className="text-white font-black">npx @bubblewrap/cli build</code></p>
-                              </div>
-                            </div>
+                        <div className="space-y-6 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 4: Play Console Upload</h4>
+                          <div className="space-y-4">
+                             <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
+                                <p className="text-xs font-bold text-emerald-400 mb-3 uppercase tracking-widest">Action Required:</p>
+                                <ol className="text-xs text-stone-400 space-y-4 list-decimal pl-5">
+                                   <li>Open <a href="https://play.google.com/console" target="_blank" className="text-white underline">Google Play Console</a> in your browser.</li>
+                                   <li>Go to <b>Internal Testing</b>.</li>
+                                   <li>Upload that <b>.aab</b> file from Step 3.</li>
+                                   <li>Google will generate the <b>SHA-256 Fingerprint</b>. You'll need it for Phase 5.</li>
+                                </ol>
+                             </div>
                           </div>
-
-                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Steps</button></div>
+                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Step</button></div>
                         </div>
                       )}
 
                       {wizardStep === 5 && (
                         <div className="space-y-10 animate-in fade-in duration-500">
-                          <div className="flex items-center space-x-4">
-                            <span className="text-4xl">🚀</span>
-                            <h4 className="text-3xl font-black text-emerald-400">Final Release</h4>
-                          </div>
-                          <div className="space-y-8">
-                            <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Play Console Upload</h5>
-                              <p className="text-sm text-stone-400">Upload your <code>app-release-bundle.aab</code> (found in your local project folder) to the Google Play Console Internal Testing track.</p>
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 5: Final Trust (No Address Bar)</h4>
+                          <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 space-y-6">
+                            <p className="text-sm text-stone-300 leading-relaxed">
+                              One last step to remove the browser address bar. Update your <code>assetlinks.json</code> file on your computer.
+                            </p>
+                            <div className="p-5 bg-black rounded-3xl space-y-3 font-mono text-[10px]">
+                               <p className="text-stone-500">// Open public/.well-known/assetlinks.json on your machine</p>
+                               <p className="text-emerald-400">"sha256_cert_fingerprints": ["YOUR_PLAY_STORE_FINGERPRINT"]</p>
                             </div>
-                            <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Address Bar Removal</h5>
-                              <p className="text-sm text-stone-400">Once your updated <code>assetlinks.json</code> is live on your website and Google Play recognizes the app, the browser address bar will automatically vanish, providing a full-screen experience.</p>
-                            </div>
+                            <p className="text-[11px] text-stone-400">
+                               After editing, run <b>git push</b> from your computer terminal. Vercel will update, and you are done!
+                            </p>
                           </div>
-                          <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase">Start Over</button>
+                          <button onClick={() => setWizardStep(0)} className="px-10 py-4 bg-emerald-500 rounded-3xl font-black text-xs uppercase shadow-xl shadow-emerald-500/20">Restart Checklist</button>
                         </div>
                       )}
                     </div>
