@@ -1,6 +1,8 @@
 {
   "name": "ClamRelaxFlow Mindfulness & Meditation",
   "short_name": "ClamRelaxFlow",
+  "id": "com.clamrelaxflow.app",
+  "start_url": "/",
   "description": "Premium mindfulness companion with guided meditations, sleep stories, and zen music.",
   "theme_color": "#10b981",
   "background_color": "#fdfcfb",
@@ -20,13 +22,13 @@
       "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=192",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=512",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "requestFramePermissions": [

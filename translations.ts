@@ -5,6 +5,7 @@ export const translations: Record<Language, Record<string, string>> = {
   en: {
     nav_today: 'Today',
     nav_library: 'Library',
+    nav_breathing: 'Breathe',
     nav_sleep: 'Sleep',
     nav_explore: 'Explore',
     nav_profile: 'Profile',
@@ -46,11 +47,18 @@ export const translations: Record<Language, Record<string, string>> = {
     pure_music_desc: 'Non-guided background tracks for deep focus.',
     deployment_guide: 'Google Play Deployment Guide',
     resource_hub: 'Content Sourcing Hub',
-    resource_desc: 'Find high-quality royalty-free assets for your app.'
+    resource_desc: 'Find high-quality royalty-free assets for your app.',
+    breathe_inhale: 'Inhale',
+    breathe_hold: 'Hold',
+    breathe_exhale: 'Exhale',
+    breathe_box: 'Box Breathing',
+    breathe_relax: '4-7-8 Relax',
+    breathe_focus: 'Deep Focus'
   },
   'zh-Hans': {
     nav_today: '今日',
     nav_library: '冥想库',
+    nav_breathing: '呼吸',
     nav_sleep: '睡眠',
     nav_explore: '探索',
     nav_profile: '我的',
@@ -92,11 +100,18 @@ export const translations: Record<Language, Record<string, string>> = {
     pure_music_desc: '无引导的背景音轨，助你深度专注。',
     deployment_guide: 'Google Play 发布指南',
     resource_hub: '内容素材中心',
-    resource_desc: '为您的应用寻找高品质版权免费素材。'
+    resource_desc: '为您的应用寻找高品质版权免费素材。',
+    breathe_inhale: '吸气',
+    breathe_hold: '屏息',
+    breathe_exhale: '呼气',
+    breathe_box: '盒式呼吸',
+    breathe_relax: '4-7-8 放松',
+    breathe_focus: '深度专注'
   },
   'zh-Hant': {
     nav_today: '今日',
     nav_library: '冥想庫',
+    nav_breathing: '呼吸',
     nav_sleep: '睡眠',
     nav_explore: '探索',
     nav_profile: '我的',
@@ -136,8 +151,14 @@ export const translations: Record<Language, Record<string, string>> = {
     preview: '預覽',
     zen_music: '禪音聖殿',
     pure_music_desc: '無引導的背景音軌，助你深度專注。',
-    deployment_guide: 'Google Play 發布指南',
+    deployment_guide: 'Google Play 發佈指南',
     resource_hub: '內容素材中心',
-    resource_desc: '為您的應用尋找高品質版權免費素材。'
+    resource_desc: '為您的應用尋找高品質版權免費素材。',
+    breathe_inhale: '吸氣',
+    breathe_hold: '屏息',
+    breathe_exhale: '呼氣',
+    breathe_box: '盒式呼吸',
+    breathe_relax: '4-7-8 放鬆',
+    breathe_focus: '深度專注'
   }
 };

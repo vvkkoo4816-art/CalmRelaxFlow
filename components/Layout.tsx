@@ -34,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
         <div className="flex-1 space-y-2">
           <NavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
           <NavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
+          <NavItem active={activeView === 'breathing'} onClick={() => setActiveView('breathing')} icon={<BreathingIcon active={activeView === 'breathing'} />} label={t.nav_breathing} />
           <NavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
           <NavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<ExploreIcon active={activeView === 'explore'} />} label={t.nav_explore} />
           {isAdmin && (
@@ -62,6 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
       <nav className="md:hidden flex justify-around items-center px-2 pt-3 pb-[calc(1.2rem+var(--safe-area-inset-bottom))] bg-white/90 backdrop-blur-2xl border-t border-stone-100 fixed bottom-0 left-0 right-0 z-50 overflow-x-auto">
         <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
         <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
+        <MobileNavItem active={activeView === 'breathing'} onClick={() => setActiveView('breathing')} icon={<BreathingIcon active={activeView === 'breathing'} />} label={t.nav_breathing} />
         <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
         <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<ExploreIcon active={activeView === 'explore'} />} label={t.nav_explore} />
         {isAdmin && (
@@ -97,6 +99,9 @@ const TodayIcon = ({ active, className }: { active?: boolean, className?: string
 );
 const LibraryIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className || "w-6 h-6"} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+);
+const BreathingIcon = ({ active, className }: { active?: boolean, className?: string }) => (
+  <svg className={className || "w-6 h-6"} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4.5 12a7.5 7.5 0 0015 0 7.5 7.5 0 00-15 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v6m-3-3h6"/></svg>
 );
 const SleepIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className || "w-6 h-6"} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>

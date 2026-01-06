@@ -47,4 +47,4 @@ export interface ZenCenter {
   url: string;
 }
 
-export type AppView = 'today' | 'library' | 'sleep' | 'explore' | 'profile' | 'admin';
+export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin';

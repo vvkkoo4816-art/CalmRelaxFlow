@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
+import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, ZenCenter, Language } from './types';
 import { MEDITATION_SESSIONS, DAILY_MEDITATION } from './constants';
 import { getPersonalizedRecommendation, findNearbyZenCenters, generateAppAsset } from './services/geminiService';
@@ -326,6 +327,16 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {view === 'breathing' && (
+          <div className="space-y-12 animate-in fade-in">
+            <header>
+              <h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">{t.nav_breathing}</h2>
+              <p className="text-stone-400 text-sm font-medium">Harmonize your mind and body with guided rhythmic breathing.</p>
+            </header>
+            <BreathingExercise lang={lang} />
+          </div>
+        )}
+
         {view === 'admin' && (
           <div className="space-y-12 animate-in fade-in duration-700">
             {!isAdminUser ? (
@@ -467,36 +478,51 @@ const App: React.FC = () => {
                               <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none" placeholder="https://clamrelaxflow.vercel.app" />
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Local Setup</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Build Error Fix</button></div>
                         </div>
                       )}
 
                       {wizardStep === 4 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 4: Local Build & Proof</h4>
-                          <div className="space-y-6">
-                            <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl">
-                              <p className="text-sm font-bold text-amber-400 mb-2">Step A: Setup Local Computer</p>
-                              <ul className="text-xs text-stone-400 space-y-2 list-decimal pl-5">
-                                <li>Download all project files to a folder on your computer.</li>
-                                <li>Install <a href="https://nodejs.org/" target="_blank" className="text-white underline">Node.js</a>.</li>
-                                <li>Install <a href="https://www.oracle.com/java/technologies/downloads/" target="_blank" className="text-white underline">Java JDK 17+</a>.</li>
-                                <li>Open your terminal (PowerShell) in that folder.</li>
-                              </ul>
-                            </div>
+                        <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-4">
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Stage 4: Fixing Build Errors</h4>
+                          
+                          {/* CRITICAL SEQUENCE FIX */}
+                          <div className="p-6 bg-red-600/20 border-2 border-red-500 rounded-[32px] mb-8 shadow-lg">
+                            <h5 className="text-lg font-black text-white mb-2 flex items-center">
+                              <span className="mr-2">🚨</span> Fix: missing "twa-manifest.json"
+                            </h5>
+                            <p className="text-xs text-stone-200 mb-4 leading-relaxed font-medium">
+                              If you see "no such file or directory, open twa-manifest.json", it means <b>init failed</b>. 
+                              You cannot run <code>build</code> until you fix the corrupted JDK and finish <code>init</code>.
+                            </p>
                             
-                            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl">
-                              <p className="text-sm font-bold text-emerald-400 mb-2">Step B: Initialize & Build</p>
-                              <p className="text-xs text-stone-400 mb-3">You MUST initialize before you can build. Run these two commands:</p>
-                              <div className="space-y-2">
-                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px]">npx @bubblewrap/cli init --manifest={productionUrl || 'YOUR_PRODUCTION_URL'}/metadata.json</code>
-                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px]">npx @bubblewrap/cli build</code>
+                            <div className="space-y-4">
+                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
+                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">1. Manual Environment Setup</p>
+                                <ul className="text-[11px] text-stone-300 list-disc pl-4 space-y-1">
+                                  <li>Download/Run: <a href="https://adoptium.net/temurin/releases/?version=17" target="_blank" className="text-white underline font-bold">JDK 17 MSI Installer</a></li>
+                                  <li>Delete this broken folder: <br/><code className="text-white">C:\Users\YOUR_NAME\.bubblewrap\jdk</code></li>
+                                </ul>
+                              </div>
+
+                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
+                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">2. RE-RUN INIT (Essential)</p>
+                                <p className="text-[11px] text-stone-300 mb-2">You must regenerate the manifest. Run this exact command:</p>
+                                <code className="block bg-black p-2 rounded text-emerald-400 text-[9px] mb-2">npx @bubblewrap/cli init --manifest={productionUrl || 'https://YOUR_PRODUCTION_URL'}/metadata.json</code>
+                                <p className="text-[11px] text-stone-300 italic">When asked "Do you want Bubblewrap to install the JDK?", type <b>N</b> and press Enter. Then paste your local JDK path.</p>
+                              </div>
+
+                              <div className="bg-black/40 p-4 rounded-2xl border border-red-500/20">
+                                <p className="text-[10px] font-black uppercase text-red-400 mb-2">3. FINAL BUILD</p>
+                                <p className="text-[11px] text-stone-300">Only after Step 2 finishes, run: <br/><code className="text-white">npx @bubblewrap/cli build</code></p>
                               </div>
                             </div>
+                          </div>
 
+                          <div className="space-y-6 opacity-40 grayscale">
                             <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl">
                               <p className="text-sm font-bold text-blue-400 mb-2">Step C: Domain Proof (Assetlinks)</p>
-                              <p className="text-xs text-stone-400 mb-4">After the build, a file <code>assetlinks.json</code> will appear in your folder. Copy the fingerprint from it and update your website's <code>.well-known/assetlinks.json</code>.</p>
+                              <p className="text-xs text-stone-400 mb-4">Bubblewrap creates <code>assetlinks.json</code> in your folder. Copy the fingerprint from it into your code's <code>public/.well-known/assetlinks.json</code> and re-deploy.</p>
                             </div>
                           </div>
                           <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Steps</button></div>
