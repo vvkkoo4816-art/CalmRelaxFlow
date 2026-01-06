@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [mood, setMood] = useState<string>('calm');
   const [nearbyCenters, setNearbyCenters] = useState<ZenCenter[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Release Wizard State
   const [wizardStep, setWizardStep] = useState(1);
@@ -85,6 +86,7 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Sync to local storage on every session change
   useEffect(() => {
     if (sessions && sessions.length > 0) {
       localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
@@ -176,7 +178,9 @@ const App: React.FC = () => {
         setSessions(prev => (prev || []).map(s => s.id === sessionId ? { ...s, audioUrl } : s));
       }
       setIsUploading(null);
-      alert("Audio file linked successfully.");
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      alert("Audio file linked and saved successfully.");
     };
     reader.readAsDataURL(file);
   };
@@ -204,6 +208,15 @@ const App: React.FC = () => {
 
   const handleUpdateSession = (id: string, field: keyof MeditationSession, value: string) => {
     setSessions(prev => (prev || []).map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  const handleManualSave = () => {
+    setSaveStatus('saving');
+    localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
+    setTimeout(() => {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 500);
   };
 
   const handleDeleteSession = (id: string) => {
@@ -323,12 +336,26 @@ const App: React.FC = () => {
               </div>
             ) : (
               <>
-                <header className="mb-10">
-                  <h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">Admin Console</h2>
-                  <div className="flex space-x-4 mt-6">
-                    <button onClick={() => setAdminTab('content')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Content Manager</button>
-                    <button onClick={() => setAdminTab('wizard')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'wizard' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Release Wizard</button>
+                <header className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">Admin Console</h2>
+                    <div className="flex space-x-4 mt-6">
+                      <button onClick={() => setAdminTab('content')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Content Manager</button>
+                      <button onClick={() => setAdminTab('wizard')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'wizard' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Release Wizard</button>
+                    </div>
                   </div>
+                  {adminTab === 'content' && (
+                    <button 
+                      onClick={handleManualSave}
+                      className={`mt-6 md:mt-0 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 shadow-xl ${
+                        saveStatus === 'saved' ? 'bg-emerald-500 text-white' : 
+                        saveStatus === 'saving' ? 'bg-stone-400 text-white animate-pulse' : 
+                        'bg-stone-900 text-white hover:bg-emerald-600'
+                      }`}
+                    >
+                      <span>{saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save All Changes'}</span>
+                    </button>
+                  )}
                 </header>
 
                 {adminTab === 'content' ? (
@@ -351,7 +378,10 @@ const App: React.FC = () => {
 
                     {/* EDIT LIBRARY CONTENT */}
                     <section className="space-y-6">
-                      <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions ? sessions.length : 0})</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions ? sessions.length : 0})</h3>
+                        <p className="text-[10px] font-bold text-stone-400 italic">Auto-syncs on edit; use button above for forced save.</p>
+                      </div>
                       <div className="space-y-4">
                         {sessions && sessions.length > 0 ? sessions.map(session => (
                           <div key={session.id} className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm hover:shadow-md transition-all">
@@ -374,7 +404,7 @@ const App: React.FC = () => {
                         )}
                       </div>
                     </section>
-                  </>
+                  </div>
                 ) : (
                   <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden animate-in slide-in-from-right-10 duration-500 min-h-[600px]">
                     <div className="relative z-10 flex flex-col h-full">
@@ -406,21 +436,21 @@ const App: React.FC = () => {
 
                       {wizardStep === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 2: Local Project Setup</h4>
+                          <h4 className="text-3xl font-black text-emerald-400">Stage 2: Linking GitHub</h4>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4 font-mono text-xs">
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4">
-                              <p className="text-red-200 font-bold mb-1">Getting "'git' is not recognized"?</p>
-                              <p className="text-stone-400 text-[10px] leading-relaxed">This means Git is not installed on your system. <br/> 1. Download it here: <a href="https://git-scm.com/downloads" target="_blank" className="text-white underline font-bold">git-scm.com</a> <br/> 2. Restart your Terminal or VSCode. <br/> 3. <b>Alternative:</b> If you can't install Git, use the <b>"Drag & Drop"</b> method on the next screen.</p>
+                              <p className="text-red-200 font-bold mb-1">Fixed "refspec main does not match any" Error:</p>
+                              <p className="text-stone-400 text-[10px] leading-relaxed">This happens because your default local branch is 'master' while GitHub expects 'main'. <br/> Use the command <code className="text-white">git branch -M main</code> to rename it.</p>
                             </div>
-                            <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">If Git is installed, run these to link to your GitHub:</p>
+                            <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">Correct Command Sequence:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 leading-loose break-all border border-emerald-500/20">
                               git init<br/>
                               git add .<br/>
                               git commit -m "Initial release"<br/>
+                              git branch -M main<br/>
                               git remote add origin YOUR_GITHUB_URL<br/>
                               git push -u origin main
                             </code>
-                            <p className="mt-4 text-[10px] text-stone-500 italic">YOUR_GITHUB_URL: Create a repository on GitHub.com to get this URL.</p>
                           </div>
                           <div className="flex space-x-4"><button onClick={() => setWizardStep(1)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Deploy to Web</button></div>
                         </div>
