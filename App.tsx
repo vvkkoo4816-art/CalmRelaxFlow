@@ -62,7 +62,8 @@ const App: React.FC = () => {
     const savedSessions = localStorage.getItem('clamrelax_sessions');
     if (savedSessions) {
       try {
-        setSessions(JSON.parse(savedSessions));
+        const parsed = JSON.parse(savedSessions);
+        setSessions(Array.isArray(parsed) ? parsed : MEDITATION_SESSIONS);
       } catch (e) {
         setSessions(MEDITATION_SESSIONS);
       }
@@ -85,7 +86,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (sessions.length > 0) {
+    if (sessions && sessions.length > 0) {
       localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
     }
   }, [sessions]);
@@ -102,19 +103,20 @@ const App: React.FC = () => {
   };
 
   const completeLogin = (email: string) => {
-    if (!email || !email.includes('@')) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       alert("Please enter a valid email address.");
       return;
     }
 
-    const isAdmin = email.toLowerCase() === 'vvkkoo4816@gmail.com';
-    const existingUser = membershipDatabase.find(u => u && u.email === email.toLowerCase());
+    const isAdmin = cleanEmail === 'vvkkoo4816@gmail.com';
+    const existingUser = membershipDatabase.find(u => u && u.email === cleanEmail);
 
     const loggedUser: User = existingUser || {
       id: "u-" + Date.now(),
-      name: email.split('@')[0].toUpperCase(),
-      email: email.toLowerCase(),
-      photoUrl: `https://ui-avatars.com/api/?name=${email}&background=10b981&color=fff`,
+      name: cleanEmail.split('@')[0].toUpperCase(),
+      email: cleanEmail,
+      photoUrl: `https://ui-avatars.com/api/?name=${cleanEmail}&background=10b981&color=fff`,
       isLoggedIn: true,
       streak: 1,
       minutesMeditated: 0,
@@ -171,7 +173,7 @@ const App: React.FC = () => {
       if (sessionId === 'new') {
         setNewSessionData(prev => ({ ...prev, audioUrl }));
       } else {
-        setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, audioUrl } : s));
+        setSessions(prev => (prev || []).map(s => s.id === sessionId ? { ...s, audioUrl } : s));
       }
       setIsUploading(null);
       alert("Audio file linked successfully.");
@@ -189,7 +191,7 @@ const App: React.FC = () => {
       ...newSessionData,
       description: 'Custom User Scenario'
     };
-    setSessions(prev => [session, ...prev]);
+    setSessions(prev => [session, ...(prev || [])]);
     setNewSessionData({
       title: '',
       category: 'Daily',
@@ -201,12 +203,12 @@ const App: React.FC = () => {
   };
 
   const handleUpdateSession = (id: string, field: keyof MeditationSession, value: string) => {
-    setSessions(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setSessions(prev => (prev || []).map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const handleDeleteSession = (id: string) => {
     if (confirm("Delete this scenario permanently?")) {
-      setSessions(prev => prev.filter(s => s.id !== id));
+      setSessions(prev => (prev || []).filter(s => s.id !== id));
     }
   };
 
@@ -239,7 +241,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  const isAdminUser = user?.email?.toLowerCase() === 'vvkkoo4816@gmail.com';
+  const isAdminUser = user?.email?.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
 
   if (!isLoggedIn || !user) {
     return (
@@ -315,7 +317,8 @@ const App: React.FC = () => {
               <div className="flex flex-col items-center justify-center py-20 bg-stone-50 rounded-[40px] border border-dashed border-stone-200">
                 <div className="text-5xl mb-6">🔐</div>
                 <h2 className="text-2xl font-black text-stone-800">Administrator Access Only</h2>
-                <p className="text-stone-500 mt-2">Please login as <span className="text-emerald-600 font-bold">vvkkoo4816@gmail.com</span> to access these tools.</p>
+                <p className="text-stone-500 mt-2">Current user: <span className="font-bold text-red-500">{user.email}</span></p>
+                <p className="text-stone-400 text-xs mt-1">Please login as <span className="text-emerald-600 font-bold">vvkkoo4816@gmail.com</span></p>
                 <button onClick={handleLogout} className="mt-8 px-6 py-2 bg-stone-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Sign Out</button>
               </div>
             ) : (
@@ -348,9 +351,9 @@ const App: React.FC = () => {
 
                     {/* EDIT LIBRARY CONTENT */}
                     <section className="space-y-6">
-                      <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions.length})</h3>
+                      <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions ? sessions.length : 0})</h3>
                       <div className="space-y-4">
-                        {sessions.map(session => (
+                        {sessions && sessions.length > 0 ? sessions.map(session => (
                           <div key={session.id} className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm hover:shadow-md transition-all">
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
                               <div className="flex items-center space-x-4">
@@ -366,10 +369,12 @@ const App: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                        ))}
+                        )) : (
+                          <div className="text-center py-10 bg-stone-50 rounded-[32px] border border-dashed border-stone-200 text-stone-400 font-bold italic">No custom scenarios yet.</div>
+                        )}
                       </div>
                     </section>
-                  </div>
+                  </>
                 ) : (
                   <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden animate-in slide-in-from-right-10 duration-500 min-h-[600px]">
                     <div className="relative z-10 flex flex-col h-full">
@@ -403,35 +408,50 @@ const App: React.FC = () => {
                         <div className="space-y-6 animate-in slide-in-from-right-5">
                           <h4 className="text-3xl font-black text-emerald-400">Stage 2: Local Project Setup</h4>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4 font-mono text-xs">
-                            <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">To deploy to Vercel, push this folder to GitHub. Ensure `package.json` exists in the root.</p>
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4">
+                              <p className="text-red-200 font-bold mb-1">Getting "'git' is not recognized"?</p>
+                              <p className="text-stone-400 text-[10px] leading-relaxed">This means Git is not installed on your system. <br/> 1. Download it here: <a href="https://git-scm.com/downloads" target="_blank" className="text-white underline font-bold">git-scm.com</a> <br/> 2. Restart your Terminal or VSCode. <br/> 3. <b>Alternative:</b> If you can't install Git, use the <b>"Drag & Drop"</b> method on the next screen.</p>
+                            </div>
+                            <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">If Git is installed, run these to link to your GitHub:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 leading-loose break-all border border-emerald-500/20">
                               git init<br/>
                               git add .<br/>
-                              git commit -m "Initial mindful commit"<br/>
-                              git remote add origin YOUR_REPO_URL<br/>
+                              git commit -m "Initial release"<br/>
+                              git remote add origin YOUR_GITHUB_URL<br/>
                               git push -u origin main
                             </code>
+                            <p className="mt-4 text-[10px] text-stone-500 italic">YOUR_GITHUB_URL: Create a repository on GitHub.com to get this URL.</p>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Vercel Setup</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Deploy to Web</button></div>
                         </div>
                       )}
 
                       {wizardStep === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 3: Vercel Production URL</h4>
+                          <h4 className="text-3xl font-black text-emerald-400">Stage 3: Deploy to Vercel</h4>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
-                            <p className="text-stone-400 text-sm">Deploy to Vercel and add your `API_KEY` in the Vercel dashboard. Once deployed, enter the URL below:</p>
-                            <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none focus:border-emerald-500" placeholder="https://clamrelaxflow.vercel.app" />
-                            {productionUrl && (
-                              <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
-                                <p className="text-white font-bold text-xs mb-2">Android Project Init Command:</p>
-                                <code className="text-emerald-400 text-[10px] break-all leading-relaxed font-mono">
-                                  npx bubblewrap init --manifest {productionUrl.replace(/\/$/, '')}/metadata.json
-                                </code>
+                            <div className="space-y-3">
+                              <h5 className="font-bold text-white text-sm">Step 1: Deployment Method</h5>
+                              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                                <p className="text-stone-400 text-xs font-bold uppercase tracking-widest text-emerald-400">Option A: Easy (No Git Needed)</p>
+                                <p className="text-stone-400 text-[11px] leading-relaxed">Go to <a href="https://vercel.com/new" target="_blank" className="text-white underline">vercel.com/new</a> and find the "Drag and Drop" area. Drag your <b>project folder</b> there. Done!</p>
+                                <div className="h-px bg-white/10 w-full"></div>
+                                <p className="text-stone-400 text-xs font-bold uppercase tracking-widest text-blue-400">Option B: Pro (Using GitHub)</p>
+                                <p className="text-stone-400 text-[11px] leading-relaxed">Import your GitHub repository directly from the Vercel dashboard.</p>
                               </div>
-                            )}
-                            <div className="p-4 bg-stone-800 rounded-2xl border border-white/5 text-[10px] text-stone-500 leading-relaxed">
-                              Tip: In Vercel, go to Settings -> Environment Variables and add Key: `API_KEY` Value: `YOUR_GEMINI_KEY`.
+                            </div>
+                            <div className="space-y-3">
+                              <h5 className="font-bold text-white text-sm">Step 2: Production URL</h5>
+                              <p className="text-stone-400 text-xs">Once deployed, paste your Vercel URL below to prepare for Android:</p>
+                              <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none focus:border-emerald-500" placeholder="https://clamrelaxflow.vercel.app" />
+                              {productionUrl && (
+                                <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20 animate-in zoom-in-95">
+                                  <p className="text-white font-bold text-xs mb-2">Android Build Command:</p>
+                                  <code className="text-emerald-400 text-[10px] break-all leading-relaxed font-mono">
+                                    npx bubblewrap init --manifest {productionUrl.replace(/\/$/, '')}/metadata.json
+                                  </code>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Verification</button></div>
@@ -440,8 +460,8 @@ const App: React.FC = () => {
 
                       {wizardStep === 4 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 4: Play Store Verification</h4>
-                          <p className="text-stone-400 text-sm">Place this file in your Vercel project at `public/.well-known/assetlinks.json` to prove ownership of the domain.</p>
+                          <h4 className="text-3xl font-black text-emerald-400">Stage 4: Domain Proof</h4>
+                          <p className="text-stone-400 text-sm">To remove the address bar on Android, create this file in your project at `public/.well-known/assetlinks.json`.</p>
                           <div className="bg-black/50 p-6 rounded-3xl font-mono text-[10px] text-emerald-400 border border-white/5 overflow-auto">
                             <pre>{`[
   {
@@ -449,13 +469,13 @@ const App: React.FC = () => {
     "target": {
       "namespace": "android_app",
       "package_name": "com.clamrelaxflow.twa",
-      "sha256_cert_fingerprints": ["PASTE_SHA256_FROM_BUBBLEWRAP"]
+      "sha256_cert_fingerprints": ["GET_THIS_FROM_BUBBLEWRAP_BUILD"]
     }
   }
 ]`}</pre>
                           </div>
-                          <p className="text-[10px] text-stone-500 italic">This step removes the browser bar and makes your app truly "Native".</p>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Build Guide</button></div>
+                          <p className="text-[10px] text-stone-500 italic">This verification makes your app indistinguishable from a native Java/Kotlin app.</p>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Submission</button></div>
                         </div>
                       )}
 
@@ -463,32 +483,32 @@ const App: React.FC = () => {
                         <div className="space-y-10 animate-in fade-in duration-500 overflow-y-auto max-h-[600px] pr-4">
                           <div className="flex items-center space-x-4">
                             <span className="text-4xl">🚀</span>
-                            <h4 className="text-3xl font-black text-emerald-400">Final Google Play Steps</h4>
+                            <h4 className="text-3xl font-black text-emerald-400">Final Release</h4>
                           </div>
                           
                           <div className="space-y-8">
                             <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Generate Release AAB</h5>
-                              <p className="text-sm text-stone-400 leading-relaxed">Run the build command and select "Release". Google requires the **.aab** file for the Play Store.</p>
+                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Build the AAB</h5>
+                              <p className="text-sm text-stone-400 leading-relaxed">Run this final command in your folder to generate the **app-release-signed.aab** file.</p>
                               <code className="block bg-black p-4 rounded-xl text-emerald-400 text-xs font-mono border border-white/5">npx bubblewrap build</code>
                             </div>
 
                             <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Submit to Console</h5>
+                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Google Play Console</h5>
                               <ul className="text-sm text-stone-400 space-y-3 list-decimal pl-5">
-                                <li>Sign in to <a href="https://play.google.com/console" target="_blank" className="text-emerald-400 underline">Play Console</a>.</li>
-                                <li>Upload your `app-release-signed.aab`.</li>
-                                <li>Use AI images from Stage 1 for the app store screenshots.</li>
-                                <li>Submit for Google review (usually 1-3 days).</li>
+                                <li>Log in to <a href="https://play.google.com/console" target="_blank" className="text-emerald-400 underline">Google Play Console</a>.</li>
+                                <li>Create an App -> Meditation -> Production.</li>
+                                <li>Upload the generated `.aab` file.</li>
+                                <li>Submit and wait for your billions of users!</li>
                               </ul>
                             </div>
                           </div>
 
                           <div className="pt-8 border-t border-white/5 flex flex-col items-center">
-                            <div className="text-6xl mb-6">✨</div>
-                            <h4 className="text-2xl font-black mb-2">You're Published!</h4>
-                            <p className="text-stone-400 text-center mb-8 max-w-sm">Vercel will now handle your web updates, and the Play Store will handle your Android distribution.</p>
-                            <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase hover:bg-white/20 transition-all">Restart Wizard</button>
+                            <div className="text-6xl mb-6">🧘</div>
+                            <h4 className="text-2xl font-black mb-2">You are Mindful.</h4>
+                            <p className="text-stone-400 text-center mb-8 max-w-sm">Congratulations on taking ClamRelaxFlow to the world stage.</p>
+                            <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase hover:bg-white/20 transition-all">Start Over</button>
                           </div>
                         </div>
                       )}
