@@ -1,0 +1,48 @@
+{
+  "name": "ClamRelaxFlow Mindfulness & Meditation",
+  "short_name": "ClamRelaxFlow",
+  "description": "Premium mindfulness companion with guided meditations, sleep stories, and zen music.",
+  "theme_color": "#10b981",
+  "background_color": "#fdfcfb",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
+  "categories": [
+    "lifestyle",
+    "health",
+    "productivity"
+  ],
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Daily Zen",
+      "url": "/?view=today",
+      "icons": [
+        {
+          "src": "https://www.google.com/favicon.ico",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
