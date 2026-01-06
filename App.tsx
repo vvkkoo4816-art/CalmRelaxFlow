@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
@@ -86,18 +86,24 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync to local storage on every session change
+  // Persist sessions whenever they change
   useEffect(() => {
     if (sessions && sessions.length > 0) {
       localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
     }
   }, [sessions]);
 
+  const handleMoodSelection = useCallback(async (selectedMood: string) => {
+    setMood(selectedMood);
+    const advice = await getPersonalizedRecommendation(selectedMood, lang);
+    setRecommendation(advice || "Close your eyes and let the world drift away for a moment.");
+  }, [lang]);
+
   useEffect(() => {
     if (isLoggedIn && user) {
       handleMoodSelection('calm');
     }
-  }, [isLoggedIn, user?.email, lang]);
+  }, [isLoggedIn, user?.email, lang, handleMoodSelection]);
 
   const handleLoginClick = () => {
     setLoginStep('select');
@@ -145,12 +151,6 @@ const App: React.FC = () => {
     setView('today');
   };
 
-  const handleMoodSelection = async (selectedMood: string) => {
-    setMood(selectedMood);
-    const advice = await getPersonalizedRecommendation(selectedMood, lang);
-    setRecommendation(advice || "Close your eyes and let the world drift away for a moment.");
-  };
-
   const handleGenerateAsset = async (type: 'icon' | 'feature') => {
     setIsGenerating(type);
     const result = await generateAppAsset(type);
@@ -180,7 +180,7 @@ const App: React.FC = () => {
       setIsUploading(null);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-      alert("Audio file linked and saved successfully.");
+      alert("Audio file linked successfully.");
     };
     reader.readAsDataURL(file);
   };
@@ -207,7 +207,7 @@ const App: React.FC = () => {
   };
 
   const handleUpdateSession = (id: string, field: keyof MeditationSession, value: string) => {
-    setSessions(prev => (prev || []).map(s => s.id === id ? { ...s, [field]: value } : s));
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const handleManualSave = () => {
@@ -221,7 +221,7 @@ const App: React.FC = () => {
 
   const handleDeleteSession = (id: string) => {
     if (confirm("Delete this scenario permanently?")) {
-      setSessions(prev => (prev || []).filter(s => s.id !== id));
+      setSessions(prev => prev.filter(s => s.id !== id));
     }
   };
 
@@ -240,10 +240,10 @@ const App: React.FC = () => {
 
   const LanguageToggle = () => (
     <div className="flex space-x-2 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 shadow-inner">
-      {['en', 'zh-Hans', 'zh-Hant'].map((l) => (
+      {(['en', 'zh-Hans', 'zh-Hant'] as Language[]).map((l) => (
         <button
           key={l}
-          onClick={() => setLang(l as Language)}
+          onClick={() => setLang(l)}
           className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
             lang === l ? 'bg-white text-emerald-600 shadow-sm' : 'text-stone-400 hover:text-stone-600'
           }`}
@@ -254,13 +254,11 @@ const App: React.FC = () => {
     </div>
   );
 
-  const isAdminUser = user?.email?.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
-
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-[#fdfcfb] flex flex-col items-center justify-between p-8 text-center relative overflow-hidden">
         {showLoginModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden p-8 flex flex-col items-center">
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-12 h-12 mb-6" />
               {loginStep === 'select' ? (
@@ -303,6 +301,8 @@ const App: React.FC = () => {
     );
   }
 
+  const isAdminUser = user.email.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
+
   return (
     <Layout activeView={view} setActiveView={setView} user={user} lang={lang}>
       <div className="max-w-5xl mx-auto w-full pb-32">
@@ -335,7 +335,7 @@ const App: React.FC = () => {
                 <button onClick={handleLogout} className="mt-8 px-6 py-2 bg-stone-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest">Sign Out</button>
               </div>
             ) : (
-              <>
+              <div className="admin-content">
                 <header className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between">
                   <div>
                     <h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">Admin Console</h2>
@@ -359,55 +359,48 @@ const App: React.FC = () => {
                 </header>
 
                 {adminTab === 'content' ? (
-                  <div className="space-y-12 animate-in slide-in-from-left-5">
-                    {/* CREATE NEW SCENARIO */}
+                  <div className="space-y-12">
                     <section className="bg-emerald-50/50 p-8 rounded-[40px] border border-emerald-100 shadow-sm">
                       <h3 className="text-2xl font-black text-stone-800 mb-6">Add New Scenario</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Title</label><input type="text" value={newSessionData.title} onChange={e => setNewSessionData(p => ({...p, title: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200 outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Zen Rain Walk" /></div>
                         <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Category</label><select value={newSessionData.category} onChange={e => setNewSessionData(p => ({...p, category: e.target.value as any}))} className="w-full p-4 rounded-2xl bg-white border-stone-200"><option>Daily</option><option>Sleep</option><option>Anxiety</option><option>Focus</option><option>Quick Relief</option></select></div>
                         <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Duration</label><input type="text" value={newSessionData.duration} onChange={e => setNewSessionData(p => ({...p, duration: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200" placeholder="10 min" /></div>
-                        <div className="lg:col-span-2 space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Audio URL (or Upload below)</label><input type="text" value={newSessionData.audioUrl} onChange={e => setNewSessionData(p => ({...p, audioUrl: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200" placeholder="https://cdn.example.com/audio.mp3" /></div>
+                        <div className="lg:col-span-2 space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Audio URL</label><input type="text" value={newSessionData.audioUrl} onChange={e => setNewSessionData(p => ({...p, audioUrl: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200" placeholder="https://cdn.example.com/audio.mp3" /></div>
                         <div className="flex items-end space-x-3">
-                          <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-4 bg-white border border-emerald-200 rounded-2xl font-black text-[10px] uppercase text-emerald-600 hover:bg-emerald-50"> {isUploading === 'new' ? 'Loading...' : 'Upload MP3'}</button>
+                          <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-4 bg-white border border-emerald-200 rounded-2xl font-black text-[10px] uppercase text-emerald-600"> {isUploading === 'new' ? 'Loading...' : 'Upload MP3'}</button>
                           <input type="file" ref={fileInputRef} onChange={e => e.target.files?.[0] && processAudioFile(e.target.files[0], 'new')} className="hidden" accept="audio/*" />
-                          <button onClick={createNewSession} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-emerald-200">Create</button>
+                          <button onClick={createNewSession} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">Create</button>
                         </div>
                       </div>
                     </section>
 
-                    {/* EDIT LIBRARY CONTENT */}
                     <section className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions ? sessions.length : 0})</h3>
-                        <p className="text-[10px] font-bold text-stone-400 italic">Auto-syncs on edit; use button above for forced save.</p>
-                      </div>
+                      <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions.length})</h3>
                       <div className="space-y-4">
-                        {sessions && sessions.length > 0 ? sessions.map(session => (
-                          <div key={session.id} className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm hover:shadow-md transition-all">
+                        {sessions.map(session => (
+                          <div key={session.id} className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm">
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
                               <div className="flex items-center space-x-4">
                                 <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0"><img src={session.imageUrl} className="w-full h-full object-cover" /></div>
                                 <div className="flex-1 min-w-0"><input type="text" value={session.title} onChange={e => handleUpdateSession(session.id, 'title', e.target.value)} className="w-full font-black text-stone-800 bg-transparent border-none p-0 focus:ring-0 truncate" /></div>
                               </div>
-                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Audio MP3 Link</label><input type="text" value={session.audioUrl} onChange={e => handleUpdateSession(session.id, 'audioUrl', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs border-transparent focus:bg-white focus:border-emerald-500 transition-all outline-none" /></div>
-                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Duration</label><input type="text" value={session.duration} onChange={e => handleUpdateSession(session.id, 'duration', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs border-transparent focus:bg-white focus:border-emerald-500 transition-all outline-none" /></div>
+                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Audio MP3 Link</label><input type="text" value={session.audioUrl} onChange={e => handleUpdateSession(session.id, 'audioUrl', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs outline-none" /></div>
+                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Duration</label><input type="text" value={session.duration} onChange={e => handleUpdateSession(session.id, 'duration', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs outline-none" /></div>
                               <div className="flex items-center space-x-2">
-                                <button onClick={() => editFileInputRefs.current[session.id]?.click()} className="flex-1 py-3 bg-stone-100 rounded-xl font-black text-[9px] uppercase hover:bg-emerald-500 hover:text-white transition-all">{isUploading === session.id ? 'Wait...' : 'Replace MP3'}</button>
+                                <button onClick={() => editFileInputRefs.current[session.id]?.click()} className="flex-1 py-3 bg-stone-100 rounded-xl font-black text-[9px] uppercase">{isUploading === session.id ? 'Wait...' : 'Replace MP3'}</button>
                                 <input type="file" ref={el => { editFileInputRefs.current[session.id] = el; }} onChange={e => e.target.files?.[0] && processAudioFile(e.target.files[0], session.id)} className="hidden" accept="audio/*" />
-                                <button onClick={() => handleDeleteSession(session.id)} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                                <button onClick={() => handleDeleteSession(session.id)} className="p-3 bg-red-50 text-red-500 rounded-xl"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
                               </div>
                             </div>
                           </div>
-                        )) : (
-                          <div className="text-center py-10 bg-stone-50 rounded-[32px] border border-dashed border-stone-200 text-stone-400 font-bold italic">No custom scenarios yet.</div>
-                        )}
+                        ))}
                       </div>
                     </section>
                   </div>
                 ) : (
-                  <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl relative overflow-hidden animate-in slide-in-from-right-10 duration-500 min-h-[600px]">
-                    <div className="relative z-10 flex flex-col h-full">
+                  <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl min-h-[600px]">
+                    <div className="flex flex-col h-full">
                       <div className="flex justify-between mb-12 relative">
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2"></div>
                         {[1, 2, 3, 4, 5].map(s => (
@@ -422,12 +415,12 @@ const App: React.FC = () => {
                             <div className="space-y-4">
                               <p className="text-[10px] font-black uppercase text-stone-500">App Icon (512x512)</p>
                               <div className="w-40 h-40 bg-stone-800 rounded-[40px] border border-white/10 flex items-center justify-center overflow-hidden">{generatedIcon ? <img src={generatedIcon} className="w-full h-full object-cover" /> : <span className="text-4xl">🧘</span>}</div>
-                              <button onClick={() => handleGenerateAsset('icon')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase hover:bg-white/20 transition-all">{isGenerating === 'icon' ? 'Panting...' : 'Generate AI Icon'}</button>
+                              <button onClick={() => handleGenerateAsset('icon')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase">{isGenerating === 'icon' ? 'Panting...' : 'Generate AI Icon'}</button>
                             </div>
                             <div className="space-y-4">
                               <p className="text-[10px] font-black uppercase text-stone-500">Store Graphic (1024x500)</p>
                               <div className="aspect-video w-full bg-stone-800 rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden">{generatedFeature ? <img src={generatedFeature} className="w-full h-full object-cover" /> : <span className="text-4xl">🌄</span>}</div>
-                              <button onClick={() => handleGenerateAsset('feature')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase hover:bg-white/20 transition-all">{isGenerating === 'feature' ? 'Painting...' : 'Generate AI Graphic'}</button>
+                              <button onClick={() => handleGenerateAsset('feature')} disabled={!!isGenerating} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase">{isGenerating === 'feature' ? 'Painting...' : 'Generate AI Graphic'}</button>
                             </div>
                           </div>
                           <button onClick={() => setWizardStep(2)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6 shadow-lg shadow-emerald-500/20">Continue to Setup</button>
@@ -439,16 +432,16 @@ const App: React.FC = () => {
                           <h4 className="text-3xl font-black text-emerald-400">Stage 2: Linking GitHub</h4>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4 font-mono text-xs">
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4">
-                              <p className="text-red-200 font-bold mb-1">Fixed "refspec main does not match any" Error:</p>
-                              <p className="text-stone-400 text-[10px] leading-relaxed">This happens because your default local branch is 'master' while GitHub expects 'main'. <br/> Use the command <code className="text-white">git branch -M main</code> to rename it.</p>
+                              <p className="text-red-200 font-bold mb-1">Fixing "refspec main does not match any" Error:</p>
+                              <p className="text-stone-400 text-[10px] leading-relaxed">This happens if your branch is named 'master'. Use the command <code>git branch -M main</code> to fix it.</p>
                             </div>
                             <p className="text-stone-400 leading-relaxed mb-4 font-sans italic text-xs">Correct Command Sequence:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 leading-loose break-all border border-emerald-500/20">
-                              git init<br/>
-                              git add .<br/>
-                              git commit -m "Initial release"<br/>
-                              git branch -M main<br/>
-                              git remote add origin YOUR_GITHUB_URL<br/>
+                              git init<br />
+                              git add .<br />
+                              git commit -m "Initial release"<br />
+                              git branch -M main<br />
+                              git remote add origin YOUR_GITHUB_URL<br />
                               git push -u origin main
                             </code>
                           </div>
@@ -465,23 +458,11 @@ const App: React.FC = () => {
                               <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
                                 <p className="text-stone-400 text-xs font-bold uppercase tracking-widest text-emerald-400">Option A: Easy (No Git Needed)</p>
                                 <p className="text-stone-400 text-[11px] leading-relaxed">Go to <a href="https://vercel.com/new" target="_blank" className="text-white underline">vercel.com/new</a> and find the "Drag and Drop" area. Drag your <b>project folder</b> there. Done!</p>
-                                <div className="h-px bg-white/10 w-full"></div>
-                                <p className="text-stone-400 text-xs font-bold uppercase tracking-widest text-blue-400">Option B: Pro (Using GitHub)</p>
-                                <p className="text-stone-400 text-[11px] leading-relaxed">Import your GitHub repository directly from the Vercel dashboard.</p>
                               </div>
                             </div>
                             <div className="space-y-3">
                               <h5 className="font-bold text-white text-sm">Step 2: Production URL</h5>
-                              <p className="text-stone-400 text-xs">Once deployed, paste your Vercel URL below to prepare for Android:</p>
-                              <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none focus:border-emerald-500" placeholder="https://clamrelaxflow.vercel.app" />
-                              {productionUrl && (
-                                <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20 animate-in zoom-in-95">
-                                  <p className="text-white font-bold text-xs mb-2">Android Build Command:</p>
-                                  <code className="text-emerald-400 text-[10px] break-all leading-relaxed font-mono">
-                                    npx bubblewrap init --manifest {productionUrl.replace(/\/$/, '')}/metadata.json
-                                  </code>
-                                </div>
-                              )}
+                              <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none" placeholder="https://clamrelaxflow.vercel.app" />
                             </div>
                           </div>
                           <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Verification</button></div>
@@ -491,7 +472,7 @@ const App: React.FC = () => {
                       {wizardStep === 4 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
                           <h4 className="text-3xl font-black text-emerald-400">Stage 4: Domain Proof</h4>
-                          <p className="text-stone-400 text-sm">To remove the address bar on Android, create this file in your project at `public/.well-known/assetlinks.json`.</p>
+                          <p className="text-stone-400 text-sm">To remove the address bar on Android, create this file at `public/.well-known/assetlinks.json`.</p>
                           <div className="bg-black/50 p-6 rounded-3xl font-mono text-[10px] text-emerald-400 border border-white/5 overflow-auto">
                             <pre>{`[
   {
@@ -499,53 +480,38 @@ const App: React.FC = () => {
     "target": {
       "namespace": "android_app",
       "package_name": "com.clamrelaxflow.twa",
-      "sha256_cert_fingerprints": ["GET_THIS_FROM_BUBBLEWRAP_BUILD"]
+      "sha256_cert_fingerprints": ["YOUR_CERT_FINGERPRINT"]
     }
   }
 ]`}</pre>
                           </div>
-                          <p className="text-[10px] text-stone-500 italic">This verification makes your app indistinguishable from a native Java/Kotlin app.</p>
                           <div className="flex space-x-4"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Submission</button></div>
                         </div>
                       )}
 
                       {wizardStep === 5 && (
-                        <div className="space-y-10 animate-in fade-in duration-500 overflow-y-auto max-h-[600px] pr-4">
+                        <div className="space-y-10 animate-in fade-in duration-500">
                           <div className="flex items-center space-x-4">
                             <span className="text-4xl">🚀</span>
                             <h4 className="text-3xl font-black text-emerald-400">Final Release</h4>
                           </div>
-                          
                           <div className="space-y-8">
                             <div className="space-y-3">
                               <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Build the AAB</h5>
-                              <p className="text-sm text-stone-400 leading-relaxed">Run this final command in your folder to generate the **app-release-signed.aab** file.</p>
                               <code className="block bg-black p-4 rounded-xl text-emerald-400 text-xs font-mono border border-white/5">npx bubblewrap build</code>
                             </div>
-
                             <div className="space-y-3">
                               <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Google Play Console</h5>
-                              <ul className="text-sm text-stone-400 space-y-3 list-decimal pl-5">
-                                <li>Log in to <a href="https://play.google.com/console" target="_blank" className="text-emerald-400 underline">Google Play Console</a>.</li>
-                                <li>Create an App -> Meditation -> Production.</li>
-                                <li>Upload the generated `.aab` file.</li>
-                                <li>Submit and wait for your billions of users!</li>
-                              </ul>
+                              <p className="text-sm text-stone-400">Upload the generated `.aab` file and wait for review!</p>
                             </div>
                           </div>
-
-                          <div className="pt-8 border-t border-white/5 flex flex-col items-center">
-                            <div className="text-6xl mb-6">🧘</div>
-                            <h4 className="text-2xl font-black mb-2">You are Mindful.</h4>
-                            <p className="text-stone-400 text-center mb-8 max-w-sm">Congratulations on taking ClamRelaxFlow to the world stage.</p>
-                            <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase hover:bg-white/20 transition-all">Start Over</button>
-                          </div>
+                          <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase">Start Over</button>
                         </div>
                       )}
                     </div>
                   </section>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
