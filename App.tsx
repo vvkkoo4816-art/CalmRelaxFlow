@@ -86,12 +86,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Persist sessions whenever they change
   useEffect(() => {
     if (sessions && sessions.length > 0) {
       localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
     }
   }, [sessions]);
+
+  // Use the dynamic daily session from the library state if it exists
+  const currentDailySession = sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION;
 
   const handleMoodSelection = useCallback(async (selectedMood: string) => {
     setMood(selectedMood);
@@ -312,12 +314,12 @@ const App: React.FC = () => {
               <div><p className="text-stone-400 font-bold text-[10px] uppercase tracking-widest mb-1">{t.welcome_back}</p><h2 className="text-3xl font-extrabold serif text-stone-900">{t.hey}, {user.name}</h2></div>
               <div className="bg-amber-50 px-3 py-1.5 rounded-2xl border border-amber-100 flex items-center space-x-2"><span className="text-amber-500">🔥</span><span className="font-extrabold text-stone-700 text-sm">{user.streak || 1}</span></div>
             </header>
-            <section className="relative h-[400px] rounded-[40px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => setActiveSession(DAILY_MEDITATION)}>
-              <img src={DAILY_MEDITATION.imageUrl} alt="Daily" className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
+            <section className="relative h-[400px] rounded-[40px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => setActiveSession(currentDailySession)}>
+              <img src={currentDailySession.imageUrl} alt="Daily" className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/30"></div>
               <div className="absolute bottom-10 left-10">
                 <span className="px-3 py-1 bg-emerald-500 rounded-full text-[10px] font-black text-white uppercase tracking-widest mb-4 inline-block">{t.daily_zen}</span>
-                <h3 className="text-4xl font-black text-white mb-4">{DAILY_MEDITATION.title}</h3>
+                <h3 className="text-4xl font-black text-white mb-4">{currentDailySession.title}</h3>
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-stone-900 shadow-xl group-hover:scale-110 transition-transform"><svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
               </div>
             </section>
@@ -465,27 +467,39 @@ const App: React.FC = () => {
                               <input type="text" value={productionUrl} onChange={e => setProductionUrl(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-emerald-400 font-mono text-sm outline-none" placeholder="https://clamrelaxflow.vercel.app" />
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Verification</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Local Setup</button></div>
                         </div>
                       )}
 
                       {wizardStep === 4 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Stage 4: Domain Proof</h4>
-                          <p className="text-stone-400 text-sm">To remove the address bar on Android, create this file at `public/.well-known/assetlinks.json`.</p>
-                          <div className="bg-black/50 p-6 rounded-3xl font-mono text-[10px] text-emerald-400 border border-white/5 overflow-auto">
-                            <pre>{`[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.clamrelaxflow.twa",
-      "sha256_cert_fingerprints": ["YOUR_CERT_FINGERPRINT"]
-    }
-  }
-]`}</pre>
+                          <h4 className="text-3xl font-black text-emerald-400">Stage 4: Local Build & Proof</h4>
+                          <div className="space-y-6">
+                            <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl">
+                              <p className="text-sm font-bold text-amber-400 mb-2">Step A: Setup Local Computer</p>
+                              <ul className="text-xs text-stone-400 space-y-2 list-decimal pl-5">
+                                <li>Download all project files to a folder on your computer.</li>
+                                <li>Install <a href="https://nodejs.org/" target="_blank" className="text-white underline">Node.js</a>.</li>
+                                <li>Install <a href="https://www.oracle.com/java/technologies/downloads/" target="_blank" className="text-white underline">Java JDK 17+</a>.</li>
+                                <li>Open your terminal (PowerShell) in that folder.</li>
+                              </ul>
+                            </div>
+                            
+                            <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl">
+                              <p className="text-sm font-bold text-emerald-400 mb-2">Step B: Initialize & Build</p>
+                              <p className="text-xs text-stone-400 mb-3">You MUST initialize before you can build. Run these two commands:</p>
+                              <div className="space-y-2">
+                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px]">npx @bubblewrap/cli init --manifest={productionUrl || 'YOUR_PRODUCTION_URL'}/metadata.json</code>
+                                <code className="block bg-black p-3 rounded-xl text-emerald-400 text-[10px]">npx @bubblewrap/cli build</code>
+                              </div>
+                            </div>
+
+                            <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl">
+                              <p className="text-sm font-bold text-blue-400 mb-2">Step C: Domain Proof (Assetlinks)</p>
+                              <p className="text-xs text-stone-400 mb-4">After the build, a file <code>assetlinks.json</code> will appear in your folder. Copy the fingerprint from it and update your website's <code>.well-known/assetlinks.json</code>.</p>
+                            </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Submission</button></div>
+                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Steps</button></div>
                         </div>
                       )}
 
@@ -497,12 +511,12 @@ const App: React.FC = () => {
                           </div>
                           <div className="space-y-8">
                             <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Build the AAB</h5>
-                              <code className="block bg-black p-4 rounded-xl text-emerald-400 text-xs font-mono border border-white/5">npx bubblewrap build</code>
+                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">1. Play Console Upload</h5>
+                              <p className="text-sm text-stone-400">Upload your <code>app-release-bundle.aab</code> (located in your local folder) to the Google Play Console Internal Testing track.</p>
                             </div>
                             <div className="space-y-3">
-                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Google Play Console</h5>
-                              <p className="text-sm text-stone-400">Upload the generated `.aab` file and wait for review!</p>
+                              <h5 className="font-black text-xs uppercase tracking-widest text-white/60">2. Address Bar Removal</h5>
+                              <p className="text-sm text-stone-400">Once your updated <code>assetlinks.json</code> is live on your website and Google Play recognizes the app, the address bar will automatically vanish!</p>
                             </div>
                           </div>
                           <button onClick={() => setWizardStep(1)} className="px-10 py-4 bg-white/10 rounded-3xl font-black text-xs uppercase">Start Over</button>

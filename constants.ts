@@ -1,3 +1,4 @@
+
 import { MeditationSession, Course } from './types';
 
 export const DAILY_MEDITATION: MeditationSession = {
@@ -6,7 +7,7 @@ export const DAILY_MEDITATION: MeditationSession = {
   duration: '12 min',
   category: 'Daily',
   imageUrl: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=800',
-  audioUrl: 'https://cdn.pixabay.com/audio/2022/10/14/audio_9039600572.mp3',
+  audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Updated to a stable test source
   description: 'Soft morning birds and gentle acoustic melodies to start your day with clarity.'
 };
 
@@ -38,7 +39,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '45 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1474487056217-76fe4f83b14f?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     description: 'Rhythmic rail sounds and misty mountain ambience for deep rest.'
   },
   {
@@ -47,7 +48,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '35 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1472120435166-d11000520e80?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2021/08/09/audio_8b58a135a1.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     description: 'High-fidelity waves washing over a peaceful shoreline.'
   },
   {
@@ -56,7 +57,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '20 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/02/10/audio_fc41620a88.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
     description: 'Ethereal pads and soft chimes representing the night sky.'
   },
   {
@@ -65,7 +66,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '60 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/03/10/audio_731474f85e.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
     description: 'Subtle crickets and wind rustling through ancient pines.'
   }
 ];
@@ -77,7 +78,7 @@ export const QUICK_RELIEF: MeditationSession[] = [
     duration: '3 min',
     category: 'Quick Relief',
     imageUrl: 'https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/03/24/audio_4472d2449e.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
     description: 'A steady, minimalist pulse to guide your inhalations and exhalations.'
   },
   {
@@ -86,7 +87,7 @@ export const QUICK_RELIEF: MeditationSession[] = [
     duration: '5 min',
     category: 'Anxiety',
     imageUrl: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/05/17/audio_49692f4e37.mp3',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
     description: 'Reassuring, low-noise drones designed to ground you in the present.'
   }
 ];
@@ -98,7 +99,7 @@ export const EXPLORE_SESSIONS: MeditationSession[] = [
     duration: '15 min',
     category: 'Gratitude',
     imageUrl: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/07/25/audio_12304892c1.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'
   },
   {
     id: 'e2',
@@ -106,7 +107,7 @@ export const EXPLORE_SESSIONS: MeditationSession[] = [
     duration: '20 min',
     category: 'Anxiety',
     imageUrl: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/01/21/audio_3108343e5c.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3'
   },
   {
     id: 'e3',
@@ -114,7 +115,7 @@ export const EXPLORE_SESSIONS: MeditationSession[] = [
     duration: '30 min',
     category: 'Daily',
     imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2023/05/29/audio_f315a63972.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3'
   },
   {
     id: 'e4',
@@ -122,7 +123,7 @@ export const EXPLORE_SESSIONS: MeditationSession[] = [
     duration: '10 min',
     category: 'Quick Relief',
     imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/05/27/audio_115629c185.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3'
   }
 ];
 
@@ -133,7 +134,7 @@ export const ZEN_MUSIC: MeditationSession[] = [
     duration: '25 min',
     category: 'Focus',
     imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/03/15/audio_b72225386b.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3'
   },
   {
     id: 'm2',
@@ -141,7 +142,7 @@ export const ZEN_MUSIC: MeditationSession[] = [
     duration: '15 min',
     category: 'Focus',
     imageUrl: 'https://images.unsplash.com/photo-1444464666168-49d633b867ad?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2021/11/25/audio_91b32eed61.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3'
   },
   {
     id: 'm3',
@@ -149,7 +150,7 @@ export const ZEN_MUSIC: MeditationSession[] = [
     duration: '30 min',
     category: 'Focus',
     imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
-    audioUrl: 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3'
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3'
   }
 ];
 
@@ -162,8 +163,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
 ];
 
 export const AMBIENT_SOUNDS = [
-  { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a1413c.mp3' },
-  { id: 'forest', name: 'Deep Woods', icon: '🌲', url: 'https://cdn.pixabay.com/audio/2023/05/29/audio_f315a63972.mp3' },
-  { id: 'fire', name: 'Warm Fire', icon: '🔥', url: 'https://cdn.pixabay.com/audio/2021/09/06/audio_f448c26f03.mp3' },
-  { id: 'wind', name: 'Soft Wind', icon: '🌬️', url: 'https://cdn.pixabay.com/audio/2021/11/25/audio_91b32eed61.mp3' },
+  { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3' },
+  { id: 'forest', name: 'Deep Woods', icon: '🌲', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3' },
+  { id: 'fire', name: 'Warm Fire', icon: '🔥', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3' },
+  { id: 'wind', name: 'Soft Wind', icon: '🌬️', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
 ];

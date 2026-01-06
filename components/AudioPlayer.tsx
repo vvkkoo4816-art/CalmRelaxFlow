@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
@@ -84,6 +85,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         onError={handleError}
         onCanPlay={handleCanPlay}
         preload="metadata"
+        crossOrigin="anonymous"
       />
       
       <div className="relative z-10">
