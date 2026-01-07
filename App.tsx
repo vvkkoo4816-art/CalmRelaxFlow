@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
@@ -400,9 +399,9 @@ const App: React.FC = () => {
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between mb-12 relative overflow-x-auto pb-4">
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2"></div>
-                        {[0, 1, 1.5, 2, 3, 3.5, 4, 5].map(s => (
+                        {[0, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5].map(s => (
                           <button key={s} onClick={() => setWizardStep(s)} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black transition-all shrink-0 ${wizardStep >= s ? 'bg-emerald-500 text-white scale-110 shadow-lg' : 'bg-stone-800 text-stone-500'}`}>
-                            {s === 0 ? '🛠️' : s === 1.5 ? '⬇️' : s === 3.5 ? '⚠️' : s}
+                            {s === 0 ? '🛠️' : s === 1.5 ? '⬇️' : s === 2.5 ? '✨' : s === 3.5 ? '⚠️' : s}
                           </button>
                         ))}
                       </div>
@@ -496,7 +495,30 @@ const App: React.FC = () => {
                             </code>
                             <p className="text-[10px] text-stone-500 italic">This "pulls" the new work you did in the browser into your local VS Code project.</p>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Build APK</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(2.5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Initialize Project</button></div>
+                        </div>
+                      )}
+
+                      {wizardStep === 2.5 && (
+                        <div className="space-y-6 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 2.5: Initializing (Crucial ✨)</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">
+                            Before building, we must generate a file called <code>twa-manifest.json</code>. This registers your app on your PC.
+                          </p>
+                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4">
+                            <p className="text-xs font-bold text-emerald-300">Run this in your terminal:</p>
+                            <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-[11px] break-all border border-emerald-500/20">
+                              npx @bubblewrap/cli init --manifest=https://calm-relax-flow-vvlt.vercel.app/metadata.json
+                            </code>
+                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2">
+                               <p className="text-[10px] font-black uppercase text-emerald-400">What to expect:</p>
+                               <ul className="text-[10px] text-stone-400 list-disc pl-4">
+                                 <li>It will ask several questions. Just <b>press Enter</b> for almost all of them to keep defaults.</li>
+                                 <li>When it asks about <b>Keystores</b>, it will help you create a new one. Save the passwords you choose!</li>
+                               </ul>
+                            </div>
+                          </div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Init Done, Next: Build</button></div>
                         </div>
                       )}
 
@@ -506,7 +528,7 @@ const App: React.FC = () => {
                           <div className="bg-amber-500/10 p-5 rounded-3xl border border-amber-500/20 mb-4">
                              <p className="text-xs font-bold text-amber-300">Terminal Ready ✅</p>
                              <p className="text-[11px] text-stone-400 mt-2">
-                                If your build failed with <b>'npx cannot be loaded'</b> or <b>'scripts disabled'</b>, proceed to the <b>⚠️ Fix: Terminal Scripts</b> step.
+                                If your build failed with <b>'twa-manifest.json not found'</b> or <b>'scripts disabled'</b>, proceed to the <b>⚠️ Fix: Terminal Errors</b> step.
                              </p>
                           </div>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
@@ -518,29 +540,35 @@ const App: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-4 mt-6">
-                            <button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button>
-                            <button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Fix: Terminal Scripts</button>
+                            <button onClick={() => setWizardStep(2.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button>
+                            <button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Fix: Terminal Errors</button>
                             <button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button>
                           </div>
                         </div>
                       )}
 
                       {wizardStep === 3.5 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Troubleshooting Script Errors</h4>
+                        <div className="space-y-8 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-2">
+                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Troubleshooting Terminal Errors</h4>
                           
                           <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Issue A: "npx cannot be loaded because running scripts is disabled"</p>
-                             <p className="text-[11px] text-stone-300">Windows blocks scripts by default for security. To fix this, paste this command into your VS Code terminal and press Enter:</p>
+                             <p className="text-xs font-black uppercase text-red-400">Error: ENOENT: twa-manifest.json not found</p>
+                             <p className="text-[11px] text-stone-300">This means you skipped the Initialization step. You MUST run the <code>init</code> command before building.</p>
+                             <button onClick={() => setWizardStep(2.5)} className="bg-red-500/20 text-red-400 p-3 rounded-xl text-[10px] font-black uppercase w-full border border-red-500/30">Go to Phase 2.5: Init</button>
+                          </div>
+
+                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-red-400">Error: "npx cannot be loaded because scripts are disabled"</p>
+                             <p className="text-[11px] text-stone-300">Windows blocks scripts by default. To fix, paste this into your VS Code terminal and press Enter:</p>
                              <code className="bg-black p-4 rounded-xl text-emerald-400 text-[11px] block mt-1 overflow-x-auto border border-white/10 font-mono">
                                Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
                              </code>
-                             <p className="text-[10px] text-stone-500 italic">Type 'Y' if asked for confirmation. This is a one-time fix.</p>
+                             <p className="text-[10px] text-stone-500 italic">Type 'Y' if asked for confirmation.</p>
                           </div>
 
                           <div className="p-6 bg-orange-500/10 border border-orange-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-orange-400">Issue B: "resource drawable/splash not found"</p>
-                             <p className="text-[11px] text-stone-300">If your build starts but fails with this specific resource error:</p>
+                             <p className="text-xs font-black uppercase text-orange-400">Error: "resource drawable/splash not found"</p>
+                             <p className="text-[11px] text-stone-300">If your build fails with this specific resource error:</p>
                              <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3">
                                 <li>Run this command: <br/><code className="bg-black p-2 rounded text-emerald-400 text-[10px] block mt-1 overflow-x-auto">npx @bubblewrap/cli update</code></li>
                                 <li>When asked: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
