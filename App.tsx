@@ -267,6 +267,11 @@ const App: React.FC = () => {
     </div>
   );
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  };
+
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-[#fdfcfb] flex flex-col items-center justify-between p-8 text-center relative overflow-hidden">
@@ -468,7 +473,7 @@ const App: React.FC = () => {
                               <ol className="text-[10px] text-stone-600 list-decimal pl-5 space-y-2 font-bold">
                                  <li>Save your chosen icon as <code className="text-emerald-600">icon.png</code> on your computer.</li>
                                  <li>Drag and drop this file into your project's **public** folder in VS Code.</li>
-                                 <li>In your VS Code terminal, run: <br/><code className="block bg-black p-2 mt-1 rounded text-emerald-400 font-mono text-[9px]">git add icon.png && git commit -m "Add icon" && git push</code></li>
+                                 <li>In your VS Code terminal, run: <br/><code className="block bg-black p-2 mt-1 rounded text-emerald-400 font-mono text-[9px]">git add public/icon.png && git commit -m "Add icon" && git push</code></li>
                                  <li>Wait 60 seconds for Vercel to update, then your URL will work!</li>
                               </ol>
                            </div>
@@ -550,6 +555,17 @@ const App: React.FC = () => {
                               <p className="text-[10px] text-stone-500">VS Code will ask you to "Sign in to GitHub" in your browser. This is safe! It proves you are the owner.</p>
                             </div>
                           </div>
+                          <div className="mt-8 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[32px]">
+                             <p className="text-xs font-black uppercase text-emerald-400 mb-4">📂 Visual Folder Guide (In VS Code)</p>
+                             <div className="font-mono text-[10px] text-stone-300 space-y-1">
+                                <div>📁 YourProjectName/</div>
+                                <div className="pl-4 text-emerald-400">📁 public/ &nbsp;&nbsp;&lt;-- Create this folder!</div>
+                                <div className="pl-8 text-emerald-500">🖼️ icon.png &nbsp;&nbsp;&lt;-- Put image here!</div>
+                                <div className="pl-4">📄 App.tsx</div>
+                                <div className="pl-4">📄 index.html</div>
+                                <div className="pl-4">📄 metadata.json</div>
+                             </div>
+                          </div>
                           <button onClick={() => setWizardStep(2)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Project Cloned, Next</button>
                         </div>
                       )}
@@ -579,28 +595,31 @@ const App: React.FC = () => {
 
                       {wizardStep === 2.5 && (
                         <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-2">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 2.5: Initializing (Crucial ✨)</h4>
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 2.5: Initializing (The Answer ✨)</h4>
                           <p className="text-sm text-stone-300 leading-relaxed">
-                            Run the <code>init</code> command. It creates the <code>twa-manifest.json</code> which registers your app locally.
+                            Run the <code>init</code> command. When it asks for the **Icon URL**, use the button below.
                           </p>
-                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4">
-                            <p className="text-xs font-bold text-emerald-300">1. Run this command in your terminal:</p>
+                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
+                            <div className="p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl">
+                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Answer for "Icon URL:"</p>
+                               <div className="flex items-center space-x-2 bg-black/40 p-3 rounded-xl border border-white/10 overflow-hidden">
+                                  <code className="flex-1 text-[10px] text-emerald-300 font-mono truncate">https://calm-relax-flow-vvlt.vercel.app/icon.png</code>
+                                  <button onClick={() => copyToClipboard('https://calm-relax-flow-vvlt.vercel.app/icon.png')} className="shrink-0 p-2 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Copy</button>
+                                  <a href="https://calm-relax-flow-vvlt.vercel.app/icon.png" target="_blank" className="shrink-0 p-2 bg-white/10 text-white rounded-lg text-[9px] font-black uppercase">Test</a>
+                               </div>
+                               <p className="text-[9px] text-stone-500 mt-2 italic">⚠️ If "Test" shows a 404, you haven't pushed icon.png to GitHub yet!</p>
+                            </div>
+
+                            <p className="text-xs font-bold text-emerald-300 mt-6">1. Run this command in your terminal:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-[11px] break-all border border-emerald-500/20">
                               npx @bubblewrap/cli init --manifest=https://calm-relax-flow-vvlt.vercel.app/metadata.json
                             </code>
-                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-4">
-                               <p className="text-[10px] font-black uppercase text-emerald-400">2. Answer these prompts exactly:</p>
+                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                               <p className="text-[10px] font-black uppercase text-stone-400">2. Other prompts to answer:</p>
                                <ul className="text-[10px] text-stone-400 space-y-3">
                                  <li><span className="text-white font-bold">? Host:</span> (calm-relax-flow-vvlt.vercel.app) - Press <span className="text-emerald-400">Enter</span></li>
                                  <li><span className="text-white font-bold">? URL path:</span> (/) - Press <span className="text-emerald-400">Enter</span></li>
-                                 <li><span className="text-white font-bold">? Application ID:</span> (com.clamrelaxflow.twa) - Press <span className="text-emerald-400">Enter</span></li>
-                                 <li><span className="text-white font-bold">? Application name:</span> (ClamRelaxFlow) - Press <span className="text-emerald-400">Enter</span></li>
-                                 <li><span className="text-white font-bold">? Icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
-                                 <li className="bg-red-500/20 p-2 rounded-xl border border-red-500/30">
-                                    <p className="text-red-400 font-black uppercase mb-1">⚠️ 404 NOT FOUND Error?</p>
-                                    <p className="text-[9px] text-stone-300">This means your icon isn't uploaded to GitHub yet. Go to **Admin > Assets Studio** and follow the "GitHub Upload Helper" steps first!</p>
-                                 </li>
-                                 <li><span className="text-white font-bold">? Maskable icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
+                                 <li><span className="text-white font-bold">? Maskable icon URL:</span> (Use the same link as above)</li>
                                  <li><span className="text-white font-bold">? Include alpha:</span> Type: <code className="text-emerald-300">Yes</code></li>
                                  <li><span className="text-white font-bold">? Splash color:</span> Type: <code className="text-emerald-300">#fdfcfb</code></li>
                                  <li><span className="text-white font-bold">? Keystore passwords:</span> Choose a password (at least 6 characters). <span className="text-red-400 font-black">SAVE IT!</span></li>

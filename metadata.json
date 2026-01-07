@@ -19,13 +19,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "https://img.icons8.com/fluency/512/meditation.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.png",
+      "src": "https://img.icons8.com/fluency/512/meditation.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,7 +41,7 @@
       "url": "/?view=today",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "https://img.icons8.com/fluency/192/meditation.png",
           "sizes": "192x192"
         }
       ]
