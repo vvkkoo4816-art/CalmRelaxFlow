@@ -373,16 +373,23 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   {adminTab === 'content' && (
-                    <button 
-                      onClick={handleManualSave}
-                      className={`mt-6 md:mt-0 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 shadow-xl ${
-                        saveStatus === 'saved' ? 'bg-emerald-500 text-white' : 
-                        saveStatus === 'saving' ? 'bg-stone-400 text-white animate-pulse' : 
-                        'bg-stone-900 text-white hover:bg-emerald-600'
-                      }`}
-                    >
-                      <span>{saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save All Changes'}</span>
-                    </button>
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-stone-100 p-3 rounded-2xl flex items-center space-x-3 border border-stone-200">
+                         <span className="text-[9px] font-black uppercase text-stone-500">Sync VS Code:</span>
+                         <code className="text-[10px] bg-white px-2 py-1 rounded border font-mono">git pull</code>
+                         <button onClick={() => copyToClipboard('git pull origin main')} className="p-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Copy</button>
+                      </div>
+                      <button 
+                        onClick={handleManualSave}
+                        className={`mt-6 md:mt-0 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 shadow-xl ${
+                          saveStatus === 'saved' ? 'bg-emerald-500 text-white' : 
+                          saveStatus === 'saving' ? 'bg-stone-400 text-white animate-pulse' : 
+                          'bg-stone-900 text-white hover:bg-emerald-600'
+                        }`}
+                      >
+                        <span>{saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save All Changes'}</span>
+                      </button>
+                    </div>
                   )}
                 </header>
 
@@ -672,6 +679,17 @@ const App: React.FC = () => {
                                Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
                              </code>
                              <p className="text-[10px] text-stone-500 italic">Type 'Y' if asked for confirmation.</p>
+                          </div>
+
+                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-red-400">Error: "Could not find MIME for Buffer null"</p>
+                             <p className="text-[11px] text-stone-300">This means your <b>Icon URL</b> is broken (returns 404). To fix:</p>
+                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3 font-bold">
+                                <li>Ensure you pushed <b>public/icon.png</b> to GitHub.</li>
+                                <li>Wait 1 minute for the site to update.</li>
+                                <li>Click "Test" in Step 2.5 to see if the image appears.</li>
+                                <li>Once "Test" works, run the <b>init</b> command again.</li>
+                             </ol>
                           </div>
 
                           <div className="p-6 bg-orange-500/10 border border-orange-500/20 rounded-[32px] space-y-4">
