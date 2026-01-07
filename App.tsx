@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
@@ -424,12 +425,6 @@ const App: React.FC = () => {
                                <p className="text-[10px] text-stone-400">Sync Ready.</p>
                             </div>
                           </div>
-
-                          <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-emerald-400">✅ Verification Success</p>
-                             <p className="text-[11px] text-stone-300">You successfully ran <code>Get-Command npx</code>. This proves your terminal can build Android apps.</p>
-                          </div>
-
                           <button onClick={() => setWizardStep(1)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Next Phase</button>
                         </div>
                       )}
@@ -500,21 +495,28 @@ const App: React.FC = () => {
                       )}
 
                       {wizardStep === 2.5 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Phase 2.5: Initializing (Crucial ✨)</h4>
+                        <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-2">
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 2.5: Initializing (Crucial ✨)</h4>
                           <p className="text-sm text-stone-300 leading-relaxed">
-                            Before building, we must generate a file called <code>twa-manifest.json</code>. This registers your app on your PC.
+                            Run the <code>init</code> command. It creates the <code>twa-manifest.json</code> which registers your app locally.
                           </p>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4">
-                            <p className="text-xs font-bold text-emerald-300">Run this in your terminal:</p>
+                            <p className="text-xs font-bold text-emerald-300">1. Run this command in your terminal:</p>
                             <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-[11px] break-all border border-emerald-500/20">
                               npx @bubblewrap/cli init --manifest=https://calm-relax-flow-vvlt.vercel.app/metadata.json
                             </code>
-                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2">
-                               <p className="text-[10px] font-black uppercase text-emerald-400">What to expect:</p>
-                               <ul className="text-[10px] text-stone-400 list-disc pl-4">
-                                 <li>It will ask several questions. Just <b>press Enter</b> for almost all of them to keep defaults.</li>
-                                 <li>When it asks about <b>Keystores</b>, it will help you create a new one. Save the passwords you choose!</li>
+                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-4">
+                               <p className="text-[10px] font-black uppercase text-emerald-400">2. Answer these prompts exactly:</p>
+                               <ul className="text-[10px] text-stone-400 space-y-3">
+                                 <li><span className="text-white font-bold">? Host:</span> (calm-relax-flow-vvlt.vercel.app) - Press <span className="text-emerald-400">Enter</span></li>
+                                 <li><span className="text-white font-bold">? URL path:</span> (/) - Press <span className="text-emerald-400">Enter</span></li>
+                                 <li><span className="text-white font-bold">? Application ID:</span> (com.clamrelaxflow.twa) - Press <span className="text-emerald-400">Enter</span></li>
+                                 <li><span className="text-white font-bold">? Application name:</span> (ClamRelaxFlow) - Press <span className="text-emerald-400">Enter</span></li>
+                                 <li><span className="text-white font-bold">? Icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
+                                 <li><span className="text-white font-bold">? Maskable icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
+                                 <li><span className="text-white font-bold">? Include alpha:</span> Type: <code className="text-emerald-300">Yes</code></li>
+                                 <li><span className="text-white font-bold">? Splash color:</span> Type: <code className="text-emerald-300">#fdfcfb</code></li>
+                                 <li><span className="text-white font-bold">? Keystore passwords:</span> Choose a password (at least 6 characters). <span className="text-red-400 font-black">SAVE IT!</span></li>
                                </ul>
                             </div>
                           </div>
