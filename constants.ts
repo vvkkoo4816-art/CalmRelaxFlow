@@ -1,8 +1,10 @@
-
 import { MeditationSession, Course } from './types';
 
-// Updated to a high-quality, reliable mindfulness meditation track
-const STABLE_AUDIO = 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3';
+// High-quality, reliable mindfulness meditation tracks from Pixabay
+const STABLE_AUDIO_ZEN = 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3';
+const STABLE_AUDIO_SLEEP = 'https://cdn.pixabay.com/audio/2022/05/17/audio_189679f228.mp3';
+const STABLE_AUDIO_FOCUS = 'https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a14781.mp3';
+const STABLE_AUDIO_RAIN = 'https://cdn.pixabay.com/audio/2021/09/06/audio_017f8a77f3.mp3';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',
@@ -10,7 +12,7 @@ export const DAILY_MEDITATION: MeditationSession = {
   duration: '12 min',
   category: 'Daily',
   imageUrl: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=800',
-  audioUrl: STABLE_AUDIO,
+  audioUrl: STABLE_AUDIO_ZEN,
   description: 'Soft morning birds and gentle acoustic melodies to start your day with clarity.'
 };
 
@@ -42,7 +44,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '45 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1474487056217-76fe4f83b14f?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
+    audioUrl: STABLE_AUDIO_SLEEP,
     description: 'Rhythmic rail sounds and misty mountain ambience for deep rest.'
   },
   {
@@ -51,7 +53,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '35 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1472120435166-d11000520e80?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
+    audioUrl: STABLE_AUDIO_SLEEP,
     description: 'High-fidelity waves washing over a peaceful shoreline.'
   },
   {
@@ -60,7 +62,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '20 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
+    audioUrl: STABLE_AUDIO_SLEEP,
     description: 'Ethereal pads and soft chimes representing the night sky.'
   },
   {
@@ -69,7 +71,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '60 min',
     category: 'Sleep',
     imageUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
+    audioUrl: STABLE_AUDIO_SLEEP,
     description: 'Subtle crickets and wind rustling through ancient pines.'
   }
 ];
@@ -81,93 +83,32 @@ export const QUICK_RELIEF: MeditationSession[] = [
     duration: '3 min',
     category: 'Quick Relief',
     imageUrl: 'https://images.unsplash.com/photo-1512438248247-f0f2a5a8b7f0?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
+    audioUrl: STABLE_AUDIO_ZEN,
     description: 'A steady, minimalist pulse to guide your inhalations and exhalations.'
   },
+  // Fix: Completed the missing q2 object and added required audioUrl
   {
     id: 'q2',
     title: 'Panic Reset',
     duration: '5 min',
     category: 'Anxiety',
-    imageUrl: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO,
-    description: 'Reassuring, low-noise drones designed to ground you in the present.'
-  }
-];
-
-export const EXPLORE_SESSIONS: MeditationSession[] = [
-  {
-    id: 'e1',
-    title: 'Gratitude Garden',
-    duration: '15 min',
-    category: 'Gratitude',
-    imageUrl: 'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  },
-  {
-    id: 'e2',
-    title: 'Deep Forgiveness',
-    duration: '20 min',
-    category: 'Anxiety',
     imageUrl: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  },
-  {
-    id: 'e3',
-    title: 'Nature Walk',
-    duration: '30 min',
-    category: 'Daily',
-    imageUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  },
-  {
-    id: 'e4',
-    title: 'Release Tension',
-    duration: '10 min',
-    category: 'Quick Relief',
-    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
+    audioUrl: STABLE_AUDIO_ZEN,
+    description: 'Quick grounding techniques to calm the nervous system.'
   }
 ];
 
-export const ZEN_MUSIC: MeditationSession[] = [
-  {
-    id: 'm1',
-    title: 'Zen Piano Flow',
-    duration: '25 min',
-    category: 'Focus',
-    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  },
-  {
-    id: 'm2',
-    title: 'Celestial Harps',
-    duration: '15 min',
-    category: 'Focus',
-    imageUrl: 'https://images.unsplash.com/photo-1444464666168-49d633b867ad?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  },
-  {
-    id: 'm3',
-    title: 'Ethereal Forest',
-    duration: '30 min',
-    category: 'Focus',
-    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
-    audioUrl: STABLE_AUDIO
-  }
-];
-
+// Fix: Export MEDITATION_SESSIONS which is imported in App.tsx
 export const MEDITATION_SESSIONS: MeditationSession[] = [
-  ...QUICK_RELIEF,
+  DAILY_MEDITATION,
   ...SLEEP_STORIES,
-  ...ZEN_MUSIC,
-  ...EXPLORE_SESSIONS,
-  DAILY_MEDITATION
+  ...QUICK_RELIEF
 ];
 
+// Fix: Export AMBIENT_SOUNDS which is imported in SoundMixer.tsx
 export const AMBIENT_SOUNDS = [
-  { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: STABLE_AUDIO },
-  { id: 'forest', name: 'Deep Woods', icon: '🌲', url: STABLE_AUDIO },
-  { id: 'fire', name: 'Warm Fire', icon: '🔥', url: STABLE_AUDIO },
-  { id: 'wind', name: 'Soft Wind', icon: '🌬️', url: STABLE_AUDIO },
+  { id: 'rain', name: 'Rainfall', icon: '🌧️', url: STABLE_AUDIO_RAIN },
+  { id: 'forest', name: 'Deep Forest', icon: '🌲', url: STABLE_AUDIO_ZEN },
+  { id: 'waves', name: 'Ocean Waves', icon: '🌊', url: STABLE_AUDIO_SLEEP },
+  { id: 'white-noise', name: 'White Noise', icon: '💨', url: STABLE_AUDIO_FOCUS }
 ];

@@ -33,9 +33,6 @@ const App: React.FC = () => {
 
   // Release Wizard State
   const [wizardStep, setWizardStep] = useState(0); 
-  const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
-  const [generatedFeature, setGeneratedFeature] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState<'icon' | 'feature' | null>(null);
 
   // Content Management State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -448,7 +445,7 @@ const App: React.FC = () => {
                           <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
                              <p className="text-xs font-bold text-white mb-2 uppercase">Your Project URL:</p>
                              <div className="bg-black/50 p-3 rounded-xl font-mono text-emerald-400 text-[11px] break-all">
-                                https://github.com/vvkkoo4816/clamrelaxflow-app
+                                https://github.com/vvkkoo4816-art/CalmRelaxFlow
                              </div>
                              <p className="text-[10px] text-stone-500 mt-2 italic">Copy this URL. You will need it in the next step.</p>
                           </div>
@@ -509,7 +506,7 @@ const App: React.FC = () => {
                           <div className="bg-amber-500/10 p-5 rounded-3xl border border-amber-500/20 mb-4">
                              <p className="text-xs font-bold text-amber-300">Terminal Ready ✅</p>
                              <p className="text-[11px] text-stone-400 mt-2">
-                                If your build failed with <b>'drawable/splash not found'</b>, proceed to the <b>⚠️ Active Fix</b> step.
+                                If your build failed with <b>'npx cannot be loaded'</b> or <b>'scripts disabled'</b>, proceed to the <b>⚠️ Fix: Terminal Scripts</b> step.
                              </p>
                           </div>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
@@ -520,23 +517,37 @@ const App: React.FC = () => {
                                <p className="text-xs text-white font-bold">app-release-bundle.aab</p>
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Active Fix: Resource Error</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button></div>
+                          <div className="flex flex-wrap gap-4 mt-6">
+                            <button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button>
+                            <button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Fix: Terminal Scripts</button>
+                            <button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button>
+                          </div>
                         </div>
                       )}
 
                       {wizardStep === 3.5 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Active Fix (AAPT Error)</h4>
+                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Troubleshooting Script Errors</h4>
+                          
                           <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Fixing: "resource drawable/splash not found"</p>
-                             <p className="text-[11px] text-stone-300">Since you hit this error earlier, follow these steps exactly:</p>
+                             <p className="text-xs font-black uppercase text-red-400">Issue A: "npx cannot be loaded because running scripts is disabled"</p>
+                             <p className="text-[11px] text-stone-300">Windows blocks scripts by default for security. To fix this, paste this command into your VS Code terminal and press Enter:</p>
+                             <code className="bg-black p-4 rounded-xl text-emerald-400 text-[11px] block mt-1 overflow-x-auto border border-white/10 font-mono">
+                               Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+                             </code>
+                             <p className="text-[10px] text-stone-500 italic">Type 'Y' if asked for confirmation. This is a one-time fix.</p>
+                          </div>
+
+                          <div className="p-6 bg-orange-500/10 border border-orange-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-orange-400">Issue B: "resource drawable/splash not found"</p>
+                             <p className="text-[11px] text-stone-300">If your build starts but fails with this specific resource error:</p>
                              <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3">
-                                <li>In the terminal, paste this: <br/><code className="bg-black p-2 rounded text-emerald-400 text-[10px] block mt-1 overflow-x-auto">npx @bubblewrap/cli update</code></li>
-                                <li>When it asks: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
-                                <li>Enter your keystore passwords again when prompted.</li>
-                                <li>Once finished, go back and run <b>npx @bubblewrap/cli build</b>. It will work now!</li>
+                                <li>Run this command: <br/><code className="bg-black p-2 rounded text-emerald-400 text-[10px] block mt-1 overflow-x-auto">npx @bubblewrap/cli update</code></li>
+                                <li>When asked: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
+                                <li>Try the build command again.</li>
                              </ol>
                           </div>
+                          
                           <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Back to Build</button></div>
                         </div>
                       )}
