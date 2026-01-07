@@ -1,7 +1,8 @@
 
 import { MeditationSession, Course } from './types';
 
-const STABLE_AUDIO = 'https://www.chosic.com/wp-content/uploads/2021/09/Morning-Routine-Lofi-Study-Music(chosic.com).mp3';
+// Updated to a high-quality, reliable mindfulness meditation track
+const STABLE_AUDIO = 'https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',

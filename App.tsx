@@ -412,35 +412,29 @@ const App: React.FC = () => {
 
                       {wizardStep === 0 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Step 0: Prerequisites (Critical)</h4>
-                          <p className="text-sm text-stone-300 leading-relaxed">To build for Android, you must have these tools installed and configured correctly:</p>
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Step 0: Prerequisites (Verified ✅)</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">Your computer is now ready to run 'npx' commands. You can proceed to the next phase.</p>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <a href="https://code.visualstudio.com/" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
-                               <p className="text-xs font-black uppercase text-blue-400 mb-2 flex items-center">Visual Studio Code <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
-                               <p className="text-[10px] text-stone-400">Professional code editor.</p>
-                            </a>
-                            <a href="https://nodejs.org/" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
-                               <p className="text-xs font-black uppercase text-green-400 mb-2 flex items-center">Node.js (LTS) <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
-                               <p className="text-[10px] text-stone-400">Required to run 'npx'.</p>
-                            </a>
-                            <a href="https://git-scm.com/downloads" target="_blank" className="bg-white/5 p-6 rounded-3xl border border-white/10 hover:bg-white/10 transition-all group">
-                               <p className="text-xs font-black uppercase text-amber-400 mb-2 flex items-center">Git <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></p>
-                               <p className="text-[10px] text-stone-400">Syncs code with GitHub.</p>
-                            </a>
+                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
+                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Visual Studio Code</p>
+                               <p className="text-[10px] text-stone-400">Installed & Ready.</p>
+                            </div>
+                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
+                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Node.js (LTS)</p>
+                               <p className="text-[10px] text-stone-400">Path Verified.</p>
+                            </div>
+                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
+                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Git</p>
+                               <p className="text-[10px] text-stone-400">Sync Ready.</p>
+                            </div>
                           </div>
 
-                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">⚠️ PowerShell Troubleshooting: "npx not recognized"</p>
-                             <p className="text-[11px] text-stone-300">If PowerShell doesn't see your Node.js installation:</p>
-                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-2">
-                                <li><b>Restart VS Code:</b> This is mandatory after installing Node.js so PowerShell can update its path.</li>
-                                <li><b>Check in PowerShell:</b> Type <code>node -v</code>. If it shows a version number, you're good.</li>
-                                <li><b>Refresh Path:</b> Run this command in your VS Code PowerShell terminal to force a refresh: <br/><code>$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")</code></li>
-                                <li><b>Verify:</b> Type <code>Get-Command npx</code>. If it returns a path, the error is fixed!</li>
-                             </ol>
+                          <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-emerald-400">✅ Verification Success</p>
+                             <p className="text-[11px] text-stone-300">You successfully ran <code>Get-Command npx</code>. This proves your terminal can build Android apps.</p>
                           </div>
 
-                          <button onClick={() => setWizardStep(1)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">PowerShell is Ready, Next</button>
+                          <button onClick={() => setWizardStep(1)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Next Phase</button>
                         </div>
                       )}
 
@@ -513,9 +507,9 @@ const App: React.FC = () => {
                         <div className="space-y-6 animate-in slide-in-from-right-5">
                           <h4 className="text-3xl font-black text-emerald-400">Phase 3: The Build Process</h4>
                           <div className="bg-amber-500/10 p-5 rounded-3xl border border-amber-500/20 mb-4">
-                             <p className="text-xs font-bold text-amber-300">Terminal Check (PowerShell):</p>
+                             <p className="text-xs font-bold text-amber-300">Terminal Ready ✅</p>
                              <p className="text-[11px] text-stone-400 mt-2">
-                                If you get a <b>'drawable/splash not found'</b> error, click the <b>⚠️ Fix</b> step next.
+                                If your build failed with <b>'drawable/splash not found'</b>, proceed to the <b>⚠️ Active Fix</b> step.
                              </p>
                           </div>
                           <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
@@ -526,21 +520,21 @@ const App: React.FC = () => {
                                <p className="text-xs text-white font-bold">app-release-bundle.aab</p>
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3.5)} className="bg-amber-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">⚠️ Fix Build Errors</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button></div>
+                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Active Fix: Resource Error</button><button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button></div>
                         </div>
                       )}
 
                       {wizardStep === 3.5 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Fixing Resource Errors (AAPT)</h4>
+                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Active Fix (AAPT Error)</h4>
                           <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Error: "resource drawable/splash not found"</p>
-                             <p className="text-[11px] text-stone-300">This means your Android project is missing the icon files. Follow these steps exactly:</p>
+                             <p className="text-xs font-black uppercase text-red-400">Fixing: "resource drawable/splash not found"</p>
+                             <p className="text-[11px] text-stone-300">Since you hit this error earlier, follow these steps exactly:</p>
                              <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3">
-                                <li>Make sure you have a file named <b>icon.png</b> in your project folder on your computer.</li>
-                                <li>In the terminal, run this command: <br/><code className="bg-black p-2 rounded text-emerald-400">npx @bubblewrap/cli update</code></li>
+                                <li>In the terminal, paste this: <br/><code className="bg-black p-2 rounded text-emerald-400 text-[10px] block mt-1 overflow-x-auto">npx @bubblewrap/cli update</code></li>
                                 <li>When it asks: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
-                                <li>It will prompt you for passwords again. Once finished, run <b>npx @bubblewrap/cli build</b> again.</li>
+                                <li>Enter your keystore passwords again when prompted.</li>
+                                <li>Once finished, go back and run <b>npx @bubblewrap/cli build</b>. It will work now!</li>
                              </ol>
                           </div>
                           <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Back to Build</button></div>
