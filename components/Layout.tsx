@@ -28,7 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
           <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
-          <span className="text-xl font-black tracking-tighter serif">ClamRelaxFlow</span>
+          <span className="text-xl font-black tracking-tighter serif">CalmRelaxFlow</span>
         </div>
 
         <div className="flex-1 space-y-2">

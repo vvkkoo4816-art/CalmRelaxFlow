@@ -52,7 +52,7 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    const savedUsers = localStorage.getItem('clamrelax_members');
+    const savedUsers = localStorage.getItem('calmrelax_members');
     if (savedUsers) {
       try {
         setMembershipDatabase(JSON.parse(savedUsers));
@@ -61,7 +61,7 @@ const App: React.FC = () => {
       }
     }
 
-    const savedSessions = localStorage.getItem('clamrelax_sessions');
+    const savedSessions = localStorage.getItem('calmrelax_sessions');
     if (savedSessions) {
       try {
         const parsed = JSON.parse(savedSessions);
@@ -73,7 +73,7 @@ const App: React.FC = () => {
       setSessions(MEDITATION_SESSIONS);
     }
 
-    const savedSession = localStorage.getItem('clamrelax_active_user');
+    const savedSession = localStorage.getItem('calmrelax_active_user');
     if (savedSession) {
       try {
         const parsedUser = JSON.parse(savedSession);
@@ -89,7 +89,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (sessions && sessions.length > 0) {
-      localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
+      localStorage.setItem('calmrelax_sessions', JSON.stringify(sessions));
     }
   }, [sessions]);
 
@@ -138,16 +138,16 @@ const App: React.FC = () => {
     setShowLoginModal(false);
     setManualEmail('');
 
-    localStorage.setItem('clamrelax_active_user', JSON.stringify(loggedUser));
+    localStorage.setItem('calmrelax_active_user', JSON.stringify(loggedUser));
     if (!existingUser) {
       const updatedDB = [...membershipDatabase, loggedUser];
       setMembershipDatabase(updatedDB);
-      localStorage.setItem('clamrelax_members', JSON.stringify(updatedDB));
+      localStorage.setItem('calmrelax_members', JSON.stringify(updatedDB));
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('clamrelax_active_user');
+    localStorage.removeItem('calmrelax_active_user');
     setIsLoggedIn(false);
     setUser(null);
     setView('today');
@@ -225,7 +225,7 @@ const App: React.FC = () => {
 
   const handleManualSave = () => {
     setSaveStatus('saving');
-    localStorage.setItem('clamrelax_sessions', JSON.stringify(sessions));
+    localStorage.setItem('calmrelax_sessions', JSON.stringify(sessions));
     setTimeout(() => {
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -281,7 +281,7 @@ const App: React.FC = () => {
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-12 h-12 mb-6" />
               {loginStep === 'select' ? (
                 <>
-                  <h2 className="text-2xl font-black text-stone-900 mb-2 text-center">Sign in to ClamRelaxFlow</h2>
+                  <h2 className="text-2xl font-black text-stone-900 mb-2 text-center">Sign in to CalmRelaxFlow</h2>
                   <div className="w-full space-y-3 mt-6">
                     <button onClick={() => completeLogin('vvkkoo4816@gmail.com')} className="w-full p-4 rounded-2xl border border-stone-100 hover:bg-stone-50 transition-all flex items-center space-x-4 text-left group">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">V</div>
@@ -308,7 +308,7 @@ const App: React.FC = () => {
           <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mb-10 shadow-2xl mx-auto">
             <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
-          <h1 className="text-5xl font-extrabold serif text-stone-900 mb-6 tracking-tighter">ClamRelaxFlow</h1>
+          <h1 className="text-5xl font-extrabold serif text-stone-900 mb-6 tracking-tighter">CalmRelaxFlow</h1>
           <p className="text-stone-500 max-w-xs mx-auto text-lg font-medium leading-relaxed">{t.personalized_paths}</p>
         </div>
         <button onClick={handleLoginClick} className="w-full max-w-md bg-stone-900 text-white px-8 py-5 rounded-3xl flex items-center justify-center space-x-4 shadow-xl mb-12 font-bold text-lg hover:scale-[1.02] transition-all active:scale-95">
