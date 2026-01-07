@@ -372,452 +372,189 @@ const App: React.FC = () => {
                       <button onClick={() => setAdminTab('wizard')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'wizard' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Release Wizard</button>
                     </div>
                   </div>
-                  {adminTab === 'content' && (
-                    <div className="flex items-center space-x-4">
-                      <div className="bg-stone-100 p-3 rounded-2xl flex items-center space-x-3 border border-stone-200">
-                         <span className="text-[9px] font-black uppercase text-stone-500">Sync VS Code:</span>
-                         <code className="text-[10px] bg-white px-2 py-1 rounded border font-mono">git pull</code>
-                         <button onClick={() => copyToClipboard('git pull origin main')} className="p-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Copy</button>
-                      </div>
-                      <button 
-                        onClick={handleManualSave}
-                        className={`mt-6 md:mt-0 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center space-x-2 shadow-xl ${
-                          saveStatus === 'saved' ? 'bg-emerald-500 text-white' : 
-                          saveStatus === 'saving' ? 'bg-stone-400 text-white animate-pulse' : 
-                          'bg-stone-900 text-white hover:bg-emerald-600'
-                        }`}
-                      >
-                        <span>{saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : 'Save All Changes'}</span>
-                      </button>
-                    </div>
-                  )}
                 </header>
-
-                {adminTab === 'content' && (
-                  <div className="space-y-12">
-                    <section className="bg-emerald-50/50 p-8 rounded-[40px] border border-emerald-100 shadow-sm">
-                      <h3 className="text-2xl font-black text-stone-800 mb-6">Add New Scenario</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Title</label><input type="text" value={newSessionData.title} onChange={e => setNewSessionData(p => ({...p, title: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200 outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Zen Rain Walk" /></div>
-                        <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Category</label><select value={newSessionData.category} onChange={e => setNewSessionData(p => ({...p, category: e.target.value as any}))} className="w-full p-4 rounded-2xl bg-white border-stone-200"><option>Daily</option><option>Sleep</option><option>Anxiety</option><option>Focus</option><option>Quick Relief</option></select></div>
-                        <div className="space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Duration</label><input type="text" value={newSessionData.duration} onChange={e => setNewSessionData(p => ({...p, duration: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200" placeholder="10 min" /></div>
-                        <div className="lg:col-span-2 space-y-1"><label className="text-[10px] font-black uppercase text-stone-400">Audio URL</label><input type="text" value={newSessionData.audioUrl} onChange={e => setNewSessionData(p => ({...p, audioUrl: e.target.value}))} className="w-full p-4 rounded-2xl bg-white border-stone-200" placeholder="https://cdn.example.com/audio.mp3" /></div>
-                        <div className="flex items-end space-x-3">
-                          <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-4 bg-white border border-emerald-200 rounded-2xl font-black text-[10px] uppercase text-emerald-600"> {isUploading === 'new' ? 'Loading...' : 'Upload MP3'}</button>
-                          <input type="file" ref={fileInputRef} onChange={e => e.target.files?.[0] && processAudioFile(e.target.files[0], 'new')} className="hidden" accept="audio/*" />
-                          <button onClick={createNewSession} className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg">Create</button>
-                        </div>
-                      </div>
-                    </section>
-
-                    <section className="space-y-6">
-                      <h3 className="text-2xl font-black text-stone-800">Library Scenarios ({sessions.length})</h3>
-                      <div className="space-y-4">
-                        {sessions.map(session => (
-                          <div key={session.id} className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm">
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
-                              <div className="flex items-center space-x-4">
-                                <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0"><img src={session.imageUrl} className="w-full h-full object-cover" /></div>
-                                <div className="flex-1 min-w-0"><input type="text" value={session.title} onChange={e => handleUpdateSession(session.id, 'title', e.target.value)} className="w-full font-black text-stone-800 bg-transparent border-none p-0 focus:ring-0 truncate" /></div>
-                              </div>
-                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Audio MP3 Link</label><input type="text" value={session.audioUrl} onChange={e => handleUpdateSession(session.id, 'audioUrl', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs outline-none" /></div>
-                              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-stone-400">Duration</label><input type="text" value={session.duration} onChange={e => handleUpdateSession(session.id, 'duration', e.target.value)} className="w-full p-2 bg-stone-50 rounded-xl text-xs outline-none" /></div>
-                              <div className="flex items-center space-x-2">
-                                <button onClick={() => editFileInputRefs.current[session.id]?.click()} className="flex-1 py-3 bg-stone-100 rounded-xl font-black text-[9px] uppercase">{isUploading === session.id ? 'Wait...' : 'Replace MP3'}</button>
-                                <input type="file" ref={el => { editFileInputRefs.current[session.id] = el; }} onChange={e => e.target.files?.[0] && processAudioFile(e.target.files[0], session.id)} className="hidden" accept="audio/*" />
-                                <button onClick={() => handleDeleteSession(session.id)} className="p-3 bg-red-50 text-red-500 rounded-xl"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  </div>
-                )}
-
-                {adminTab === 'assets' && (
-                  <div className="space-y-12 animate-in fade-in">
-                    <section className="bg-stone-50 p-10 rounded-[40px] border border-stone-200 shadow-inner text-center">
-                      <div className="max-w-md mx-auto space-y-8">
-                        <div className="w-20 h-20 bg-emerald-100 rounded-[30px] flex items-center justify-center text-emerald-600 text-3xl mx-auto shadow-inner">🎨</div>
-                        <h3 className="text-3xl font-black text-stone-900 serif tracking-tight">App Icon Studio</h3>
-                        <p className="text-stone-500 text-sm leading-relaxed">
-                          Every Android app needs a professional icon. Use Gemini to create a custom minimalist icon, then save it to your repo.
-                        </p>
-                        
-                        <div className="relative group">
-                           {generatedIcon ? (
-                             <div className="space-y-6">
-                               <div className="w-48 h-48 bg-white p-2 rounded-[48px] shadow-2xl mx-auto overflow-hidden border-4 border-white transition-transform group-hover:scale-105">
-                                 <img src={generatedIcon} alt="Generated Icon" className="w-full h-full object-cover rounded-[40px]" />
-                               </div>
-                               <div className="flex flex-col space-y-3">
-                                 <button onClick={downloadIcon} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20">Download icon.png</button>
-                                 <button onClick={handleGenerateIcon} className="text-stone-400 font-bold text-[10px] uppercase hover:text-stone-600 transition-colors">Generate Different Design</button>
-                               </div>
-                             </div>
-                           ) : (
-                             <button 
-                               onClick={handleGenerateIcon} 
-                               disabled={isGeneratingIcon}
-                               className={`w-full py-6 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl ${isGeneratingIcon ? 'bg-stone-200 text-stone-400 animate-pulse' : 'bg-stone-900 text-white hover:bg-emerald-600'}`}
-                             >
-                               {isGeneratingIcon ? 'Designing Icon...' : 'Generate New Zen Icon'}
-                             </button>
-                           )}
-                        </div>
-
-                        <div className="p-8 bg-white rounded-[40px] border border-stone-100 text-left space-y-6 shadow-sm">
-                           <div className="flex items-center space-x-3 mb-2">
-                             <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs">🚀</span>
-                             <p className="text-xs font-black uppercase text-stone-800 tracking-widest">GitHub Upload Helper</p>
-                           </div>
-                           <p className="text-[11px] text-stone-500 leading-relaxed">
-                             To resolve the **404 error** on your live site, you must manually "upload" your icon to the root folder of your project.
-                           </p>
-                           <div className="bg-stone-50 p-4 rounded-2xl space-y-3">
-                              <p className="text-[10px] font-black uppercase text-stone-400">Steps to "Upload":</p>
-                              <ol className="text-[10px] text-stone-600 list-decimal pl-5 space-y-2 font-bold">
-                                 <li>Save your chosen icon as <code className="text-emerald-600">icon.png</code> on your computer.</li>
-                                 <li>Drag and drop this file into your project's **public** folder in VS Code.</li>
-                                 <li>In your VS Code terminal, run: <br/><code className="block bg-black p-2 mt-1 rounded text-emerald-400 font-mono text-[9px]">git add public/icon.png && git commit -m "Add icon" && git push</code></li>
-                                 <li>Wait 60 seconds for Vercel to update, then your URL will work!</li>
-                              </ol>
-                           </div>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
 
                 {adminTab === 'wizard' && (
                   <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl min-h-[600px]">
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between mb-12 relative overflow-x-auto pb-4">
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2"></div>
-                        {[0, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5].map(s => (
+                        {[0, 1, 2.5, 2.9, 3, 3.5, 4, 5].map(s => (
                           <button key={s} onClick={() => setWizardStep(s)} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black transition-all shrink-0 ${wizardStep >= s ? 'bg-emerald-500 text-white scale-110 shadow-lg' : 'bg-stone-800 text-stone-500'}`}>
-                            {s === 0 ? '🛠️' : s === 1.5 ? '⬇️' : s === 2.5 ? '✨' : s === 3.5 ? '⚠️' : s}
+                            {s === 0 ? '🛠️' : s === 2.9 ? '🔑' : s === 3.5 ? '🚨' : s}
                           </button>
                         ))}
                       </div>
 
                       {wizardStep === 0 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Step 0: Prerequisites (Verified ✅)</h4>
-                          <p className="text-sm text-stone-300 leading-relaxed">Your computer is now ready to run 'npx' commands. You can proceed to the next phase.</p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
-                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Visual Studio Code</p>
-                               <p className="text-[10px] text-stone-400">Installed & Ready.</p>
-                            </div>
-                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
-                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Node.js (LTS)</p>
-                               <p className="text-[10px] text-stone-400">Path Verified.</p>
-                            </div>
-                            <div className="bg-emerald-500/10 p-6 rounded-3xl border border-emerald-500/20">
-                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Git</p>
-                               <p className="text-[10px] text-stone-400">Sync Ready.</p>
-                            </div>
-                          </div>
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 0: Readiness Check</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">Ensure you have <b>Node.js 18+</b> and <b>JDK 17</b> installed on your computer. If you skip these, build will crash.</p>
                           <button onClick={() => setWizardStep(1)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Next Phase</button>
                         </div>
                       )}
 
                       {wizardStep === 1 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Phase 1: Your GitHub Project</h4>
-                          <p className="text-sm text-stone-300 leading-relaxed">
-                            Every time you click <b>"Save to GitHub"</b> in this online IDE, your progress is stored on the web.
-                            Now we need to download (Clone) it to your computer using VS Code.
-                          </p>
-                          <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
-                             <p className="text-xs font-bold text-white mb-2 uppercase">Your Project URL:</p>
-                             <div className="bg-black/50 p-3 rounded-xl font-mono text-emerald-400 text-[11px] break-all">
-                                https://github.com/vvkkoo4816-art/CalmRelaxFlow
-                             </div>
-                             <p className="text-[10px] text-stone-500 mt-2 italic">Copy this URL. You will need it in the next step.</p>
-                          </div>
-                          <button onClick={() => setWizardStep(1.5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Next: How to Download</button>
-                        </div>
-                      )}
-
-                      {wizardStep === 1.5 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 1.5: How to "Drag" (Clone) in VS Code</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                              <p className="text-sm text-stone-300">Open <b>VS Code</b> on your computer and follow this:</p>
-                              <ol className="text-xs text-stone-400 space-y-4 list-decimal pl-5">
-                                 <li>Click the <b>Source Control</b> icon in the left sidebar (it looks like a branch <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 9a3 3 0 11-6 0 3 3 0 016 0zM5.07 19.29c.09.63.59 1.15 1.21 1.29l.1.02.1-.02c.62-.14 1.12-.66 1.21-1.29L7.7 18H11v-1H7.7l-.01-.01c-.09-.63-.59-1.15-1.21-1.29L6.38 15.68l-.1.02c-.62.14-1.12.66-1.21 1.29L5.06 17H2v1h3.06l.01.29zM12 11h1v7h-1v-7z"/></svg>).</li>
-                                 <li>Click the <b>Clone Repository</b> button.</li>
-                                 <li><b>Paste the URL</b> from Step 1 into the box that appears at the top.</li>
-                                 <li>Press <b>Enter</b> and choose a folder on your computer to save the app.</li>
-                                 <li>Click <b>Open</b> when it asks if you want to open the cloned folder.</li>
-                              </ol>
-                            </div>
-                            <div className="bg-white/5 border border-white/10 rounded-[40px] p-6 flex flex-col items-center justify-center text-center">
-                              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4"><svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg></div>
-                              <p className="text-xs font-bold text-white mb-2">Login Required</p>
-                              <p className="text-[10px] text-stone-500">VS Code will ask you to "Sign in to GitHub" in your browser. This is safe! It proves you are the owner.</p>
-                            </div>
-                          </div>
-                          <div className="mt-8 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[32px]">
-                             <p className="text-xs font-black uppercase text-emerald-400 mb-4">📂 Visual Folder Guide (In VS Code)</p>
-                             <div className="font-mono text-[10px] text-stone-300 space-y-1">
-                                <div>📁 YourProjectName/</div>
-                                <div className="pl-4 text-emerald-400">📁 public/ &nbsp;&nbsp;&lt;-- Create this folder!</div>
-                                <div className="pl-8 text-emerald-500">🖼️ icon.png &nbsp;&nbsp;&lt;-- Put image here!</div>
-                                <div className="pl-4">📄 App.tsx</div>
-                                <div className="pl-4">📄 index.html</div>
-                                <div className="pl-4">📄 metadata.json</div>
-                             </div>
-                          </div>
-                          <button onClick={() => setWizardStep(2)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Project Cloned, Next</button>
-                        </div>
-                      )}
-
-                      {wizardStep === 2 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Phase 2: Updating Your Computer</h4>
-                          <div className="bg-emerald-500/10 p-5 rounded-3xl border border-emerald-500/20 mb-4">
-                             <p className="text-xs font-bold text-emerald-300">How to open the Terminal in VS Code:</p>
-                             <p className="text-[11px] text-stone-400 mt-2">
-                                Look at the top menu bar in VS Code: Click <b>Terminal</b> &gt; <b>New Terminal</b>. 
-                                <br/>Alternatively, press <b>Ctrl + `</b> (the key next to 1).
-                             </p>
-                          </div>
-                          <p className="text-sm text-stone-300 leading-relaxed">
-                            Once your terminal is open at the bottom of VS Code, run this command:
-                          </p>
-                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-4">
-                            <code className="block bg-black/50 p-4 rounded-xl text-emerald-400 font-mono text-[12px]">
-                              git pull origin main
-                            </code>
-                            <p className="text-[10px] text-stone-500 italic">This "pulls" the new work you did in the browser into your local VS Code project.</p>
-                          </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(1.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(2.5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Initialize Project</button></div>
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 1: Clone Your Project</h4>
+                          <p className="text-sm text-stone-300">Open VS Code, click "Clone Repository" and paste this URL:</p>
+                          <div className="p-4 bg-black rounded-xl border border-white/10 text-emerald-400 font-mono text-xs">https://github.com/vvkkoo4816-art/CalmRelaxFlow</div>
+                          <button onClick={() => setWizardStep(2.5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Cloned & Ready</button>
                         </div>
                       )}
 
                       {wizardStep === 2.5 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-2">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 2.5: Initializing (The Answer ✨)</h4>
-                          <p className="text-sm text-stone-300 leading-relaxed">
-                            Run the <code>init</code> command. When it asks for the **Icon URL**, use the button below.
-                          </p>
-                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
-                            <div className="p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl">
-                               <p className="text-xs font-black uppercase text-emerald-400 mb-2">Answer for "Icon URL:"</p>
-                               <div className="flex items-center space-x-2 bg-black/40 p-3 rounded-xl border border-white/10 overflow-hidden">
-                                  <code className="flex-1 text-[10px] text-emerald-300 font-mono truncate">https://calm-relax-flow-vvlt.vercel.app/icon.png</code>
-                                  <button onClick={() => copyToClipboard('https://calm-relax-flow-vvlt.vercel.app/icon.png')} className="shrink-0 p-2 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Copy</button>
-                                  <a href="https://calm-relax-flow-vvlt.vercel.app/icon.png" target="_blank" className="shrink-0 p-2 bg-white/10 text-white rounded-lg text-[9px] font-black uppercase">Test</a>
-                               </div>
-                               <p className="text-[9px] text-stone-500 mt-2 italic">⚠️ If "Test" shows a 404, you haven't pushed icon.png to GitHub yet!</p>
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 2.5: The Icon Secret</h4>
+                          <div className="p-6 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-emerald-400">⚠️ MUST TEST BEFORE PROCEEDING</p>
+                             <p className="text-[11px] text-white">Click the test link below. If it fails, your build will fail at 44%.</p>
+                             <div className="flex items-center space-x-3 bg-black/40 p-4 rounded-2xl border border-white/10">
+                               <code className="flex-1 text-[10px] text-emerald-300 truncate">https://calm-relax-flow-vvlt.vercel.app/icon.png</code>
+                               <a href="https://calm-relax-flow-vvlt.vercel.app/icon.png" target="_blank" className="p-2 bg-white/10 text-white rounded-lg text-[10px] font-black">TEST LINK</a>
+                             </div>
+                             <p className="text-[10px] text-stone-400">If TEST LINK shows 404: Place icon.png in VS Code `public/` folder, then git add, commit, and push!</p>
+                          </div>
+                          <button onClick={() => setWizardStep(2.9)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Icon Verified, Next</button>
+                        </div>
+                      )}
+
+                      {wizardStep === 2.9 && (
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 2.9: Generate Your Key</h4>
+                          <p className="text-sm text-stone-300 leading-relaxed">Run these commands in your VS Code terminal (PowerShell/CMD):</p>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <p className="text-[10px] text-stone-400 font-black uppercase">1. Fix Terminal Encoding (Crucial for Windows):</p>
+                              <div className="relative group">
+                                <code className="block bg-black p-4 rounded-xl text-emerald-300 text-[11px] font-mono border border-white/10">chcp 65001</code>
+                                <button onClick={() => copyToClipboard('chcp 65001')} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white text-xs">📋</button>
+                              </div>
                             </div>
 
-                            <p className="text-xs font-bold text-emerald-300 mt-6">1. Run this command in your terminal:</p>
-                            <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-[11px] break-all border border-emerald-500/20">
-                              npx @bubblewrap/cli init --manifest=https://calm-relax-flow-vvlt.vercel.app/metadata.json
-                            </code>
-                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
-                               <p className="text-[10px] font-black uppercase text-stone-400">2. Other prompts to answer:</p>
-                               <ul className="text-[10px] text-stone-400 space-y-3">
-                                 <li><span className="text-white font-bold">? Host:</span> (calm-relax-flow-vvlt.vercel.app) - Press <span className="text-emerald-400">Enter</span></li>
-                                 <li><span className="text-white font-bold">? URL path:</span> (/) - Press <span className="text-emerald-400">Enter</span></li>
-                                 <li><span className="text-white font-bold">? Maskable icon URL:</span> (Use the same link as above)</li>
-                                 <li><span className="text-white font-bold">? Include alpha:</span> Type: <code className="text-emerald-300">Yes</code></li>
-                                 <li><span className="text-white font-bold">? Splash color:</span> Type: <code className="text-emerald-300">#fdfcfb</code></li>
-                                 <li><span className="text-white font-bold">? Keystore passwords:</span> Choose a password (at least 6 characters). <span className="text-red-400 font-black">SAVE IT!</span></li>
-                               </ul>
+                            <div className="space-y-2">
+                              <p className="text-[10px] text-stone-400 font-black uppercase">2. Generate the Key:</p>
+                              <div className="relative group">
+                                <code className="block bg-black p-4 rounded-xl text-emerald-300 text-[11px] font-mono border border-white/10 break-all leading-relaxed pr-12">
+                                  keytool -genkey -v -keystore android.keystore -alias calmrelaxkey -keyalg RSA -keysize 2048 -validity 10000
+                                </code>
+                                <button 
+                                  onClick={() => copyToClipboard('keytool -genkey -v -keystore android.keystore -alias calmrelaxkey -keyalg RSA -keysize 2048 -validity 10000')}
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white text-xs"
+                                >
+                                  📋
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex space-x-4"><button onClick={() => setWizardStep(2)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Init Done, Next: Build</button></div>
+
+                          <div className="space-y-3 p-6 bg-red-500/10 rounded-[32px] border border-red-500/20">
+                             <p className="text-[10px] font-black uppercase text-red-400">🚨 Troubleshooting "?????":</p>
+                             <p className="text-[11px] text-stone-300 leading-relaxed">
+                               If you see <b>????????</b>, don't panic! It is simply asking for a <b>Password</b>. 
+                               Type your password (e.g., <span className="text-white font-mono">123456</span>) and press Enter. 
+                               The screen won't move while you type—this is normal. Do it twice!
+                             </p>
+                          </div>
+
+                          <button onClick={() => setWizardStep(3)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest mt-6">Key Generated, Build Now</button>
                         </div>
                       )}
 
                       {wizardStep === 3 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400">Phase 3: The Build Process</h4>
-                          <div className="bg-amber-500/10 p-5 rounded-3xl border border-amber-500/20 mb-4">
-                             <p className="text-xs font-bold text-amber-300">Terminal Ready ✅</p>
-                             <p className="text-[11px] text-stone-400 mt-2">
-                                If your build failed with <b>'twa-manifest.json not found'</b> or <b>'scripts disabled'</b>, proceed to the <b>⚠️ Fix: Terminal Errors</b> step.
-                             </p>
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 3: The Build Commands</h4>
+                          <div className="space-y-4">
+                            <p className="text-xs font-bold text-stone-400">1. Start the session:</p>
+                            <code className="block bg-black p-4 rounded-xl text-emerald-400 text-[11px] border border-white/5">npx @bubblewrap/cli init --manifest=https://calm-relax-flow-vvlt.vercel.app/metadata.json</code>
+                            <p className="text-xs font-bold text-stone-400">2. Run the build:</p>
+                            <code className="block bg-black p-4 rounded-xl text-emerald-400 text-[11px] border border-white/5">npx @bubblewrap/cli build</code>
                           </div>
-                          <div className="bg-black/30 p-8 rounded-[40px] border border-white/5 space-y-6">
-                            <p className="text-sm text-stone-300">Run this in your **VS Code Terminal** to create the file for Google Play:</p>
-                            <code className="block bg-black p-4 rounded-xl text-emerald-400 font-mono text-sm border border-emerald-500/20">npx @bubblewrap/cli build</code>
-                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                               <p className="text-[10px] font-black uppercase text-emerald-400 mb-1">Look for this file in your computer folder:</p>
-                               <p className="text-xs text-white font-bold">app-release-bundle.aab</p>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-4 mt-6">
-                            <button onClick={() => setWizardStep(2.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button>
-                            <button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">⚠️ Fix: Terminal Errors</button>
-                            <button onClick={() => setWizardStep(4)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Next: Play Console</button>
-                          </div>
+                          <button onClick={() => setWizardStep(3.5)} className="bg-red-500 px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-red-500/20">🚨 HELP: Build crashed at 44%</button>
                         </div>
                       )}
 
                       {wizardStep === 3.5 && (
                         <div className="space-y-8 animate-in slide-in-from-right-5 overflow-y-auto max-h-[500px] pr-2">
-                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Phase 3.5: Troubleshooting Terminal Errors</h4>
+                          <h4 className="text-3xl font-black text-red-400 tracking-tighter">Fix: 44% Buffer null Crash</h4>
                           
-                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Error: ENOENT: twa-manifest.json not found</p>
-                             <p className="text-[11px] text-stone-300">This means you skipped the Initialization step. You MUST run the <code>init</code> command before building.</p>
-                             <button onClick={() => setWizardStep(2.5)} className="bg-red-500/20 text-red-400 p-3 rounded-xl text-[10px] font-black uppercase w-full border border-red-500/30">Go to Phase 2.5: Init</button>
+                          <div className="p-6 bg-red-500/10 border-2 border-red-500/40 rounded-[32px] space-y-4">
+                             <p className="text-xs font-black uppercase text-red-400">Why it crashed:</p>
+                             <p className="text-[11px] text-white">Bubblewrap couldn't download your icon. Even if you fixed the link, it is still "cached" as broken on your computer.</p>
+                             
+                             <div className="bg-black p-6 rounded-2xl space-y-6">
+                               <div className="space-y-2">
+                                 <p className="text-[10px] text-emerald-400 font-bold uppercase">1. Clear the local cache:</p>
+                                 <p className="text-[10px] text-stone-400">Paste this command into VS Code terminal and press Enter:</p>
+                                 <code className="bg-stone-900 p-3 rounded block text-[11px] text-emerald-300 font-mono">npx @bubblewrap/cli update</code>
+                                 <p className="text-[10px] text-stone-500 italic">Select "Yes" when it asks to regenerate the project.</p>
+                               </div>
+
+                               <div className="space-y-2">
+                                 <p className="text-[10px] text-emerald-400 font-bold uppercase">2. Retry the Build:</p>
+                                 <code className="bg-stone-900 p-3 rounded block text-[11px] text-emerald-300 font-mono">npx @bubblewrap/cli build</code>
+                               </div>
+                             </div>
                           </div>
 
-                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Error: "npx cannot be loaded because scripts are disabled"</p>
-                             <p className="text-[11px] text-stone-300">Windows blocks scripts by default. To fix, paste this into your VS Code terminal and press Enter:</p>
-                             <code className="bg-black p-4 rounded-xl text-emerald-400 text-[11px] block mt-1 overflow-x-auto border border-white/10 font-mono">
-                               Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-                             </code>
-                             <p className="text-[10px] text-stone-500 italic">Type 'Y' if asked for confirmation.</p>
+                          <div className="flex space-x-4 mt-6">
+                            <button onClick={() => setWizardStep(3)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Back to Build</button>
                           </div>
-
-                          <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-red-400">Error: "Could not find MIME for Buffer null"</p>
-                             <p className="text-[11px] text-stone-300">This means your <b>Icon URL</b> is broken (returns 404). To fix:</p>
-                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3 font-bold">
-                                <li>Ensure you pushed <b>public/icon.png</b> to GitHub.</li>
-                                <li>Wait 1 minute for the site to update.</li>
-                                <li>Click "Test" in Step 2.5 to see if the image appears.</li>
-                                <li>Once "Test" works, run the <b>init</b> command again.</li>
-                             </ol>
-                          </div>
-
-                          <div className="p-6 bg-orange-500/10 border border-orange-500/20 rounded-[32px] space-y-4">
-                             <p className="text-xs font-black uppercase text-orange-400">Error: "resource drawable/splash not found"</p>
-                             <p className="text-[11px] text-stone-300">If your build fails with this specific resource error:</p>
-                             <ol className="text-[11px] text-stone-400 list-decimal pl-5 space-y-3">
-                                <li>Run this command: <br/><code className="bg-black p-2 rounded text-emerald-400 text-[10px] block mt-1 overflow-x-auto">npx @bubblewrap/cli update</code></li>
-                                <li>When asked: <b>"would you like to regenerate your project?"</b>, type <b>Yes</b> and press Enter.</li>
-                                <li>Try the build command again.</li>
-                             </ol>
-                          </div>
-                          
-                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Back to Build</button></div>
                         </div>
                       )}
 
                       {wizardStep === 4 && (
-                        <div className="space-y-6 animate-in slide-in-from-right-5">
-                          <h4 className="text-3xl font-black text-emerald-400 tracking-tighter">Phase 4: Play Console Upload</h4>
-                          <div className="space-y-4">
-                             <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
-                                <p className="text-xs font-bold text-emerald-400 mb-3 uppercase tracking-widest">Action Required:</p>
-                                <ol className="text-xs text-stone-400 space-y-4 list-decimal pl-5">
-                                   <li>Open <a href="https://play.google.com/console" target="_blank" className="text-white underline">Google Play Console</a> in your browser.</li>
-                                   <li>Go to <b>Internal Testing</b>.</li>
-                                   <li>Upload that <b>.aab</b> file from Step 3.</li>
-                                   <li>Google will generate the <b>SHA-256 Fingerprint</b>. You'll need it for Phase 5.</li>
-                                </ol>
-                             </div>
-                          </div>
-                          <div className="flex space-x-4 mt-6"><button onClick={() => setWizardStep(3.5)} className="text-stone-500 font-bold text-xs uppercase p-4">Back</button><button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Final Step</button></div>
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 4: Play Store Upload</h4>
+                          <p className="text-sm text-stone-300">Upload <b>app-release-bundle.aab</b> to Google Play Console.</p>
+                          <button onClick={() => setWizardStep(5)} className="bg-emerald-500 px-8 py-3 rounded-2xl font-black text-xs uppercase">Last Step</button>
                         </div>
                       )}
 
                       {wizardStep === 5 && (
-                        <div className="space-y-10 animate-in fade-in duration-500">
-                          <h4 className="text-3xl font-black text-emerald-400">Phase 5: Final Trust (No Address Bar)</h4>
-                          <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 space-y-6">
-                            <p className="text-sm text-stone-300 leading-relaxed">
-                              One last step to remove the browser address bar. Update your <code>assetlinks.json</code> file on your computer.
-                            </p>
-                            <div className="p-5 bg-black rounded-3xl space-y-3 font-mono text-[10px]">
-                               <p className="text-stone-500">// Open public/.well-known/assetlinks.json on your machine</p>
-                               <p className="text-emerald-400">"sha256_cert_fingerprints": ["YOUR_PLAY_STORE_FINGERPRINT"]</p>
-                            </div>
-                            <p className="text-[11px] text-stone-400">
-                               After editing, run <b>git push</b> from your computer terminal. Vercel will update, and you are done!
-                            </p>
-                          </div>
-                          <button onClick={() => setWizardStep(0)} className="px-10 py-4 bg-emerald-500 rounded-3xl font-black text-xs uppercase shadow-xl shadow-emerald-500/20">Restart Checklist</button>
+                        <div className="space-y-8 animate-in slide-in-from-right-5">
+                          <h4 className="text-3xl font-black text-emerald-400">Phase 5: Digital Asset Links</h4>
+                          <p className="text-sm text-stone-300">Update `assetlinks.json` with your SHA-256 fingerprint from Google Play.</p>
+                          <button onClick={() => setWizardStep(0)} className="bg-stone-800 px-8 py-3 rounded-2xl font-black text-xs uppercase">Restart Wizard</button>
                         </div>
                       )}
                     </div>
                   </section>
                 )}
+                
+                {adminTab === 'content' && (
+                  <div className="p-8 bg-white rounded-[40px] shadow-sm border border-stone-100">
+                    <h3 className="text-2xl font-black text-stone-800 mb-6">Library Scenarios</h3>
+                    {sessions.map(s => (
+                      <div key={s.id} className="flex items-center justify-between p-4 border-b border-stone-50">
+                        <span className="font-bold">{s.title}</span>
+                        <button onClick={() => handleDeleteSession(s.id)} className="text-red-500 text-xs font-black uppercase">Delete</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {adminTab === 'assets' && (
+                   <div className="p-8 bg-stone-50 rounded-[40px] border border-stone-200 text-center space-y-8">
+                     <h3 className="text-3xl font-black text-stone-900 serif">Icon Studio</h3>
+                     <p className="text-stone-500 text-sm max-w-md mx-auto">Generate a high-quality icon for your Android app.</p>
+                     {generatedIcon ? (
+                       <div className="space-y-4">
+                         <img src={generatedIcon} alt="Icon" className="w-48 h-48 rounded-[48px] mx-auto shadow-2xl border-4 border-white" />
+                         <button onClick={downloadIcon} className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase">Download icon.png</button>
+                       </div>
+                     ) : (
+                       <button onClick={handleGenerateIcon} disabled={isGeneratingIcon} className="bg-stone-900 text-white px-10 py-5 rounded-3xl font-black uppercase text-xs">
+                         {isGeneratingIcon ? 'Designing...' : 'Generate New Zen Icon'}
+                       </button>
+                     )}
+                   </div>
+                )}
               </div>
             )}
           </div>
-        )}
-
-        {view === 'library' && (
-          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5">
-            <header><h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">{t.nav_library}</h2></header>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {sessions.map(s => (
-                  <div key={s.id} onClick={() => setActiveSession(s)} className="bg-white rounded-[32px] border border-stone-100 shadow-sm overflow-hidden group cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1">
-                     <div className="h-48 relative overflow-hidden"><img src={s.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /><div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black uppercase text-emerald-600">{s.category}</div></div>
-                     <div className="p-6"><h4 className="font-bold text-lg text-stone-800">{s.title}</h4><p className="text-stone-400 text-xs">{s.duration} • Guided</p></div>
-                  </div>
-               ))}
-            </div>
-          </div>
-        )}
-
-        {view === 'sleep' && (
-          <div className="space-y-12 animate-in fade-in">
-             <header><h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">{t.sleep_sanctuary}</h2></header>
-             <SoundMixer />
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                {sessions.filter(s => s.category === 'Sleep').map(story => (
-                  <div key={story.id} onClick={() => setActiveSession(story)} className="relative h-64 rounded-[40px] overflow-hidden group cursor-pointer shadow-lg hover:shadow-2xl transition-all">
-                     <img src={story.imageUrl} className="absolute inset-0 w-full h-full object-cover" />
-                     <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 to-transparent"></div>
-                     <div className="absolute bottom-6 left-6"><h4 className="text-xl font-bold text-white mb-1">{story.title}</h4><p className="text-[10px] text-white/60 font-black uppercase tracking-widest">{story.duration}</p></div>
-                  </div>
-                ))}
-             </div>
-          </div>
-        )}
-
-        {view === 'explore' && (
-          <div className="space-y-12 animate-in fade-in">
-            <header><h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">{t.nav_explore}</h2></header>
-            <section className="bg-stone-50 p-8 rounded-[40px] border border-stone-100">
-               <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-black text-stone-900">{t.wellness_near_you}</h3>
-                  <button onClick={handleScanCenters} disabled={isScanning} className="bg-stone-900 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-emerald-600 disabled:opacity-50">
-                    {isScanning ? 'Scanning...' : t.scan_area}
-                  </button>
-               </div>
-               <div className="space-y-4">
-                  {nearbyCenters.map((center, idx) => (
-                    <a key={idx} href={center.url} target="_blank" rel="noopener noreferrer" className="bg-white p-5 rounded-3xl flex items-center justify-between group border border-stone-50 hover:shadow-md transition-all">
-                       <div className="flex items-center space-x-4"><div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 text-xl">📍</div><div><h4 className="font-bold text-stone-800 group-hover:text-emerald-600 transition-colors">{center.name}</h4><p className="text-[10px] text-stone-400 font-bold uppercase">{center.address}</p></div></div>
-                       <div className="flex items-center space-x-1 text-amber-400 font-bold text-xs">★ <span className="text-stone-700">{center.rating}</span></div>
-                    </a>
-                  ))}
-               </div>
-            </section>
-          </div>
-        )}
-
-        {view === 'profile' && (
-          <div className="animate-in fade-in text-center py-12">
-            <div className="w-32 h-32 rounded-[40px] overflow-hidden border-4 border-white shadow-2xl mb-8 mx-auto"><img src={user.photoUrl} className="w-full h-full object-cover" /></div>
-            <h2 className="text-4xl font-black serif text-stone-900 mb-2">{user.name}</h2>
-            <p className="text-stone-400 font-bold uppercase text-[10px] tracking-[0.2em] mb-12">{user.email}</p>
-            <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-               <div className="bg-white p-6 rounded-[32px] border border-stone-100"><p className="text-3xl font-black text-emerald-600">{user.streak || 1}</p><p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Day Streak</p></div>
-               <div className="bg-white p-6 rounded-[32px] border border-stone-100"><p className="text-3xl font-black text-stone-800">{user.minutesMeditated || 0}</p><p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Mindful Mins</p></div>
-            </div>
-            <button onClick={handleLogout} className="mt-16 px-10 py-4 bg-stone-900 text-white rounded-[24px] font-black uppercase text-[10px] tracking-[0.2em] hover:bg-red-500 transition-all">Sign Out</button>
-          </div>
-        )}
-      </div>
-
-      {activeSession && <AudioPlayer url={activeSession.audioUrl} title={activeSession.title} onClose={() => setActiveSession(null)} />}
-    </Layout>
+        </Layout>
   );
 };
 
