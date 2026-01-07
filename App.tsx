@@ -11,7 +11,7 @@ import { translations } from './translations';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
-  const [adminTab, setAdminTab] = useState<'wizard' | 'content'>('content');
+  const [adminTab, setAdminTab] = useState<'wizard' | 'content' | 'assets'>('content');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -30,6 +30,10 @@ const App: React.FC = () => {
   const [nearbyCenters, setNearbyCenters] = useState<ZenCenter[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Asset Studio State
+  const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
+  const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
 
   // Release Wizard State
   const [wizardStep, setWizardStep] = useState(0); 
@@ -147,6 +151,27 @@ const App: React.FC = () => {
     setIsLoggedIn(false);
     setUser(null);
     setView('today');
+  };
+
+  const handleGenerateIcon = async () => {
+    setIsGeneratingIcon(true);
+    const url = await generateAppAsset('icon');
+    if (url) {
+      setGeneratedIcon(url);
+    } else {
+      alert("Icon generation failed. Please check your API key.");
+    }
+    setIsGeneratingIcon(false);
+  };
+
+  const downloadIcon = () => {
+    if (!generatedIcon) return;
+    const link = document.createElement('a');
+    link.href = generatedIcon;
+    link.download = 'icon.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const processAudioFile = (file: File, sessionId: string | 'new') => {
@@ -337,7 +362,8 @@ const App: React.FC = () => {
                   <div>
                     <h2 className="text-4xl font-extrabold serif text-stone-900 mb-2">Admin Console</h2>
                     <div className="flex space-x-4 mt-6">
-                      <button onClick={() => setAdminTab('content')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Content Manager</button>
+                      <button onClick={() => setAdminTab('content')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Content</button>
+                      <button onClick={() => setAdminTab('assets')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'assets' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Assets Studio</button>
                       <button onClick={() => setAdminTab('wizard')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'wizard' ? 'bg-stone-900 text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>Release Wizard</button>
                     </div>
                   </div>
@@ -355,7 +381,7 @@ const App: React.FC = () => {
                   )}
                 </header>
 
-                {adminTab === 'content' ? (
+                {adminTab === 'content' && (
                   <div className="space-y-12">
                     <section className="bg-emerald-50/50 p-8 rounded-[40px] border border-emerald-100 shadow-sm">
                       <h3 className="text-2xl font-black text-stone-800 mb-6">Add New Scenario</h3>
@@ -395,7 +421,64 @@ const App: React.FC = () => {
                       </div>
                     </section>
                   </div>
-                ) : (
+                )}
+
+                {adminTab === 'assets' && (
+                  <div className="space-y-12 animate-in fade-in">
+                    <section className="bg-stone-50 p-10 rounded-[40px] border border-stone-200 shadow-inner text-center">
+                      <div className="max-w-md mx-auto space-y-8">
+                        <div className="w-20 h-20 bg-emerald-100 rounded-[30px] flex items-center justify-center text-emerald-600 text-3xl mx-auto shadow-inner">🎨</div>
+                        <h3 className="text-3xl font-black text-stone-900 serif tracking-tight">App Icon Studio</h3>
+                        <p className="text-stone-500 text-sm leading-relaxed">
+                          Every Android app needs a professional icon. Use Gemini to create a custom minimalist icon, then save it to your repo.
+                        </p>
+                        
+                        <div className="relative group">
+                           {generatedIcon ? (
+                             <div className="space-y-6">
+                               <div className="w-48 h-48 bg-white p-2 rounded-[48px] shadow-2xl mx-auto overflow-hidden border-4 border-white transition-transform group-hover:scale-105">
+                                 <img src={generatedIcon} alt="Generated Icon" className="w-full h-full object-cover rounded-[40px]" />
+                               </div>
+                               <div className="flex flex-col space-y-3">
+                                 <button onClick={downloadIcon} className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20">Download icon.png</button>
+                                 <button onClick={handleGenerateIcon} className="text-stone-400 font-bold text-[10px] uppercase hover:text-stone-600 transition-colors">Generate Different Design</button>
+                               </div>
+                             </div>
+                           ) : (
+                             <button 
+                               onClick={handleGenerateIcon} 
+                               disabled={isGeneratingIcon}
+                               className={`w-full py-6 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl ${isGeneratingIcon ? 'bg-stone-200 text-stone-400 animate-pulse' : 'bg-stone-900 text-white hover:bg-emerald-600'}`}
+                             >
+                               {isGeneratingIcon ? 'Designing Icon...' : 'Generate New Zen Icon'}
+                             </button>
+                           )}
+                        </div>
+
+                        <div className="p-8 bg-white rounded-[40px] border border-stone-100 text-left space-y-6 shadow-sm">
+                           <div className="flex items-center space-x-3 mb-2">
+                             <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs">🚀</span>
+                             <p className="text-xs font-black uppercase text-stone-800 tracking-widest">GitHub Upload Helper</p>
+                           </div>
+                           <p className="text-[11px] text-stone-500 leading-relaxed">
+                             To resolve the **404 error** on your live site, you must manually "upload" your icon to the root folder of your project.
+                           </p>
+                           <div className="bg-stone-50 p-4 rounded-2xl space-y-3">
+                              <p className="text-[10px] font-black uppercase text-stone-400">Steps to "Upload":</p>
+                              <ol className="text-[10px] text-stone-600 list-decimal pl-5 space-y-2 font-bold">
+                                 <li>Save your chosen icon as <code className="text-emerald-600">icon.png</code> on your computer.</li>
+                                 <li>Drag and drop this file into your project's **public** folder in VS Code.</li>
+                                 <li>In your VS Code terminal, run: <br/><code className="block bg-black p-2 mt-1 rounded text-emerald-400 font-mono text-[9px]">git add icon.png && git commit -m "Add icon" && git push</code></li>
+                                 <li>Wait 60 seconds for Vercel to update, then your URL will work!</li>
+                              </ol>
+                           </div>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {adminTab === 'wizard' && (
                   <section className="bg-stone-900 text-white p-10 rounded-[40px] shadow-2xl min-h-[600px]">
                     <div className="flex flex-col h-full">
                       <div className="flex justify-between mb-12 relative overflow-x-auto pb-4">
@@ -513,6 +596,10 @@ const App: React.FC = () => {
                                  <li><span className="text-white font-bold">? Application ID:</span> (com.clamrelaxflow.twa) - Press <span className="text-emerald-400">Enter</span></li>
                                  <li><span className="text-white font-bold">? Application name:</span> (ClamRelaxFlow) - Press <span className="text-emerald-400">Enter</span></li>
                                  <li><span className="text-white font-bold">? Icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
+                                 <li className="bg-red-500/20 p-2 rounded-xl border border-red-500/30">
+                                    <p className="text-red-400 font-black uppercase mb-1">⚠️ 404 NOT FOUND Error?</p>
+                                    <p className="text-[9px] text-stone-300">This means your icon isn't uploaded to GitHub yet. Go to **Admin > Assets Studio** and follow the "GitHub Upload Helper" steps first!</p>
+                                 </li>
                                  <li><span className="text-white font-bold">? Maskable icon URL:</span> Type: <code className="text-emerald-300">https://calm-relax-flow-vvlt.vercel.app/icon.png</code></li>
                                  <li><span className="text-white font-bold">? Include alpha:</span> Type: <code className="text-emerald-300">Yes</code></li>
                                  <li><span className="text-white font-bold">? Splash color:</span> Type: <code className="text-emerald-300">#fdfcfb</code></li>
