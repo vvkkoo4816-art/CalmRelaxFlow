@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, ZenCenter, Language } from './types';
 import { MEDITATION_SESSIONS, DAILY_MEDITATION, SLEEP_STORIES, QUICK_RELIEF } from './constants';
-import { getPersonalizedRecommendation, findNearbyZenCenters, generateAppAsset } from './services/geminiService';
+import { findNearbyZenCenters, generateAppAsset } from './services/geminiService';
 import { translations } from './translations';
 
 const App: React.FC = () => {
@@ -15,71 +15,69 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   
   const [sessions, setSessions] = useState<MeditationSession[]>([]);
   const [user, setUser] = useState<User | null>(null);
-
-  const t = translations[lang] || translations['en'];
-
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [nearbyCenters, setNearbyCenters] = useState<ZenCenter[]>([]);
-  
-  // Advanced Health Check State
+
+  // Asset Debugging State
   const [lastScanned, setLastScanned] = useState<string | null>(null);
-  const [healthStatus, setHealthStatus] = useState<Record<string, {
-    status: 'checking' | 'ok' | 'fail' | 'wrong_type',
-    mimeType?: string
-  }>>({
-    icon: { status: 'checking' },
-    icon1: { status: 'checking' },
-    manifest: { status: 'checking' },
-    assetlinks: { status: 'checking' }
-  });
+  const [healthStatus, setHealthStatus] = useState<Record<string, any>>({});
+  const [localIconOverride, setLocalIconOverride] = useState<string | null>(localStorage.getItem('app_icon_override'));
 
   const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
   const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
 
+  const t = translations[lang] || translations['en'];
+
   const checkAssets = async () => {
-    setHealthStatus({
-      icon: { status: 'checking' },
-      icon1: { status: 'checking' },
-      manifest: { status: 'checking' },
-      assetlinks: { status: 'checking' }
-    });
-    
-    const verify = async (path: string) => {
+    const assetsToTest = [
+      { id: 'icon', path: '/icon.png', label: 'Root Icon' },
+      { id: 'icon_alt', path: '/public/icon.png', label: 'Public Subfolder Icon' },
+      { id: 'icon1', path: '/icon1.png', label: 'Secondary Icon' },
+      { id: 'manifest', path: '/metadata.json', label: 'Manifest' }
+    ];
+
+    const results: Record<string, any> = {};
+
+    await Promise.all(assetsToTest.map(async (asset) => {
       try {
-        const res = await fetch(`${path}?t=${Date.now()}`);
-        if (!res.ok) return { status: 'fail' as const };
+        const res = await fetch(`${asset.path}?t=${Date.now()}`);
+        const contentType = res.headers.get('Content-Type') || 'unknown';
+        const size = res.headers.get('Content-Length') || 'unknown';
         
-        const contentType = res.headers.get('Content-Type') || '';
-        
-        // If we expect an image but get HTML, it's a false positive (SPA routing error)
-        if (path.endsWith('.png') && contentType.includes('text/html')) {
-          return { status: 'wrong_type' as const, mimeType: contentType };
-        }
-        
-        return { status: 'ok' as const, mimeType: contentType };
+        results[asset.id] = {
+          label: asset.label,
+          path: asset.path,
+          ok: res.ok,
+          status: res.status,
+          type: contentType,
+          size: size,
+          isImage: contentType.includes('image'),
+          isHtml: contentType.includes('text/html')
+        };
       } catch (e) {
-        return { status: 'fail' as const };
+        results[asset.id] = { label: asset.label, ok: false, status: 'Error', path: asset.path };
       }
-    };
+    }));
 
-    const [iconRes, icon1Res, manifestRes, assetlinksRes] = await Promise.all([
-      verify('/icon.png'),
-      verify('/icon1.png'),
-      verify('/metadata.json'),
-      verify('/.well-known/assetlinks.json')
-    ]);
-
-    setHealthStatus({
-      icon: iconRes,
-      icon1: icon1Res,
-      manifest: manifestRes,
-      assetlinks: assetlinksRes
-    });
+    setHealthStatus(results);
     setLastScanned(new Date().toLocaleTimeString());
+  };
+
+  const handleLocalIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setLocalIconOverride(base64);
+        localStorage.setItem('app_icon_override', base64);
+        alert("Success! The app will now use this uploaded image instead of the broken server link.");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   useEffect(() => {
@@ -94,12 +92,8 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(savedSessions);
         setSessions(Array.isArray(parsed) && parsed.length > 0 ? parsed : MEDITATION_SESSIONS);
-      } catch (e) {
-        setSessions(MEDITATION_SESSIONS);
-      }
-    } else {
-      setSessions(MEDITATION_SESSIONS);
-    }
+      } catch (e) { setSessions(MEDITATION_SESSIONS); }
+    } else { setSessions(MEDITATION_SESSIONS); }
 
     const savedUser = localStorage.getItem('calmrelax_active_user');
     if (savedUser) {
@@ -112,19 +106,6 @@ const App: React.FC = () => {
       } catch (e) {}
     }
   }, []);
-
-  useEffect(() => {
-    if (sessions.length > 0) {
-      localStorage.setItem('calmrelax_sessions', JSON.stringify(sessions));
-    }
-  }, [sessions]);
-
-  const handleLogout = () => {
-    setUser(null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('calmrelax_active_user');
-    setView('today');
-  };
 
   const completeLogin = (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
@@ -145,16 +126,11 @@ const App: React.FC = () => {
     localStorage.setItem('calmrelax_active_user', JSON.stringify(loggedUser));
   };
 
-  const handleGenerateIcon = async () => {
-    setIsGeneratingIcon(true);
-    try {
-      const icon = await generateAppAsset('icon');
-      if (icon) setGeneratedIcon(icon);
-    } catch (e) {
-      console.error("Failed to generate icon:", e);
-    } finally {
-      setIsGeneratingIcon(false);
-    }
+  const handleLogout = () => {
+    setUser(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('calmrelax_active_user');
+    setView('today');
   };
 
   if (!isLoggedIn || !user) {
@@ -180,7 +156,11 @@ const App: React.FC = () => {
           </div>
         )}
         <div className="w-20 h-20 bg-emerald-500 rounded-[28px] flex items-center justify-center mb-8 shadow-2xl relative z-10 animate-bounce">
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          {localIconOverride ? (
+            <img src={localIconOverride} className="w-full h-full rounded-[28px] object-cover" alt="icon" />
+          ) : (
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          )}
         </div>
         <h1 className="text-5xl font-extrabold serif mb-4 tracking-tighter relative z-10 text-stone-900">CalmRelax</h1>
         <p className="text-stone-500 text-sm font-medium mb-16 relative z-10 max-w-[240px] leading-relaxed">Personalized paths to a calmer, more mindful you.</p>
@@ -202,12 +182,7 @@ const App: React.FC = () => {
                 <p className="text-stone-400 font-black text-[10px] uppercase tracking-widest mb-1">{t.welcome_back}</p>
                 <h2 className="text-3xl font-extrabold serif text-stone-900">{t.hey}, {user.name}</h2>
               </div>
-              <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-                <span className="text-xs">🔥</span>
-                <span className="text-[10px] font-black text-emerald-600 uppercase">3 Day Streak</span>
-              </div>
             </header>
-
             <section className="relative h-80 rounded-[40px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => setActiveSession(sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION)}>
               <img src={(sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION).imageUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="daily zen" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
@@ -225,73 +200,76 @@ const App: React.FC = () => {
         {view === 'admin' && (
           <div className="space-y-10 pb-12">
              <header className="flex justify-between items-center">
-                <h2 className="text-3xl font-black serif text-stone-900">Admin</h2>
-                <button onClick={handleLogout} className="text-red-500 text-[10px] font-black uppercase tracking-widest underline decoration-2 underline-offset-4">Log Out</button>
+                <h2 className="text-3xl font-black serif text-stone-900">Admin Panel</h2>
+                <button onClick={handleLogout} className="text-red-500 text-[10px] font-black uppercase tracking-widest underline underline-offset-4">Log Out</button>
              </header>
 
              <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
-                <button onClick={() => setAdminTab('content')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Content Feed</button>
-                <button onClick={() => setAdminTab('status')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'status' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>App Health</button>
-                <button onClick={() => setAdminTab('assets')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'assets' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Asset Studio</button>
+                <button onClick={() => setAdminTab('content')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Content</button>
+                <button onClick={() => setAdminTab('status')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'status' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>System Health</button>
              </div>
 
              {adminTab === 'status' && (
                 <div className="space-y-6">
-                  <div className="p-8 bg-stone-900 rounded-[44px] text-center text-white space-y-4 shadow-2xl">
-                    <div className="w-16 h-16 bg-emerald-500 rounded-full mx-auto flex items-center justify-center text-2xl shadow-xl shadow-emerald-500/20">✓</div>
-                    <h3 className="text-xl font-black serif">App Diagnostics</h3>
-                    <p className="text-stone-500 text-[10px] uppercase tracking-[0.2em] font-black">Last Scanned: {lastScanned || 'Never'}</p>
-                  </div>
-                  
-                  <div className="bg-white p-8 rounded-[44px] border border-stone-100 shadow-sm space-y-6">
-                    <div className="flex justify-between items-center border-b border-stone-50 pb-4">
-                      <h3 className="text-lg font-black serif text-stone-800">Advanced Asset Scanner</h3>
-                      <button onClick={checkAssets} className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">Refresh Now</button>
+                  {/* Local Override Tool */}
+                  <div className="p-8 bg-emerald-500 rounded-[44px] text-white space-y-4 shadow-2xl shadow-emerald-100">
+                    <h3 className="text-xl font-black serif">Bypass Broken Icons</h3>
+                    <p className="text-[11px] font-medium leading-relaxed opacity-80 uppercase tracking-wider">If your server icons are broken, upload a local file here. The app will use this instead of the URL.</p>
+                    <div className="relative">
+                      <input type="file" accept="image/png" onChange={handleLocalIconUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <div className="w-full py-4 bg-white/20 rounded-2xl border-2 border-dashed border-white/40 flex items-center justify-center font-black uppercase text-[10px] tracking-widest">
+                        {localIconOverride ? 'Change Local Override' : 'Upload Local icon.png'}
+                      </div>
                     </div>
-                    
-                    <div className="space-y-4">
-                      <HealthRow label="icon.png" data={healthStatus.icon} path="/icon.png" description="PWA Icon (PNG Required)" />
-                      <HealthRow label="icon1.png" data={healthStatus.icon1} path="/icon1.png" description="Secondary Logo" />
-                      <HealthRow label="metadata.json" data={healthStatus.manifest} path="/metadata.json" description="App Config" />
-                      <HealthRow label="assetlinks.json" data={healthStatus.assetlinks} path="/.well-known/assetlinks.json" description="Play Store Key" />
+                    {localIconOverride && (
+                      <button onClick={() => { setLocalIconOverride(null); localStorage.removeItem('app_icon_override'); }} className="text-[10px] font-black uppercase underline">Remove Override</button>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[44px] border border-stone-100 shadow-sm space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-black serif text-stone-800">Surgical Asset Scanner</h3>
+                      <button onClick={checkAssets} className="text-emerald-500 text-[10px] font-black uppercase">Re-Scan</button>
                     </div>
 
-                    <div className="bg-red-50 p-6 rounded-[32px] border border-red-100 space-y-3">
-                      <h4 className="font-bold text-red-900 text-sm">Crucial Fix Guide</h4>
-                      <p className="text-[11px] text-red-700 leading-relaxed">
-                        If an icon shows <strong>"Wrong Type (HTML)"</strong>, your server is returning a webpage instead of an image. This happens if you haven't put the file in the <code>public</code> folder.
-                      </p>
-                      <ul className="text-[11px] text-red-800 space-y-1 font-bold">
-                        <li>1. Create a folder named <code>public</code> at the project root.</li>
-                        <li>2. Move your <code>icon.png</code> and <code>icon1.png</code> inside it.</li>
-                        <li>3. Git add, commit, and push to Vercel.</li>
-                      </ul>
+                    <div className="space-y-3">
+                      {Object.entries(healthStatus).map(([id, info]: [string, any]) => (
+                        <div key={id} className={`p-5 rounded-3xl border transition-all ${info.isHtml ? 'bg-red-50 border-red-200' : 'bg-stone-50 border-stone-100'}`}>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <p className="font-bold text-sm text-stone-800">{info.label}</p>
+                              <p className="text-[9px] text-stone-400 font-mono">{info.path}</p>
+                            </div>
+                            <div className={`px-2 py-1 rounded text-[8px] font-black uppercase ${info.ok && !info.isHtml ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                              {info.ok && !info.isHtml ? 'VERIFIED' : 'FAILED'}
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                            <div>Type: <span className={info.isHtml ? 'text-red-600' : 'text-stone-600'}>{info.type}</span></div>
+                            <div>HTTP: <span className="text-stone-600">{info.status}</span></div>
+                          </div>
+
+                          {info.isHtml && (
+                            <div className="mt-4 p-3 bg-red-100 rounded-xl text-[10px] font-bold text-red-700 leading-tight">
+                              CRITICAL ERROR: The server is sending a Webpage (HTML) instead of an Image. 
+                              Check your "public" folder path.
+                            </div>
+                          )}
+
+                          {info.ok && !info.isHtml && (
+                            <div className="mt-4 flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-white rounded-xl border border-stone-200 overflow-hidden">
+                                <img src={`${info.path}?t=${Date.now()}`} className="w-full h-full object-contain" alt="preview" />
+                              </div>
+                              <p className="text-[10px] text-emerald-600 font-black">Browser Successfully Rendered This Asset</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-             )}
-
-             {adminTab === 'assets' && (
-               <div className="p-10 bg-white rounded-[50px] border border-stone-100 text-center space-y-10 shadow-sm">
-                 <div className="space-y-2">
-                   <h3 className="text-2xl font-black serif text-stone-900">AI Icon Studio</h3>
-                   <p className="text-stone-400 text-[11px]">Generate a high-res PWA logo.</p>
-                 </div>
-                 {generatedIcon ? (
-                   <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-                     <img src={generatedIcon} className="w-56 h-56 rounded-[64px] shadow-2xl border-4 border-white mx-auto" alt="generated" />
-                     <button onClick={() => {
-                        const link = document.createElement('a'); link.href = generatedIcon; link.download = 'icon.png'; link.click();
-                     }} className="w-full py-5 bg-emerald-500 text-white rounded-[28px] font-black uppercase text-[10px] tracking-widest shadow-xl">Download for /public</button>
-                     <button onClick={handleGenerateIcon} className="text-stone-300 text-[10px] font-black uppercase">Try Again</button>
-                   </div>
-                 ) : (
-                    <button onClick={handleGenerateIcon} disabled={isGeneratingIcon} className="w-full py-20 border-4 border-dashed border-stone-100 rounded-[50px] bg-stone-50/30 transition-all flex flex-col items-center justify-center">
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-4xl shadow-xl">{isGeneratingIcon ? '⏳' : '🎨'}</div>
-                      <p className="mt-6 text-[11px] font-black uppercase text-stone-400 tracking-widest">{isGeneratingIcon ? 'Designing...' : 'Generate Icon'}</p>
-                    </button>
-                 )}
-               </div>
              )}
           </div>
         )}
@@ -301,44 +279,6 @@ const App: React.FC = () => {
         <AudioPlayer url={activeSession.audioUrl} title={activeSession.title} onClose={() => setActiveSession(null)} />
       )}
     </Layout>
-  );
-};
-
-// Sub-component for health check rows with visual preview
-const HealthRow = ({ label, data, path, description }: { label: string, data: any, path: string, description: string }) => {
-  const { status, mimeType } = data;
-  const isOk = status === 'ok';
-  const isPending = status === 'checking';
-  const isWrong = status === 'wrong_type';
-  
-  return (
-    <div className={`flex flex-col p-4 rounded-2xl border transition-all ${isWrong ? 'bg-amber-50 border-amber-200' : 'bg-white border-stone-100 shadow-sm'}`}>
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4 flex-1 min-w-0">
-          {label.endsWith('.png') && (
-             <div className="w-10 h-10 bg-stone-100 rounded-lg overflow-hidden flex items-center justify-center border border-stone-200 shrink-0">
-               {isOk ? <img src={path} className="w-full h-full object-cover" alt="preview" /> : <span className="text-xs">?</span>}
-             </div>
-          )}
-          <div className="min-w-0 pr-4">
-            <p className={`font-bold text-sm truncate ${isOk ? 'text-stone-800' : 'text-stone-400'}`}>{label}</p>
-            <p className="text-[9px] text-stone-400 font-black uppercase tracking-widest">{description}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <div className="text-right">
-            <p className={`text-[9px] font-black uppercase tracking-widest ${isOk ? 'text-emerald-500' : isWrong ? 'text-amber-600' : isPending ? 'text-stone-300' : 'text-red-500'}`}>
-              {isPending ? 'Pinging...' : isOk ? 'Found' : isWrong ? 'False Positive' : 'Not Found'}
-            </p>
-            {isWrong && <p className="text-[8px] text-amber-500 font-bold uppercase">MIME: HTML (Code)</p>}
-          </div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm transition-all duration-500 ${isOk ? 'bg-emerald-500' : isWrong ? 'bg-amber-500' : isPending ? 'bg-stone-200' : 'bg-red-500'}`}>
-            {isPending ? '...' : isOk ? '✓' : isWrong ? '!' : '✕'}
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
 
