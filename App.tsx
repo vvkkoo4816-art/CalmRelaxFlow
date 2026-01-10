@@ -6,271 +6,283 @@ import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, ZenCenter, Language } from './types';
 import { MEDITATION_SESSIONS, DAILY_MEDITATION, SLEEP_STORIES, QUICK_RELIEF } from './constants';
-import { findNearbyZenCenters, generateAppAsset } from './services/geminiService';
+import { findNearbyZenCenters, generateAppAsset, getPersonalizedRecommendation } from './services/geminiService';
 import { translations } from './translations';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
-  const [adminTab, setAdminTab] = useState<'content' | 'status' | 'assets'>('content');
+  const [adminTab, setAdminTab] = useState<'status' | 'content' | 'deployment'>('status');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const [showLoginModal, setShowLoginModal] = useState(false);
   
-  const [sessions, setSessions] = useState<MeditationSession[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
   const [nearbyCenters, setNearbyCenters] = useState<ZenCenter[]>([]);
 
-  // Asset Debugging State
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
-  const [healthStatus, setHealthStatus] = useState<Record<string, any>>({});
-  const [localIconOverride, setLocalIconOverride] = useState<string | null>(localStorage.getItem('app_icon_override'));
-
+  // Deployment & Asset State
+  const [isGenerating, setIsGenerating] = useState(false);
   const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
-  const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
+  const [assetStatus, setAssetStatus] = useState<Record<string, boolean>>({
+    icon: false,
+    metadata: false,
+    assetlinks: false
+  });
 
   const t = translations[lang] || translations['en'];
 
-  const checkAssets = async () => {
-    const assetsToTest = [
-      { id: 'icon', path: '/icon.png', label: 'Root Icon' },
-      { id: 'icon_alt', path: '/public/icon.png', label: 'Public Subfolder Icon' },
-      { id: 'icon1', path: '/icon1.png', label: 'Secondary Icon' },
-      { id: 'manifest', path: '/metadata.json', label: 'Manifest' }
-    ];
-
-    const results: Record<string, any> = {};
-
-    await Promise.all(assetsToTest.map(async (asset) => {
-      try {
-        const res = await fetch(`${asset.path}?t=${Date.now()}`);
-        const contentType = res.headers.get('Content-Type') || 'unknown';
-        const size = res.headers.get('Content-Length') || 'unknown';
-        
-        results[asset.id] = {
-          label: asset.label,
-          path: asset.path,
-          ok: res.ok,
-          status: res.status,
-          type: contentType,
-          size: size,
-          isImage: contentType.includes('image'),
-          isHtml: contentType.includes('text/html')
-        };
-      } catch (e) {
-        results[asset.id] = { label: asset.label, ok: false, status: 'Error', path: asset.path };
-      }
-    }));
-
-    setHealthStatus(results);
-    setLastScanned(new Date().toLocaleTimeString());
-  };
-
-  const handleLocalIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setLocalIconOverride(base64);
-        localStorage.setItem('app_icon_override', base64);
-        alert("Success! The app will now use this uploaded image instead of the broken server link.");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   useEffect(() => {
-    if (view === 'admin' && adminTab === 'status') {
-      checkAssets();
-    }
-  }, [view, adminTab]);
-
-  useEffect(() => {
-    const savedSessions = localStorage.getItem('calmrelax_sessions');
-    if (savedSessions) {
-      try {
-        const parsed = JSON.parse(savedSessions);
-        setSessions(Array.isArray(parsed) && parsed.length > 0 ? parsed : MEDITATION_SESSIONS);
-      } catch (e) { setSessions(MEDITATION_SESSIONS); }
-    } else { setSessions(MEDITATION_SESSIONS); }
-
     const savedUser = localStorage.getItem('calmrelax_active_user');
     if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
-        if (parsed?.email) {
+        if (parsed?.isLoggedIn) {
           setUser(parsed);
           setIsLoggedIn(true);
         }
       } catch (e) {}
     }
+    checkPhysicalAssets();
   }, []);
 
-  const completeLogin = (email: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-    const isAdmin = cleanEmail === 'vvkkoo4816@gmail.com';
-    const loggedUser: User = {
-      id: "u-" + Date.now(),
-      name: cleanEmail.split('@')[0].toUpperCase(),
-      email: cleanEmail,
-      photoUrl: `https://ui-avatars.com/api/?name=${cleanEmail}&background=10b981&color=fff`,
-      isLoggedIn: true,
-      streak: 1,
-      minutesMeditated: 0,
-      role: isAdmin ? 'admin' : 'user'
+  const checkPhysicalAssets = async () => {
+    const paths = {
+      icon: '/icon.png',
+      metadata: '/metadata.json',
+      assetlinks: '/.well-known/assetlinks.json'
     };
-    setUser(loggedUser);
-    setIsLoggedIn(true);
-    setShowLoginModal(false);
-    localStorage.setItem('calmrelax_active_user', JSON.stringify(loggedUser));
+    const results: Record<string, boolean> = {};
+    for (const [key, path] of Object.entries(paths)) {
+      try {
+        const res = await fetch(path);
+        results[key] = res.ok && !res.headers.get('Content-Type')?.includes('text/html');
+      } catch {
+        results[key] = false;
+      }
+    }
+    setAssetStatus(results);
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('calmrelax_active_user');
-    setView('today');
+  const handleMoodSelect = async (mood: string) => {
+    setRecommendation("Loading your personalized path...");
+    const advice = await getPersonalizedRecommendation(mood, lang);
+    setRecommendation(advice);
+  };
+
+  const loginAsAdmin = () => {
+    const adminUser: User = {
+      id: "admin-1",
+      name: "Admin",
+      email: "vvkkoo4816@gmail.com",
+      photoUrl: "https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff",
+      isLoggedIn: true,
+      streak: 12,
+      minutesMeditated: 450,
+      role: 'admin'
+    };
+    setUser(adminUser);
+    setIsLoggedIn(true);
+    setShowLoginModal(false);
+    localStorage.setItem('calmrelax_active_user', JSON.stringify(adminUser));
+  };
+
+  const generateIcon = async () => {
+    setIsGenerating(true);
+    try {
+      const url = await generateAppAsset('icon');
+      if (url) setGeneratedIcon(url);
+    } catch (e) {
+      alert("Error generating icon. Please check your API configuration.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (!isLoggedIn || !user) {
     return (
       <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1/2 bg-emerald-500/10 blur-[120px] pointer-events-none"></div>
-        {showLoginModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-6 backdrop-blur-md">
-            <div className="bg-white w-full rounded-[40px] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in-95">
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-10 h-10 mb-8" />
-              <h2 className="text-xl font-black mb-2 serif">Sign In</h2>
-              <p className="text-xs text-stone-400 mb-10 uppercase tracking-widest font-black">Secure Member Access</p>
-              <button onClick={() => completeLogin('vvkkoo4816@gmail.com')} className="w-full p-5 rounded-3xl border border-stone-100 bg-stone-50 hover:bg-stone-100 flex items-center space-x-4 mb-4 transition-all active:scale-95">
-                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black shadow-lg shadow-emerald-200">V</div>
-                <div className="text-left flex-1">
-                  <p className="text-sm font-bold">vvkkoo4816@gmail.com</p>
-                  <p className="text-[9px] text-emerald-600 font-black uppercase">Administrator</p>
-                </div>
-                <div className="text-stone-300">➜</div>
-              </button>
-              <button onClick={() => setShowLoginModal(false)} className="text-stone-400 text-[10px] font-black uppercase mt-8 tracking-widest">Cancel</button>
-            </div>
-          </div>
-        )}
-        <div className="w-20 h-20 bg-emerald-500 rounded-[28px] flex items-center justify-center mb-8 shadow-2xl relative z-10 animate-bounce">
-          {localIconOverride ? (
-            <img src={localIconOverride} className="w-full h-full rounded-[28px] object-cover" alt="icon" />
-          ) : (
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-          )}
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-emerald-500/5 blur-[120px] pointer-events-none"></div>
+        <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mb-10 shadow-2xl relative z-10">
+          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         </div>
-        <h1 className="text-5xl font-extrabold serif mb-4 tracking-tighter relative z-10 text-stone-900">CalmRelax</h1>
-        <p className="text-stone-500 text-sm font-medium mb-16 relative z-10 max-w-[240px] leading-relaxed">Personalized paths to a calmer, more mindful you.</p>
-        <button onClick={() => setShowLoginModal(true)} className="w-full max-w-[300px] bg-stone-900 text-white py-6 rounded-[32px] font-black shadow-2xl flex items-center justify-center space-x-3 active:scale-95 transition-all relative z-10">
+        <h1 className="text-5xl font-extrabold serif mb-4 tracking-tighter text-stone-900">CalmRelax</h1>
+        <p className="text-stone-500 text-sm font-medium mb-16 max-w-[280px] leading-relaxed">Your professional mindfulness companion for daily peace.</p>
+        <button onClick={() => setShowLoginModal(true)} className="w-full max-w-[320px] bg-stone-900 text-white py-6 rounded-[32px] font-black shadow-2xl flex items-center justify-center space-x-3 active:scale-95 transition-all">
           <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5" />
           <span className="uppercase text-xs tracking-widest">Sign in with Google</span>
         </button>
+
+        {showLoginModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
+            <div className="bg-white w-full max-w-sm rounded-[44px] p-10 shadow-2xl animate-in zoom-in-95">
+              <h2 className="text-2xl font-black mb-8 serif">Welcome</h2>
+              <button onClick={loginAsAdmin} className="w-full p-6 bg-stone-50 border border-stone-100 rounded-3xl flex items-center space-x-4 mb-4 hover:bg-emerald-50 transition-all">
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">V</div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-800 text-sm">vvkkoo4816@gmail.com</p>
+                  <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Administrator</p>
+                </div>
+              </button>
+              <button onClick={() => setShowLoginModal(false)} className="mt-6 text-stone-400 text-[10px] font-black uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <Layout activeView={view} setActiveView={setView} user={user} lang={lang}>
-      <div className="w-full animate-in fade-in duration-700">
+      <div className="w-full space-y-10 animate-in fade-in duration-500 pb-20">
         {view === 'today' && (
-          <div className="space-y-12">
-            <header className="flex justify-between items-end">
-              <div>
-                <p className="text-stone-400 font-black text-[10px] uppercase tracking-widest mb-1">{t.welcome_back}</p>
-                <h2 className="text-3xl font-extrabold serif text-stone-900">{t.hey}, {user.name}</h2>
-              </div>
-            </header>
-            <section className="relative h-80 rounded-[40px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => setActiveSession(sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION)}>
-              <img src={(sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION).imageUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="daily zen" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-              <div className="absolute bottom-8 left-8 right-8">
-                <span className="px-3 py-1 bg-emerald-500 rounded-full text-[9px] font-black text-white uppercase tracking-widest mb-3 inline-block shadow-lg">Daily Zen Session</span>
-                <h3 className="text-3xl font-black text-white mb-4 leading-tight">{(sessions.find(s => s.category === 'Daily') || DAILY_MEDITATION).title}</h3>
-                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-stone-900 shadow-2xl transition-all active:scale-90">
-                  <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <>
+            <section className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">{t.welcome_back}</p>
+              <h2 className="text-4xl font-black serif text-stone-900">{t.hey}, {user.name}</h2>
+            </section>
+
+            <section className="relative h-96 rounded-[50px] overflow-hidden shadow-2xl group cursor-pointer" onClick={() => setActiveSession(DAILY_MEDITATION)}>
+              <img src={DAILY_MEDITATION.imageUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="daily" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+              <div className="absolute bottom-10 left-10 right-10">
+                <span className="px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest mb-4 inline-block shadow-lg">{t.daily_zen}</span>
+                <h3 className="text-3xl font-black text-white mb-6 leading-tight">{DAILY_MEDITATION.title}</h3>
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-stone-900 shadow-2xl hover:scale-110 transition-transform">
+                  <svg className="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </div>
               </div>
             </section>
+
+            <section className="space-y-6">
+              <h4 className="text-lg font-black serif text-stone-800">How are you today?</h4>
+              <div className="grid grid-cols-4 gap-3">
+                {['Stress', 'Anxious', 'Happy', 'Tired'].map(mood => (
+                  <button key={mood} onClick={() => handleMoodSelect(mood)} className="p-4 bg-white border border-stone-100 rounded-3xl text-[11px] font-black uppercase tracking-wider text-stone-500 hover:bg-emerald-500 hover:text-white transition-all active:scale-95 shadow-sm">
+                    {mood}
+                  </button>
+                ))}
+              </div>
+              {recommendation && (
+                <div className="p-8 bg-emerald-50 border border-emerald-100 rounded-[40px] animate-in fade-in slide-in-from-top-4">
+                  <p className="text-sm text-emerald-900 font-medium leading-relaxed italic">"{recommendation}"</p>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {view === 'library' && (
+          <div className="space-y-10">
+            <h2 className="text-3xl font-black serif text-stone-900">{t.nav_library}</h2>
+            <div className="space-y-8">
+              {['Anxiety', 'Gratitude', 'Quick Relief'].map(category => (
+                <div key={category} className="space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-stone-400">{category}</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {MEDITATION_SESSIONS.filter(s => s.category === category).map(session => (
+                      <div key={session.id} onClick={() => setActiveSession(session)} className="bg-white p-4 rounded-[32px] border border-stone-50 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                        <img src={session.imageUrl} className="w-full h-32 object-cover rounded-[24px] mb-4" alt={session.title} />
+                        <h5 className="font-bold text-stone-800 text-sm truncate">{session.title}</h5>
+                        <p className="text-[10px] text-stone-400 font-bold uppercase">{session.duration}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {view === 'admin' && (
-          <div className="space-y-10 pb-12">
-             <header className="flex justify-between items-center">
-                <h2 className="text-3xl font-black serif text-stone-900">Admin Panel</h2>
-                <button onClick={handleLogout} className="text-red-500 text-[10px] font-black uppercase tracking-widest underline underline-offset-4">Log Out</button>
-             </header>
-
-             <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
-                <button onClick={() => setAdminTab('content')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'content' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Content</button>
-                <button onClick={() => setAdminTab('status')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'status' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>System Health</button>
-             </div>
-
-             {adminTab === 'status' && (
-                <div className="space-y-6">
-                  {/* Local Override Tool */}
-                  <div className="p-8 bg-emerald-500 rounded-[44px] text-white space-y-4 shadow-2xl shadow-emerald-100">
-                    <h3 className="text-xl font-black serif">Bypass Broken Icons</h3>
-                    <p className="text-[11px] font-medium leading-relaxed opacity-80 uppercase tracking-wider">If your server icons are broken, upload a local file here. The app will use this instead of the URL.</p>
-                    <div className="relative">
-                      <input type="file" accept="image/png" onChange={handleLocalIconUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      <div className="w-full py-4 bg-white/20 rounded-2xl border-2 border-dashed border-white/40 flex items-center justify-center font-black uppercase text-[10px] tracking-widest">
-                        {localIconOverride ? 'Change Local Override' : 'Upload Local icon.png'}
-                      </div>
-                    </div>
-                    {localIconOverride && (
-                      <button onClick={() => { setLocalIconOverride(null); localStorage.removeItem('app_icon_override'); }} className="text-[10px] font-black uppercase underline">Remove Override</button>
-                    )}
-                  </div>
-
-                  <div className="bg-white p-8 rounded-[44px] border border-stone-100 shadow-sm space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-black serif text-stone-800">Surgical Asset Scanner</h3>
-                      <button onClick={checkAssets} className="text-emerald-500 text-[10px] font-black uppercase">Re-Scan</button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {Object.entries(healthStatus).map(([id, info]: [string, any]) => (
-                        <div key={id} className={`p-5 rounded-3xl border transition-all ${info.isHtml ? 'bg-red-50 border-red-200' : 'bg-stone-50 border-stone-100'}`}>
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <p className="font-bold text-sm text-stone-800">{info.label}</p>
-                              <p className="text-[9px] text-stone-400 font-mono">{info.path}</p>
-                            </div>
-                            <div className={`px-2 py-1 rounded text-[8px] font-black uppercase ${info.ok && !info.isHtml ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                              {info.ok && !info.isHtml ? 'VERIFIED' : 'FAILED'}
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400">
-                            <div>Type: <span className={info.isHtml ? 'text-red-600' : 'text-stone-600'}>{info.type}</span></div>
-                            <div>HTTP: <span className="text-stone-600">{info.status}</span></div>
-                          </div>
-
-                          {info.isHtml && (
-                            <div className="mt-4 p-3 bg-red-100 rounded-xl text-[10px] font-bold text-red-700 leading-tight">
-                              CRITICAL ERROR: The server is sending a Webpage (HTML) instead of an Image. 
-                              Check your "public" folder path.
-                            </div>
-                          )}
-
-                          {info.ok && !info.isHtml && (
-                            <div className="mt-4 flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-white rounded-xl border border-stone-200 overflow-hidden">
-                                <img src={`${info.path}?t=${Date.now()}`} className="w-full h-full object-contain" alt="preview" />
-                              </div>
-                              <p className="text-[10px] text-emerald-600 font-black">Browser Successfully Rendered This Asset</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+        {view === 'sleep' && (
+          <div className="space-y-10">
+            <h2 className="text-3xl font-black serif text-stone-900">{t.nav_sleep}</h2>
+            <div className="grid grid-cols-1 gap-6">
+              {SLEEP_STORIES.map(story => (
+                <div key={story.id} onClick={() => setActiveSession(story)} className="relative h-48 rounded-[40px] overflow-hidden group cursor-pointer shadow-lg">
+                  <img src={story.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={story.title} />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all"></div>
+                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                    <h4 className="text-xl font-black text-white">{story.title}</h4>
+                    <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">{story.duration}</p>
                   </div>
                 </div>
-             )}
+              ))}
+            </div>
+            <SoundMixer />
+          </div>
+        )}
+
+        {view === 'explore' && <BreathingExercise lang={lang} />}
+
+        {view === 'admin' && (
+          <div className="space-y-10">
+            <header className="flex justify-between items-center">
+              <h2 className="text-3xl font-black serif text-stone-900">Deployment</h2>
+              <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="text-red-500 text-[10px] font-black uppercase tracking-widest underline underline-offset-4 decoration-2">Full Reset</button>
+            </header>
+
+            <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-2">
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'status' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Health</button>
+              <button onClick={() => setAdminTab('deployment')} className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shrink-0 transition-all ${adminTab === 'deployment' ? 'bg-stone-900 text-white shadow-xl' : 'bg-stone-100 text-stone-400'}`}>Asset Gen</button>
+            </div>
+
+            {adminTab === 'status' && (
+              <div className="space-y-6">
+                <div className="bg-white p-8 rounded-[44px] border border-stone-100 shadow-sm space-y-6">
+                  <h3 className="text-lg font-black serif text-stone-800">Deployment Checklist</h3>
+                  <div className="space-y-3">
+                    {Object.entries(assetStatus).map(([key, ok]) => (
+                      <div key={key} className={`p-5 rounded-3xl border flex justify-between items-center ${ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                        <span className="text-[11px] font-black uppercase text-stone-600 tracking-wider">/{key === 'assetlinks' ? '.well-known/assetlinks.json' : key === 'icon' ? 'icon.png' : key + '.json'}</span>
+                        <span className={`text-[9px] font-black px-3 py-1 rounded-full ${ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                          {ok ? 'DETECTED' : 'MISSING'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {!assetStatus.icon && (
+                    <div className="p-6 bg-stone-900 rounded-[32px] text-white">
+                      <p className="text-[11px] font-medium leading-relaxed">
+                        ⚠️ <b>Attention:</b> icon.png is not found in your root folder. Use the <b>Asset Gen</b> tab to create your official app icon for Google Play.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {adminTab === 'deployment' && (
+              <div className="bg-white p-10 rounded-[50px] border border-stone-100 text-center space-y-10 shadow-sm">
+                <div className="w-20 h-20 bg-emerald-50 rounded-[28px] flex items-center justify-center mx-auto text-4xl">🎨</div>
+                <h3 className="text-2xl font-black serif text-stone-900">AI App Store Studio</h3>
+                <p className="text-[12px] text-stone-500 leading-relaxed px-4">Generate and download your high-resolution 512x512 app icon for the Google Play Store.</p>
+                
+                {generatedIcon ? (
+                  <div className="space-y-8">
+                    <img src={generatedIcon} className="w-56 h-56 rounded-[64px] shadow-2xl mx-auto border-4 border-white" alt="generated" />
+                    <button onClick={() => {
+                      const link = document.createElement('a'); link.href = generatedIcon; link.download = 'icon.png'; link.click();
+                    }} className="w-full py-6 bg-emerald-500 text-white rounded-[32px] font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition-all">Download & Place in /public</button>
+                    <button onClick={() => setGeneratedIcon(null)} className="text-stone-300 text-[10px] font-black uppercase tracking-widest underline decoration-2">Regenerate</button>
+                  </div>
+                ) : (
+                  <button onClick={generateIcon} disabled={isGenerating} className="w-full py-20 border-4 border-dashed border-stone-100 rounded-[50px] bg-stone-50/30 flex flex-col items-center justify-center group active:scale-95 transition-all">
+                    {isGenerating ? (
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Designing with Gemini...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-3xl shadow-xl group-hover:scale-110 transition-transform">✨</div>
+                        <p className="mt-8 text-[11px] font-black uppercase text-stone-400 tracking-widest">Create Official icon.png</p>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

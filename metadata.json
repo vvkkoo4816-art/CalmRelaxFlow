@@ -1,21 +1,12 @@
 {
-  "name": "CalmRelaxFlow Mindfulness & Meditation",
-  "short_name": "CalmRelaxFlow",
+  "name": "CalmRelaxFlow Mindfulness",
+  "short_name": "CalmRelax",
   "id": "com.calmrelaxflow.app",
   "start_url": "/",
-  "description": "Premium mindfulness companion with guided meditations, sleep stories, and zen music.",
+  "description": "Professional mindfulness companion with guided meditations, sleep stories, and zen music.",
   "theme_color": "#10b981",
   "background_color": "#fdfcfb",
   "display": "standalone",
-  "display_override": [
-    "window-controls-overlay",
-    "minimal-ui"
-  ],
-  "categories": [
-    "lifestyle",
-    "health",
-    "productivity"
-  ],
   "orientation": "portrait",
   "icons": [
     {
@@ -34,7 +25,6 @@
   "requestFramePermissions": [
     "geolocation"
   ],
-  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Daily Zen",
