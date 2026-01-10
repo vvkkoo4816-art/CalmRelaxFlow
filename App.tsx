@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [recommendation, setRecommendation] = useState<string | null>(null);
 
   // Admin Asset State
-  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean }>>({});
+  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean, details?: string }>>({});
   const [generatedAsset, setGeneratedAsset] = useState<string | null>(null);
   const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
 
@@ -47,17 +47,25 @@ const App: React.FC = () => {
 
     for (const path of targets) {
       try {
-        const res = await fetch(`${path}?t=${Date.now()}`);
+        const res = await fetch(`${path}?t=${Date.now()}`, { method: 'HEAD' }).catch(() => fetch(`${path}?t=${Date.now()}`));
         const contentType = res.headers.get('Content-Type') || '';
         const isHtmlFallback = contentType.includes('text/html');
         
+        let details = "";
+        if (isHtmlFallback) {
+          details = "Server returned an HTML page (likely a 404 redirect) instead of the file.";
+        } else if (!res.ok) {
+          details = `Server returned status ${res.status}. File is physically missing from the public directory.`;
+        }
+
         results[path] = {
           ok: res.ok && !isHtmlFallback,
-          status: isHtmlFallback ? 'MSR-404 (Returns HTML)' : (res.ok ? 'OK' : `Error ${res.status}`),
-          isFallback: isHtmlFallback
+          status: isHtmlFallback ? '404 (Returns HTML)' : (res.ok ? 'Found' : `Missing (${res.status})`),
+          isFallback: isHtmlFallback,
+          details
         };
       } catch {
-        results[path] = { ok: false, status: 'Network Error', isFallback: false };
+        results[path] = { ok: false, status: 'Network Error', isFallback: false, details: "Check your internet connection or deployment status." };
       }
     }
     setAssetHealth(results);
@@ -273,13 +281,20 @@ const App: React.FC = () => {
                    </div>
                    
                    <div className="space-y-4">
-                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; isFallback: boolean }]>).map(([path, info]) => (
-                       <div key={path} className={`p-6 rounded-[32px] border flex justify-between items-center ${info.ok ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'}`}>
-                         <div>
-                            <p className="text-[11px] font-black text-stone-700 uppercase tracking-widest">{path}</p>
-                            <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
+                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; isFallback: boolean; details?: string }]>).map(([path, info]) => (
+                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'}`}>
+                         <div className="flex justify-between items-center w-full">
+                            <div>
+                               <p className="text-[11px] font-black text-stone-700 uppercase tracking-widest">{path}</p>
+                               <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
+                            </div>
+                            <div className={`w-4 h-4 rounded-full shadow-inner ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                          </div>
-                         <div className={`w-4 h-4 rounded-full shadow-inner ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                         {info.details && (
+                           <p className="text-[10px] text-stone-500 leading-relaxed font-medium bg-white/50 p-3 rounded-2xl border border-stone-100">
+                             <strong>Troubleshooting:</strong> {info.details}
+                           </p>
+                         )}
                        </div>
                      ))}
                    </div>
@@ -287,11 +302,19 @@ const App: React.FC = () => {
                    {(Object.values(assetHealth) as Array<{ isFallback: boolean; ok: boolean }>).some(h => h.isFallback || !h.ok) && (
                      <div className="bg-amber-50 p-8 rounded-[40px] border border-amber-200 text-amber-900 space-y-4">
                         <p className="text-xs font-black uppercase tracking-[0.2em] flex items-center">
-                          <span className="mr-2 text-lg">⚠️</span> Sync Required
+                          <span className="mr-2 text-lg">⚠️</span> Critical Action Required
                         </p>
                         <p className="text-[11px] leading-relaxed font-medium">
-                          Bubblewrap and Google Play require these specific files to be visible at the root. If they show "MSR-404", you need to upload them to your GitHub <code>public/</code> folder.
+                          If <strong>icon.png</strong> shows a 404 error, ensure you have a 512x512 PNG file at <code>public/icon.png</code>. In production (e.g., Vercel), this must be committed to your repository in the root <code>public</code> directory.
                         </p>
+                        <div className="bg-white/50 p-4 rounded-2xl border border-amber-200">
+                           <p className="text-[10px] font-black uppercase tracking-widest mb-2">PWA Checklist:</p>
+                           <ul className="text-[10px] space-y-1 list-disc list-inside opacity-70">
+                              <li>File exists at root <code>public/icon.png</code></li>
+                              <li>File is a valid PNG (not renamed JPG)</li>
+                              <li>Filename is all lowercase</li>
+                           </ul>
+                        </div>
                      </div>
                    )}
                 </div>
