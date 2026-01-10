@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="/icon.png">
   <link rel="manifest" href="/metadata.json">
   
-  <title>CalmRelax - Professional Mindfulness</title>
+  <title>CalmRelaxFlow - Professional Mindfulness</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,8 @@
       margin: 0;
       color: #1c1917;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      /* user-select: none removed to allow copy-paste as requested */
+      user-select: auto;
     }
     .serif {
       font-family: 'Fraunces', serif;
@@ -46,16 +47,20 @@
       scrollbar-width: none;
     }
     /* Fallback for missing icon.png images */
-    img[src="/icon.png"] {
+    img[src="/icon.png"], img[src="/icon1.png"] {
       background: #10b981;
       position: relative;
+      min-height: 40px;
+      min-width: 40px;
+      display: block;
     }
-    img[src="/icon.png"]:after {
+    img[src="/icon.png"]:after, img[src="/icon1.png"]:after {
       content: "🧘";
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem; color: white;
+      background: #10b981;
     }
   </style>
   <script type="importmap">

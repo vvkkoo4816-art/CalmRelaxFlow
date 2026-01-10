@@ -3,7 +3,7 @@
   "packageId": "com.calmrelaxflow.app",
   "host": "calm-relax-flow.vercel.app",
   "name": "CalmRelaxFlow",
-  "launcherName": "CalmRelax",
+  "launcherName": "CalmRelaxFlow",
   "display": "standalone",
   "themeColor": "#10B981",
   "themeColorDark": "#000000",
