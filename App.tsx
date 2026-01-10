@@ -35,9 +35,10 @@ const App: React.FC = () => {
 
   const t = translations[lang] || translations['en'];
 
-  // Host Verification
-  const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const isHostMismatch = currentUrl && !remoteHost.includes(window.location.hostname) && !window.location.hostname.includes('localhost');
+  // Host Verification (Crucial for fixing MIME null error)
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const cleanHost = remoteHost.replace(/\/$/, "");
+  const isHostMismatch = currentOrigin && !currentOrigin.includes(new URL(cleanHost).hostname) && !window.location.hostname.includes('localhost');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('calmrelax_active_user');
@@ -68,10 +69,9 @@ const App: React.FC = () => {
         const localType = localRes.headers.get('Content-Type') || '';
         const isLocalHtml = localType.includes('text/html');
 
-        const cleanHost = remoteHost.replace(/\/$/, "");
         const remoteUrl = `${cleanHost}${path}`;
         let remoteOk = false;
-        let remoteStatus = "Checking...";
+        let remoteStatus = "Scanning...";
         let remoteDetails = "";
 
         try {
@@ -80,25 +80,25 @@ const App: React.FC = () => {
             const isRemoteHtml = remoteType.includes('text/html');
             
             remoteOk = remoteRes.ok && !isRemoteHtml;
-            remoteStatus = remoteOk ? "Live & Ready" : (isRemoteHtml ? "404 (Redirect to HTML)" : `Error ${remoteRes.status}`);
+            remoteStatus = remoteOk ? "Live & Ready" : (isRemoteHtml ? "404 Error (HTML returned)" : `Server Error ${remoteRes.status}`);
             
             if (isRemoteHtml) {
-              remoteDetails = `Bubblewrap is hitting a 404 page instead of the file. This is why the 'MIME Buffer null' error happens.`;
+              remoteDetails = `Your website is live but ${path} is missing. Bubblewrap crashes when it sees HTML instead of an image.`;
             }
         } catch (e) {
-            remoteStatus = "Unreachable";
-            remoteDetails = "Domain could not be reached. Verify your Vercel URL.";
+            remoteStatus = "Offline";
+            remoteDetails = "Could not reach your Vercel URL. Check for typos.";
         }
 
         results[path] = {
           ok: localRes.ok && !isLocalHtml && remoteOk,
           status: remoteStatus,
           isFallback: isLocalHtml,
-          details: remoteDetails || (!localRes.ok ? "Local file missing in public/ folder." : ""),
+          details: remoteDetails || (!localRes.ok ? "Local file missing in your public folder." : ""),
           remoteUrl
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Scan Error', isFallback: false };
+        results[path] = { ok: false, status: 'Network Error', isFallback: false };
       }
     }
     setAssetHealth(results);
@@ -299,78 +299,87 @@ const App: React.FC = () => {
             <header className="flex justify-between items-center">
               <div>
                 <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Admin Console</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Bubblewrap Build Integrity</p>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Bubblewrap Fix Engine</p>
               </div>
-              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">SYSTEM</span>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">DIAGNOSTIC</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Build Check</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Critical Fixes</button>
               <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
                 {isHostMismatch && (
-                  <div className="p-8 bg-red-900 text-white rounded-[40px] shadow-2xl border-4 border-red-800 animate-in bounce-in">
-                    <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Critical URL Mismatch!</h3>
-                    <p className="text-xs opacity-80 mb-6 leading-relaxed">
-                      Bubblewrap is looking for your app at <code className="bg-black/30 p-1">{remoteHost}</code>, but you are currently browsing <code className="bg-black/30 p-1">{currentUrl}</code>. This <b>WILL</b> cause the "MIME null" error.
+                  <div className="p-10 bg-red-600 text-white rounded-[56px] shadow-3xl border-4 border-red-500 animate-in bounce-in duration-700">
+                    <h3 className="text-2xl font-black mb-3 uppercase tracking-tight">URL Warning Detected</h3>
+                    <p className="text-sm opacity-90 mb-8 leading-relaxed font-medium">
+                      Bubblewrap is searching for your app at <b>{remoteHost}</b>, but you are browsing <b>{currentOrigin}</b>. This mismatch is causing the "MIME null" error.
                     </p>
-                    <button 
-                      onClick={() => setRemoteHost(currentUrl)}
-                      className="bg-white text-red-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl"
-                    >
-                      Update Host to Current URL
-                    </button>
+                    <div className="flex flex-col space-y-4">
+                      <button 
+                        onClick={() => { setRemoteHost(currentOrigin); checkAssetIntegrity(); }}
+                        className="bg-white text-red-600 px-8 py-4 rounded-[32px] text-[11px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl"
+                      >
+                        Sync Host to: {currentOrigin}
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-8">
-                   <div className="bg-stone-900 p-8 rounded-[40px] text-white">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-emerald-400 mb-2">Build Configuration</h4>
-                      <p className="text-[11px] leading-relaxed opacity-80 mb-6">
-                        Bubblewrap downloads your assets from your <b>live website URL</b>. If the URL below doesn't match your actual Vercel site, the build will crash.
+                <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-10">
+                   <div className="bg-stone-900 p-10 rounded-[48px] text-white">
+                      <h4 className="text-xs font-black uppercase tracking-[0.4em] text-emerald-400 mb-4">Fix MIME Buffer Null</h4>
+                      <p className="text-[11px] leading-relaxed opacity-70 mb-8 font-medium">
+                        Copy the configuration below and replace the contents of your <b>application.json</b> file. This uses your actual live URL.
                       </p>
-                      <div className="space-y-3">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-stone-500">Your Live Vercel URL:</label>
-                        <div className="flex space-x-2">
-                          <input 
-                            type="text" 
-                            value={remoteHost} 
-                            onChange={(e) => setRemoteHost(e.target.value)}
-                            className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-4 py-3 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all"
-                            placeholder="https://your-app.vercel.app"
-                          />
-                          <button 
-                            onClick={checkAssetIntegrity}
-                            className="bg-emerald-500 text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all"
-                          >
-                            Sync & Verify
-                          </button>
-                        </div>
+                      <div className="bg-black/50 p-6 rounded-3xl font-mono text-[9px] overflow-x-auto text-emerald-200 border border-white/10 select-all whitespace-pre cursor-pointer" onClick={() => {
+                        const hostname = new URL(currentOrigin).hostname;
+                        const config = {
+                          packageId: "com.calmrelaxflow.app",
+                          host: hostname,
+                          name: "CalmRelaxFlow",
+                          launcherName: "CalmRelaxFlow",
+                          display: "standalone",
+                          themeColor: "#10B981",
+                          startUrl: "/",
+                          iconUrl: `${currentOrigin}/icon.png`,
+                          maskableIconUrl: `${currentOrigin}/icon.png`,
+                          fullScopeUrl: `${currentOrigin}/`,
+                          webManifestUrl: `${currentOrigin}/metadata.json`
+                        };
+                        navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+                        alert("Configuration copied to clipboard! Paste this into application.json");
+                      }}>
+{`{
+  "packageId": "com.calmrelaxflow.app",
+  "host": "${new URL(currentOrigin || 'https://host.com').hostname}",
+  "iconUrl": "${currentOrigin}/icon.png",
+  "webManifestUrl": "${currentOrigin}/metadata.json"
+  ... (Click to copy full corrected config)
+}`}
                       </div>
+                      <p className="text-[9px] mt-4 text-stone-400 italic">Click the code block to copy the full fix.</p>
                    </div>
 
-                   <div className="space-y-4">
+                   <div className="space-y-6">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Integrity Health Check</h4>
                      {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string }]>).map(([path, info]) => (
-                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-200 shadow-lg'}`}>
+                       <div key={path} className={`p-8 rounded-[40px] border flex flex-col space-y-4 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100 shadow-lg'}`}>
                          <div className="flex justify-between items-center w-full">
-                            <div className="flex items-center space-x-3">
-                               <div className={`w-3 h-3 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                            <div className="flex items-center space-x-4">
+                               <div className={`w-4 h-4 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                                <div>
-                                  <p className="text-[11px] font-black text-stone-700 uppercase tracking-widest">{path}</p>
+                                  <p className="text-[11px] font-black text-stone-800 uppercase tracking-widest">{path}</p>
                                   <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
                                </div>
                             </div>
                          </div>
                          {info.details && (
-                           <div className="bg-white/90 p-4 rounded-2xl border border-red-100">
-                             <p className="text-[11px] leading-relaxed font-bold text-red-600 uppercase tracking-widest mb-1">Issue Detected:</p>
-                             <p className="text-[11px] text-stone-600 font-medium">{info.details}</p>
-                             {info.remoteUrl && (
-                               <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-[9px] font-black uppercase text-emerald-600 underline">Preview Remote Asset</a>
-                             )}
+                           <div className="bg-white/80 p-5 rounded-3xl border border-red-50">
+                             <p className="text-[10px] leading-relaxed font-black text-red-500 uppercase tracking-widest mb-2">Build Alert:</p>
+                             <p className="text-[11px] text-stone-600 font-medium leading-relaxed">{info.details}</p>
                            </div>
                          )}
                        </div>
@@ -382,41 +391,42 @@ const App: React.FC = () => {
 
             {adminTab === 'deployment' && (
               <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
-                <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-10">
+                <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-12">
                    <div className="space-y-2">
-                     <h3 className="text-xl font-black serif text-stone-800 tracking-tight">Zen Asset Studio</h3>
-                     <p className="text-[11px] text-stone-400 font-medium leading-relaxed">Download these and place them in your <code>public/</code> folder.</p>
+                     <h3 className="text-2xl font-black serif text-stone-900 tracking-tight">Zen Asset Studio</h3>
+                     <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Download and place in /public folder</p>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
                       <button 
                         onClick={() => handleGenerateAsset('icon')} 
                         disabled={isGeneratingAsset}
-                        className="p-8 bg-stone-50 border border-stone-100 rounded-[40px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                        className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
                       >
-                        Generate App Icon
+                        Generate Icon
                       </button>
                       <button 
                         onClick={() => handleGenerateAsset('feature')} 
                         disabled={isGeneratingAsset}
-                        className="p-8 bg-stone-50 border border-stone-100 rounded-[40px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                        className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
                       >
-                        Feature Graphic
+                        Store Graphic
                       </button>
                    </div>
 
                    {isGeneratingAsset && (
-                     <div className="flex flex-col items-center space-y-5 py-16 animate-pulse">
-                        <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin"></div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.4em] text-emerald-600">Generating Clarity...</p>
+                     <div className="flex flex-col items-center space-y-6 py-20 animate-pulse">
+                        <div className="w-20 h-20 border-[8px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin"></div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.5em] text-emerald-600">Drawing Serenity...</p>
                      </div>
                    )}
 
                    {generatedAsset && !isGeneratingAsset && (
                      <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                        <div className="relative rounded-[56px] overflow-hidden border-[12px] border-stone-50 shadow-2xl group">
+                        <div className="relative rounded-[64px] overflow-hidden border-[16px] border-white shadow-3xl group">
                           <img src={generatedAsset} alt="generated-asset" className="w-full aspect-square object-cover" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-12 text-center">
+                             <p className="text-white text-xs font-bold mb-6">Save this as 'icon.png' in your public/ directory.</p>
                              <button 
                                 onClick={() => {
                                   const link = document.createElement('a');
@@ -424,9 +434,9 @@ const App: React.FC = () => {
                                   link.download = 'icon.png';
                                   link.click();
                                 }}
-                                className="px-8 py-4 bg-white rounded-full shadow-2xl text-stone-900 font-black uppercase text-[10px] tracking-widest active:scale-90 transition-all"
+                                className="px-10 py-5 bg-white rounded-full shadow-2xl text-stone-900 font-black uppercase text-[10px] tracking-widest active:scale-90 transition-all"
                               >
-                                 Download for Public/ Folder
+                                 Download Asset
                               </button>
                           </div>
                         </div>
