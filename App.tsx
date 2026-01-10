@@ -35,6 +35,10 @@ const App: React.FC = () => {
 
   const t = translations[lang] || translations['en'];
 
+  // Host Verification
+  const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const isHostMismatch = currentUrl && !remoteHost.includes(window.location.hostname) && !window.location.hostname.includes('localhost');
+
   useEffect(() => {
     const savedUser = localStorage.getItem('calmrelax_active_user');
     if (savedUser) {
@@ -76,25 +80,25 @@ const App: React.FC = () => {
             const isRemoteHtml = remoteType.includes('text/html');
             
             remoteOk = remoteRes.ok && !isRemoteHtml;
-            remoteStatus = remoteOk ? "Live & Ready" : (isRemoteHtml ? "404 (Returns HTML)" : `Error ${remoteRes.status}`);
+            remoteStatus = remoteOk ? "Live & Ready" : (isRemoteHtml ? "404 (Redirect to HTML)" : `Error ${remoteRes.status}`);
             
             if (isRemoteHtml) {
-              remoteDetails = `Vercel is serving index.html instead of ${path}. This means the file is missing from your deployment.`;
+              remoteDetails = `Bubblewrap is hitting a 404 page instead of the file. This is why the 'MIME Buffer null' error happens.`;
             }
         } catch (e) {
-            remoteStatus = "Domain Error";
-            remoteDetails = "Could not reach the remote domain. Check the Host URL.";
+            remoteStatus = "Unreachable";
+            remoteDetails = "Domain could not be reached. Verify your Vercel URL.";
         }
 
         results[path] = {
           ok: localRes.ok && !isLocalHtml && remoteOk,
           status: remoteStatus,
           isFallback: isLocalHtml,
-          details: remoteDetails || (!localRes.ok ? "Local file missing. Build will fail to include it." : ""),
+          details: remoteDetails || (!localRes.ok ? "Local file missing in public/ folder." : ""),
           remoteUrl
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Scan Failed', isFallback: false };
+        results[path] = { ok: false, status: 'Scan Error', isFallback: false };
       }
     }
     setAssetHealth(results);
@@ -295,26 +299,41 @@ const App: React.FC = () => {
             <header className="flex justify-between items-center">
               <div>
                 <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Admin Console</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Vercel Build & Asset Status</p>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Bubblewrap Build Integrity</p>
               </div>
-              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">DEPLOY MODE</span>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">SYSTEM</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Integrity Scan</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Build Check</button>
               <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
+                {isHostMismatch && (
+                  <div className="p-8 bg-red-900 text-white rounded-[40px] shadow-2xl border-4 border-red-800 animate-in bounce-in">
+                    <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Critical URL Mismatch!</h3>
+                    <p className="text-xs opacity-80 mb-6 leading-relaxed">
+                      Bubblewrap is looking for your app at <code className="bg-black/30 p-1">{remoteHost}</code>, but you are currently browsing <code className="bg-black/30 p-1">{currentUrl}</code>. This <b>WILL</b> cause the "MIME null" error.
+                    </p>
+                    <button 
+                      onClick={() => setRemoteHost(currentUrl)}
+                      className="bg-white text-red-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl"
+                    >
+                      Update Host to Current URL
+                    </button>
+                  </div>
+                )}
+
                 <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-8">
                    <div className="bg-stone-900 p-8 rounded-[40px] text-white">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-emerald-400 mb-2">Build Verification</h4>
+                      <h4 className="text-sm font-black uppercase tracking-widest text-emerald-400 mb-2">Build Configuration</h4>
                       <p className="text-[11px] leading-relaxed opacity-80 mb-6">
-                        Bubblewrap update fails when assets are missing on Vercel. Verify your Live URL is correctly set below.
+                        Bubblewrap downloads your assets from your <b>live website URL</b>. If the URL below doesn't match your actual Vercel site, the build will crash.
                       </p>
                       <div className="space-y-3">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-stone-500">Target Vercel Domain:</label>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-stone-500">Your Live Vercel URL:</label>
                         <div className="flex space-x-2">
                           <input 
                             type="text" 
@@ -327,7 +346,7 @@ const App: React.FC = () => {
                             onClick={checkAssetIntegrity}
                             className="bg-emerald-500 text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all"
                           >
-                            Sync URL
+                            Sync & Verify
                           </button>
                         </div>
                       </div>
@@ -335,7 +354,7 @@ const App: React.FC = () => {
 
                    <div className="space-y-4">
                      {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string }]>).map(([path, info]) => (
-                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-200 shadow-lg'}`}>
                          <div className="flex justify-between items-center w-full">
                             <div className="flex items-center space-x-3">
                                <div className={`w-3 h-3 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
@@ -346,42 +365,17 @@ const App: React.FC = () => {
                             </div>
                          </div>
                          {info.details && (
-                           <div className="bg-white/90 p-4 rounded-2xl border border-red-50">
-                             <p className="text-[11px] leading-relaxed font-bold text-red-600 uppercase tracking-widest mb-1">Build Warning:</p>
+                           <div className="bg-white/90 p-4 rounded-2xl border border-red-100">
+                             <p className="text-[11px] leading-relaxed font-bold text-red-600 uppercase tracking-widest mb-1">Issue Detected:</p>
                              <p className="text-[11px] text-stone-600 font-medium">{info.details}</p>
+                             {info.remoteUrl && (
+                               <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-[9px] font-black uppercase text-emerald-600 underline">Preview Remote Asset</a>
+                             )}
                            </div>
                          )}
                        </div>
                      ))}
                    </div>
-
-                   {!Object.values(assetHealth).every(a => a.ok) && (
-                     <div className="p-8 bg-blue-50 rounded-[40px] border border-blue-200">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-4">How to fix Vercel Build & Bubblewrap:</h4>
-                        <ol className="text-[11px] space-y-4 font-medium text-blue-900/70">
-                           <li className="flex items-start">
-                              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5 shrink-0">1</span>
-                              <span>Generate <b>App Icon</b> in Asset Studio. Download and rename it to <code className="bg-blue-100 px-1 font-bold">icon.png</code>.</span>
-                           </li>
-                           <li className="flex items-start">
-                              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5 shrink-0">2</span>
-                              <span>Place <code className="bg-blue-100 px-1 font-bold">icon.png</code> in your project's <code className="bg-blue-100 px-1 font-bold">public/</code> folder.</span>
-                           </li>
-                           <li className="flex items-start">
-                              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5 shrink-0">3</span>
-                              <span><b>PUSH TO GITHUB</b>. This triggers the Vercel build. The build should now succeed with the new Vite config.</span>
-                           </li>
-                           <li className="flex items-start">
-                              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5 shrink-0">4</span>
-                              <span>Once Vercel says <b>Success</b>, come back here and verify all lights are <b>Live & Ready</b>.</span>
-                           </li>
-                           <li className="flex items-start">
-                              <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5 shrink-0">5</span>
-                              <span>Finally, run <code className="bg-blue-100 px-1 font-bold">bubblewrap update</code>. It will no longer crash.</span>
-                           </li>
-                        </ol>
-                     </div>
-                   )}
                 </div>
               </div>
             )}
@@ -391,7 +385,7 @@ const App: React.FC = () => {
                 <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-10">
                    <div className="space-y-2">
                      <h3 className="text-xl font-black serif text-stone-800 tracking-tight">Zen Asset Studio</h3>
-                     <p className="text-[11px] text-stone-400 font-medium leading-relaxed">Ensure these files are live in your <code>public/</code> folder for Android builds.</p>
+                     <p className="text-[11px] text-stone-400 font-medium leading-relaxed">Download these and place them in your <code>public/</code> folder.</p>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
@@ -414,7 +408,7 @@ const App: React.FC = () => {
                    {isGeneratingAsset && (
                      <div className="flex flex-col items-center space-y-5 py-16 animate-pulse">
                         <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin"></div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.4em] text-emerald-600">Syncing Serenity...</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.4em] text-emerald-600">Generating Clarity...</p>
                      </div>
                    )}
 
