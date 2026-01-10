@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   server: {
-    allowedHosts: true,
     port: 3000,
     strictPort: true,
   },
@@ -14,6 +13,6 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser'
+    minify: true // Uses built-in esbuild instead of terser to avoid missing dependency errors
   }
 });
