@@ -5,7 +5,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.calmrelaxflow.app",
-      "sha256_cert_fingerprints": ["YOUR_CERT_FINGERPRINT"]
+      "sha256_cert_fingerprints": [
+        "REPLACE_WITH_YOUR_ACTUAL_SHA256_FINGERPRINT"
+      ]
     }
   }
 ]
