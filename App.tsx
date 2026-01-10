@@ -21,7 +21,8 @@ const App: React.FC = () => {
   const [recommendation, setRecommendation] = useState<string | null>(null);
 
   // Admin Asset State
-  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean, details?: string }>>({});
+  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean, details?: string, remoteUrl?: string }>>({});
+  const [isCheckingAssets, setIsCheckingAssets] = useState(false);
   const [generatedAsset, setGeneratedAsset] = useState<string | null>(null);
   const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
 
@@ -42,33 +43,52 @@ const App: React.FC = () => {
   }, []);
 
   const checkAssetIntegrity = async () => {
+    setIsCheckingAssets(true);
+    // These are the files Bubblewrap needs
     const targets = ['/icon.png', '/icon1.png', '/metadata.json', '/.well-known/assetlinks.json'];
     const results: Record<string, any> = {};
+    const remoteHost = "https://calm-relax-flow.vercel.app";
 
     for (const path of targets) {
       try {
-        const res = await fetch(`${path}?t=${Date.now()}`, { method: 'HEAD' }).catch(() => fetch(`${path}?t=${Date.now()}`));
-        const contentType = res.headers.get('Content-Type') || '';
-        const isHtmlFallback = contentType.includes('text/html');
+        // Check local first
+        const localRes = await fetch(`${path}?t=${Date.now()}`);
+        const localContentType = localRes.headers.get('Content-Type') || '';
+        const isLocalHtml = localContentType.includes('text/html');
         
+        // Check remote (What Bubblewrap sees)
+        const remoteUrl = `${remoteHost}${path}`;
+        let remoteOk = false;
+        let remoteStatus = "Checking...";
+
+        try {
+            const remoteRes = await fetch(`${remoteUrl}?t=${Date.now()}`, { method: 'HEAD' });
+            remoteOk = remoteRes.ok && !(remoteRes.headers.get('Content-Type') || '').includes('text/html');
+            remoteStatus = remoteOk ? "Live" : `Error ${remoteRes.status}`;
+        } catch (e) {
+            remoteStatus = "Unreachable";
+        }
+
         let details = "";
-        if (isHtmlFallback) {
-          details = "Server returned an HTML page (likely a 404 redirect) instead of the file.";
-        } else if (!res.ok) {
-          details = `Server returned status ${res.status}. File is physically missing from the public directory.`;
+        if (!localRes.ok || isLocalHtml) {
+          details = "Local file missing. Bubblewrap cannot bundle a missing icon.";
+        } else if (!remoteOk) {
+          details = `Bubblewrap Error Source: Your remote URL (${remoteUrl}) is returning a 404. You must deploy the icons to Vercel first!`;
         }
 
         results[path] = {
-          ok: res.ok && !isHtmlFallback,
-          status: isHtmlFallback ? '404 (Returns HTML)' : (res.ok ? 'Found' : `Missing (${res.status})`),
-          isFallback: isHtmlFallback,
-          details
+          ok: localRes.ok && !isLocalHtml && remoteOk,
+          status: remoteOk ? 'Healthy & Live' : 'Build Blocker ❌',
+          isFallback: isLocalHtml,
+          details,
+          remoteUrl
         };
-      } catch {
-        results[path] = { ok: false, status: 'Network Error', isFallback: false, details: "Check your internet connection or deployment status." };
+      } catch (e) {
+        results[path] = { ok: false, status: 'Network Error', isFallback: false, details: "Check your local server." };
       }
     }
     setAssetHealth(results);
+    setIsCheckingAssets(false);
   };
 
   const loginAsAdmin = () => {
@@ -261,62 +281,96 @@ const App: React.FC = () => {
         )}
 
         {view === 'admin' && (
-          <div className="space-y-12">
+          <div className="space-y-12 animate-in fade-in duration-700">
             <header className="flex justify-between items-center">
-              <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Console</h2>
-              <span className="bg-stone-900 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Admin v1.2</span>
+              <div>
+                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Admin Console</h2>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Build Readiness & Asset Studio</p>
+              </div>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">BUILDER MODE</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Integrity</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Build Integrity</button>
               <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Studio</button>
             </div>
 
             {adminTab === 'status' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-8">
+                   <div className="bg-red-900 p-8 rounded-[40px] text-white space-y-4">
+                      <div className="flex items-center space-x-3">
+                         <span className="text-3xl">🛡️</span>
+                         <h4 className="text-sm font-black uppercase tracking-widest">Bubblewrap Crash Fixer</h4>
+                      </div>
+                      <p className="text-[11px] leading-relaxed opacity-90">
+                        If <code className="bg-black/20 p-1">bubblewrap update</code> fails with <code className="bg-black/20 p-1">MIME for Buffer null</code>, it means Bubblewrap can't find your icons at your public URL.
+                      </p>
+                   </div>
+
                    <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-black serif text-stone-800">Diagnostic Tool</h3>
-                      <button onClick={checkAssetIntegrity} className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Re-Scan</button>
+                      <h3 className="text-xl font-black serif text-stone-800 tracking-tight">Remote Availability Scan</h3>
+                      <button 
+                        onClick={checkAssetIntegrity} 
+                        disabled={isCheckingAssets}
+                        className={`px-5 py-2 bg-stone-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isCheckingAssets ? 'opacity-50' : 'hover:scale-105 shadow-lg'}`}
+                      >
+                        {isCheckingAssets ? 'Scanning...' : 'Test Build Readiness'}
+                      </button>
                    </div>
                    
                    <div className="space-y-4">
-                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; isFallback: boolean; details?: string }]>).map(([path, info]) => (
-                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'}`}>
+                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; isFallback: boolean; details?: string, remoteUrl?: string }]>).map(([path, info]) => (
+                       <div key={path} className={`p-6 rounded-[32px] border flex flex-col space-y-3 transition-all ${info.ok ? 'bg-emerald-50/50 border-emerald-100 shadow-sm' : 'bg-red-50 border-red-200'}`}>
                          <div className="flex justify-between items-center w-full">
-                            <div>
-                               <p className="text-[11px] font-black text-stone-700 uppercase tracking-widest">{path}</p>
-                               <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
+                            <div className="flex items-center space-x-3">
+                               <div className={`w-3 h-3 rounded-full shadow-inner ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                               <div>
+                                  <p className="text-[11px] font-black text-stone-700 uppercase tracking-widest">{path}</p>
+                                  <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
+                               </div>
                             </div>
-                            <div className={`w-4 h-4 rounded-full shadow-inner ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                          </div>
                          {info.details && (
-                           <p className="text-[10px] text-stone-500 leading-relaxed font-medium bg-white/50 p-3 rounded-2xl border border-stone-100">
-                             <strong>Troubleshooting:</strong> {info.details}
-                           </p>
+                           <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-red-100 text-stone-600">
+                             <p className="text-[10px] leading-relaxed font-bold mb-2 text-red-600 uppercase tracking-widest">BUILD BLOCKER:</p>
+                             <p className="text-[11px] leading-relaxed font-medium">
+                               {info.details}
+                             </p>
+                             {info.remoteUrl && (
+                               <a href={info.remoteUrl} target="_blank" className="inline-block mt-3 text-[9px] font-black uppercase text-blue-500 underline">Try opening URL manually</a>
+                             )}
+                           </div>
                          )}
                        </div>
                      ))}
                    </div>
 
-                   {(Object.values(assetHealth) as Array<{ isFallback: boolean; ok: boolean }>).some(h => h.isFallback || !h.ok) && (
-                     <div className="bg-amber-50 p-8 rounded-[40px] border border-amber-200 text-amber-900 space-y-4">
-                        <p className="text-xs font-black uppercase tracking-[0.2em] flex items-center">
-                          <span className="mr-2 text-lg">⚠️</span> Critical Action Required
-                        </p>
-                        <p className="text-[11px] leading-relaxed font-medium">
-                          If <strong>icon.png</strong> shows a 404 error, ensure you have a 512x512 PNG file at <code>public/icon.png</code>. In production (e.g., Vercel), this must be committed to your repository in the root <code>public</code> directory.
-                        </p>
-                        <div className="bg-white/50 p-4 rounded-2xl border border-amber-200">
-                           <p className="text-[10px] font-black uppercase tracking-widest mb-2">PWA Checklist:</p>
-                           <ul className="text-[10px] space-y-1 list-disc list-inside opacity-70">
-                              <li>File exists at root <code>public/icon.png</code></li>
-                              <li>File is a valid PNG (not renamed JPG)</li>
-                              <li>Filename is all lowercase</li>
-                           </ul>
-                        </div>
-                     </div>
-                   )}
+                   <div className="p-8 bg-stone-50 rounded-[40px] border border-stone-200">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-4">Fix Sequence:</h4>
+                      <ol className="text-[11px] space-y-4 font-medium text-stone-600">
+                         <li className="flex items-start">
+                            <span className="bg-stone-900 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5">1</span>
+                            <span>Download the icon from <b>Asset Studio</b> tab.</span>
+                         </li>
+                         <li className="flex items-start">
+                            <span className="bg-stone-900 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5">2</span>
+                            <span>Rename it to exactly <code>icon.png</code> and place in your <code>public/</code> folder.</span>
+                         </li>
+                         <li className="flex items-start">
+                            <span className="bg-stone-900 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5">3</span>
+                            <span><b>PUSH TO GITHUB</b>. Vercel must finish the deployment.</span>
+                         </li>
+                         <li className="flex items-start">
+                            <span className="bg-stone-900 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5">4</span>
+                            <span>Wait until the scan above shows "Healthy & Live".</span>
+                         </li>
+                         <li className="flex items-start">
+                            <span className="bg-stone-900 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] mr-3 mt-0.5">5</span>
+                            <span>Run <code>bubblewrap update</code> again.</span>
+                         </li>
+                      </ol>
+                   </div>
                 </div>
               </div>
             )}
@@ -325,51 +379,57 @@ const App: React.FC = () => {
               <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
                 <div className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-xl space-y-10">
                    <div className="space-y-2">
-                     <h3 className="text-xl font-black serif text-stone-800 tracking-tight">AI Asset Generator</h3>
-                     <p className="text-[11px] text-stone-400 font-medium leading-relaxed">Generate professional branding assets using Gemini 2.5 Flash Image.</p>
+                     <h3 className="text-xl font-black serif text-stone-800 tracking-tight">Zen Asset Studio</h3>
+                     <p className="text-[11px] text-stone-400 font-medium leading-relaxed">Generate 512x512 branding assets. These are <b>required</b> for the Android build to succeed.</p>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
                       <button 
                         onClick={() => handleGenerateAsset('icon')} 
                         disabled={isGeneratingAsset}
-                        className="p-6 bg-stone-50 border border-stone-100 rounded-[32px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50"
+                        className="p-8 bg-stone-50 border border-stone-100 rounded-[40px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 shadow-sm active:scale-95"
                       >
-                        Generate Icon
+                        Generate App Icon
                       </button>
                       <button 
                         onClick={() => handleGenerateAsset('feature')} 
                         disabled={isGeneratingAsset}
-                        className="p-6 bg-stone-50 border border-stone-100 rounded-[32px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50"
+                        className="p-8 bg-stone-50 border border-stone-100 rounded-[40px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 shadow-sm active:scale-95"
                       >
-                        Generate Feature
+                        Feature Graphic
                       </button>
                    </div>
 
                    {isGeneratingAsset && (
-                     <div className="flex flex-col items-center space-y-4 py-10">
-                        <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 animate-pulse">Consulting the muse...</p>
+                     <div className="flex flex-col items-center space-y-5 py-16 animate-pulse">
+                        <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin"></div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.4em] text-emerald-600">Visualizing Serenity...</p>
                      </div>
                    )}
 
                    {generatedAsset && !isGeneratingAsset && (
-                     <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                        <div className="relative rounded-[40px] overflow-hidden border-4 border-stone-50 shadow-2xl">
+                     <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                        <div className="relative rounded-[56px] overflow-hidden border-[12px] border-stone-50 shadow-2xl group">
                           <img src={generatedAsset} alt="generated-asset" className="w-full aspect-square object-cover" />
-                          <button 
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = generatedAsset;
-                              link.download = 'calm-relax-asset.png';
-                              link.click();
-                            }}
-                            className="absolute bottom-6 right-6 p-4 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl text-stone-900 active:scale-90 transition-all"
-                          >
-                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                          </button>
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = generatedAsset;
+                                  link.download = 'icon.png';
+                                  link.click();
+                                }}
+                                className="px-8 py-4 bg-white rounded-full shadow-2xl text-stone-900 font-black uppercase text-[10px] tracking-widest active:scale-90 transition-all"
+                              >
+                                 Download for Public/ Folder
+                              </button>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-center text-stone-400 font-bold uppercase tracking-widest">Generated via Gemini-2.5-Flash-Image</p>
+                        <div className="p-6 bg-emerald-50 rounded-[32px] border border-emerald-100">
+                           <p className="text-[10px] text-center text-emerald-900 font-bold uppercase tracking-widest leading-loose">
+                              PRO TIP: Save this as <code className="bg-emerald-100 px-1">icon.png</code> and place it in your project's root <code className="bg-emerald-100 px-1">public</code> directory.
+                           </p>
+                        </div>
                      </div>
                    )}
                 </div>
