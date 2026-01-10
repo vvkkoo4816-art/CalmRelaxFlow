@@ -28,14 +28,14 @@ const App: React.FC = () => {
     return "https://calm-relax-flow.vercel.app";
   });
   
-  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean, details?: string, remoteUrl?: string }>>({});
+  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, isFallback: boolean, details?: string, remoteUrl?: string, contentType?: string }>>({});
   const [isCheckingAssets, setIsCheckingAssets] = useState(false);
   const [generatedAsset, setGeneratedAsset] = useState<string | null>(null);
   const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
 
   const t = translations[lang] || translations['en'];
 
-  // Host Verification (Crucial for fixing MIME null error)
+  // Host Verification
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const cleanHost = remoteHost.replace(/\/$/, "");
   const isHostMismatch = currentOrigin && !currentOrigin.includes(new URL(cleanHost).hostname) && !window.location.hostname.includes('localhost');
@@ -60,45 +60,27 @@ const App: React.FC = () => {
       localStorage.setItem('admin_remote_host', remoteHost);
     }
     
-    const targets = ['/icon.png', '/metadata.json', '/.well-known/assetlinks.json'];
+    // Check critical deployment files and common user images
+    const targets = ['/icon.png', '/mmc.jpg', '/metadata.json', '/.well-known/assetlinks.json'];
     const results: Record<string, any> = {};
 
     for (const path of targets) {
+      const remoteUrl = `${cleanHost}${path}`;
       try {
-        const localRes = await fetch(`${path}?t=${Date.now()}`);
-        const localType = localRes.headers.get('Content-Type') || '';
-        const isLocalHtml = localType.includes('text/html');
-
-        const remoteUrl = `${cleanHost}${path}`;
-        let remoteOk = false;
-        let remoteStatus = "Scanning...";
-        let remoteDetails = "";
-
-        try {
-            const remoteRes = await fetch(`${remoteUrl}?t=${Date.now()}`, { method: 'GET' });
-            const remoteType = remoteRes.headers.get('Content-Type') || '';
-            const isRemoteHtml = remoteType.includes('text/html');
-            
-            remoteOk = remoteRes.ok && !isRemoteHtml;
-            remoteStatus = remoteOk ? "Live & Ready" : (isRemoteHtml ? "404 Error (HTML returned)" : `Server Error ${remoteRes.status}`);
-            
-            if (isRemoteHtml) {
-              remoteDetails = `Your website is live but ${path} is missing. Bubblewrap crashes when it sees HTML instead of an image.`;
-            }
-        } catch (e) {
-            remoteStatus = "Offline";
-            remoteDetails = "Could not reach your Vercel URL. Check for typos.";
-        }
+        const res = await fetch(`${remoteUrl}?t=${Date.now()}`, { method: 'GET' });
+        const contentType = res.headers.get('Content-Type') || 'unknown';
+        const isHtml = contentType.includes('text/html');
+        const isOk = res.ok && !isHtml;
 
         results[path] = {
-          ok: localRes.ok && !isLocalHtml && remoteOk,
-          status: remoteStatus,
-          isFallback: isLocalHtml,
-          details: remoteDetails || (!localRes.ok ? "Local file missing in your public folder." : ""),
+          ok: isOk,
+          status: isOk ? "Live & Valid" : (isHtml ? "404 Error (HTML Fallback)" : `Failed (${res.status})`),
+          contentType: contentType,
+          details: !isOk ? `This file is missing from your Vercel deployment. Make sure it is located in the "public/" folder.` : "",
           remoteUrl
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Network Error', isFallback: false };
+        results[path] = { ok: false, status: 'Unreachable', contentType: 'none' };
       }
     }
     setAssetHealth(results);
@@ -299,75 +281,35 @@ const App: React.FC = () => {
             <header className="flex justify-between items-center">
               <div>
                 <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Admin Console</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Bubblewrap Fix Engine</p>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Asset Audit & Fixes</p>
               </div>
               <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">DIAGNOSTIC</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Critical Fixes</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Audit</button>
               <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
-                {isHostMismatch && (
-                  <div className="p-10 bg-red-600 text-white rounded-[56px] shadow-3xl border-4 border-red-500 animate-in bounce-in duration-700">
-                    <h3 className="text-2xl font-black mb-3 uppercase tracking-tight">URL Warning Detected</h3>
-                    <p className="text-sm opacity-90 mb-8 leading-relaxed font-medium">
-                      Bubblewrap is searching for your app at <b>{remoteHost}</b>, but you are browsing <b>{currentOrigin}</b>. This mismatch is causing the "MIME null" error.
-                    </p>
-                    <div className="flex flex-col space-y-4">
-                      <button 
-                        onClick={() => { setRemoteHost(currentOrigin); checkAssetIntegrity(); }}
-                        className="bg-white text-red-600 px-8 py-4 rounded-[32px] text-[11px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl"
-                      >
-                        Sync Host to: {currentOrigin}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-10">
-                   <div className="bg-stone-900 p-10 rounded-[48px] text-white">
-                      <h4 className="text-xs font-black uppercase tracking-[0.4em] text-emerald-400 mb-4">Fix MIME Buffer Null</h4>
-                      <p className="text-[11px] leading-relaxed opacity-70 mb-8 font-medium">
-                        Copy the configuration below and replace the contents of your <b>application.json</b> file. This uses your actual live URL.
+                   <div className="p-8 bg-amber-50 border-4 border-amber-200 rounded-[40px] animate-in bounce-in">
+                      <h3 className="text-xl font-black text-amber-900 mb-2 uppercase tracking-tight">Why images disappear:</h3>
+                      <p className="text-xs text-amber-800/80 leading-relaxed font-bold">
+                        Vite ignores files in the root folder. You <b>MUST</b> move images like <code className="bg-amber-200/50 px-1">mmc.jpg</code> into the <code className="bg-amber-200/50 px-1 font-black underline">public/</code> folder for them to work on Vercel.
                       </p>
-                      <div className="bg-black/50 p-6 rounded-3xl font-mono text-[9px] overflow-x-auto text-emerald-200 border border-white/10 select-all whitespace-pre cursor-pointer" onClick={() => {
-                        const hostname = new URL(currentOrigin).hostname;
-                        const config = {
-                          packageId: "com.calmrelaxflow.app",
-                          host: hostname,
-                          name: "CalmRelaxFlow",
-                          launcherName: "CalmRelaxFlow",
-                          display: "standalone",
-                          themeColor: "#10B981",
-                          startUrl: "/",
-                          iconUrl: `${currentOrigin}/icon.png`,
-                          maskableIconUrl: `${currentOrigin}/icon.png`,
-                          fullScopeUrl: `${currentOrigin}/`,
-                          webManifestUrl: `${currentOrigin}/metadata.json`
-                        };
-                        navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-                        alert("Configuration copied to clipboard! Paste this into application.json");
-                      }}>
-{`{
-  "packageId": "com.calmrelaxflow.app",
-  "host": "${new URL(currentOrigin || 'https://host.com').hostname}",
-  "iconUrl": "${currentOrigin}/icon.png",
-  "webManifestUrl": "${currentOrigin}/metadata.json"
-  ... (Click to copy full corrected config)
-}`}
-                      </div>
-                      <p className="text-[9px] mt-4 text-stone-400 italic">Click the code block to copy the full fix.</p>
                    </div>
 
                    <div className="space-y-6">
-                     <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">Integrity Health Check</h4>
-                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string }]>).map(([path, info]) => (
+                     <div className="flex justify-between items-center px-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Live Asset Scan</h4>
+                        <button onClick={checkAssetIntegrity} className="text-[10px] font-black text-emerald-500 uppercase tracking-widest underline">Refresh Scan</button>
+                     </div>
+                     
+                     {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string, contentType?: string }]>).map(([path, info]) => (
                        <div key={path} className={`p-8 rounded-[40px] border flex flex-col space-y-4 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100 shadow-lg'}`}>
-                         <div className="flex justify-between items-center w-full">
+                         <div className="flex justify-between items-start w-full">
                             <div className="flex items-center space-x-4">
                                <div className={`w-4 h-4 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                                <div>
@@ -376,14 +318,39 @@ const App: React.FC = () => {
                                </div>
                             </div>
                          </div>
-                         {info.details && (
-                           <div className="bg-white/80 p-5 rounded-3xl border border-red-50">
-                             <p className="text-[10px] leading-relaxed font-black text-red-500 uppercase tracking-widest mb-2">Build Alert:</p>
+                         
+                         {!info.ok && (
+                           <div className="bg-white/80 p-5 rounded-3xl border border-red-50 space-y-2">
+                             <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Diagnostic Details:</p>
                              <p className="text-[11px] text-stone-600 font-medium leading-relaxed">{info.details}</p>
+                             <p className="text-[9px] text-stone-400 font-mono">Type Detected: {info.contentType}</p>
+                             <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="inline-block pt-2 text-[9px] font-black uppercase text-emerald-600 underline">Try opening manually</a>
                            </div>
                          )}
                        </div>
                      ))}
+                   </div>
+
+                   <div className="bg-stone-900 p-10 rounded-[48px] text-white">
+                      <h4 className="text-xs font-black uppercase tracking-[0.4em] text-emerald-400 mb-6 text-center">Bubblewrap Sync Tool</h4>
+                      <div className="bg-black/50 p-6 rounded-3xl font-mono text-[9px] overflow-x-auto text-emerald-200 border border-white/10 select-all cursor-pointer" onClick={() => {
+                        const hostname = new URL(currentOrigin).hostname;
+                        const config = {
+                          packageId: "com.calmrelaxflow.app",
+                          host: hostname,
+                          iconUrl: `${currentOrigin}/icon.png`,
+                          webManifestUrl: `${currentOrigin}/metadata.json`,
+                          fullScopeUrl: `${currentOrigin}/`
+                        };
+                        navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+                        alert("Sync config copied!");
+                      }}>
+{`{
+  "host": "${new URL(currentOrigin || 'https://host.com').hostname}",
+  "iconUrl": "${currentOrigin}/icon.png"
+  ... (Copy for application.json)
+}`}
+                      </div>
                    </div>
                 </div>
               </div>
