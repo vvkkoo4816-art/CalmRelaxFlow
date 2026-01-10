@@ -14,15 +14,15 @@
   "backgroundColor": "#10B981",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://calm-relax-flow.vercel.app/icon1.png",
-  "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon1.png",
+  "iconUrl": "https://calm-relax-flow.vercel.app/icon.png",
+  "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "calmrelaxkey",
     "alias": "calmrelaxkey"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "2",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://calm-relax-flow.vercel.app/metadata.json",
@@ -44,5 +44,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "1"
+  "appVersion": "2"
 }
