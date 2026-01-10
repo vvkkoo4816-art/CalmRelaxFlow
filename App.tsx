@@ -24,8 +24,15 @@ const App: React.FC = () => {
 
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [nearbyCenters, setNearbyCenters] = useState<ZenCenter[]>([]);
-  const [healthChecks, setHealthChecks] = useState<{ [key: string]: 'pending' | 'ok' | 'fail' }>({
-    icon: 'pending', manifest: 'pending'
+  
+  // Enhanced health check state
+  const [healthStatus, setHealthStatus] = useState<{
+    icon: 'checking' | 'ok' | 'fail',
+    icon1: 'checking' | 'ok' | 'fail',
+    manifest: 'checking' | 'ok' | 'fail',
+    assetlinks: 'checking' | 'ok' | 'fail'
+  }>({
+    icon: 'checking', icon1: 'checking', manifest: 'checking', assetlinks: 'checking'
   });
 
   const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
@@ -41,8 +48,32 @@ const App: React.FC = () => {
 
   const isAdminUser = user?.email?.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
 
+  // Function to verify if public assets are reachable
+  const checkAssets = async () => {
+    const check = async (path: string) => {
+      try {
+        const res = await fetch(path, { method: 'HEAD' });
+        return res.ok ? 'ok' : 'fail';
+      } catch (e) {
+        return 'fail';
+      }
+    };
+
+    setHealthStatus({
+      icon: await check('/icon.png'),
+      icon1: await check('/icon1.png'),
+      manifest: await check('/metadata.json'),
+      assetlinks: await check('/.well-known/assetlinks.json')
+    });
+  };
+
   useEffect(() => {
-    // Initial Load
+    if (view === 'admin' && adminTab === 'status') {
+      checkAssets();
+    }
+  }, [view, adminTab]);
+
+  useEffect(() => {
     const savedSessions = localStorage.getItem('calmrelax_sessions');
     if (savedSessions) {
       try {
@@ -113,7 +144,6 @@ const App: React.FC = () => {
     setShowAddForm(false);
   };
 
-  // Fix: Implemented missing handleLogout function
   const handleLogout = () => {
     setUser(null);
     setIsLoggedIn(false);
@@ -121,7 +151,6 @@ const App: React.FC = () => {
     setView('today');
   };
 
-  // Fix: Implemented missing handleGenerateIcon function to call Gemini API
   const handleGenerateIcon = async () => {
     setIsGeneratingIcon(true);
     try {
@@ -366,17 +395,31 @@ const App: React.FC = () => {
                   <div className="p-8 bg-stone-900 rounded-[44px] text-center text-white space-y-4 shadow-2xl">
                     <div className="w-16 h-16 bg-emerald-500 rounded-full mx-auto flex items-center justify-center text-2xl shadow-xl shadow-emerald-500/20">✓</div>
                     <h3 className="text-xl font-black serif">System Normal</h3>
-                    <p className="text-stone-500 text-[10px] uppercase tracking-[0.2em] font-black">All Microservices Online</p>
+                    <p className="text-stone-500 text-[10px] uppercase tracking-[0.2em] font-black">Admin Health Diagnostics</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-4">
-                     <div className="p-6 bg-white rounded-[32px] border border-stone-100 flex justify-between items-center shadow-sm">
-                        <div><p className="font-bold text-sm">PWA Descriptor</p><p className="text-[9px] text-stone-400 font-black uppercase">metadata.json</p></div>
-                        <span className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs">✓</span>
-                     </div>
-                     <div className="p-6 bg-white rounded-[32px] border border-stone-100 flex justify-between items-center shadow-sm">
-                        <div><p className="font-bold text-sm">App Assets</p><p className="text-[9px] text-stone-400 font-black uppercase">icon.png (512px)</p></div>
-                        <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs">!</span>
-                     </div>
+                  
+                  <div className="bg-white p-8 rounded-[44px] border border-stone-100 shadow-sm space-y-6">
+                    <h3 className="text-lg font-black serif text-stone-800 border-b border-stone-50 pb-4">Asset Reachability Scanner</h3>
+                    <p className="text-[11px] text-stone-400 leading-relaxed uppercase tracking-widest font-bold">This tool checks if files exist in your "public" folder on the server.</p>
+                    
+                    <div className="space-y-4">
+                      <HealthRow label="icon.png" status={healthStatus.icon} description="Primary logo (512px)" />
+                      <HealthRow label="icon1.png" status={healthStatus.icon1} description="Secondary asset variant" />
+                      <HealthRow label="metadata.json" status={healthStatus.manifest} description="PWA Web Manifest" />
+                      <HealthRow label="assetlinks.json" status={healthStatus.assetlinks} description="Google Play Verification" />
+                    </div>
+
+                    <button 
+                      onClick={checkAssets} 
+                      className="w-full py-4 mt-6 bg-stone-50 text-stone-500 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-stone-100 hover:bg-stone-100 transition-colors"
+                    >
+                      Re-scan Assets
+                    </button>
+                  </div>
+
+                  <div className="bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 space-y-3">
+                    <h4 className="font-bold text-emerald-900 text-sm">Pro Tip</h4>
+                    <p className="text-[11px] text-emerald-700 leading-relaxed">If icons show red "FAIL", ensure you ran <code>git add public/icon.png</code> and pushed to Vercel. Filenames are case-sensitive on the server.</p>
                   </div>
                 </div>
              )}
@@ -417,6 +460,29 @@ const App: React.FC = () => {
         <AudioPlayer url={activeSession.audioUrl} title={activeSession.title} onClose={() => setActiveSession(null)} />
       )}
     </Layout>
+  );
+};
+
+// Sub-component for health check rows
+const HealthRow = ({ label, status, description }: { label: string, status: string, description: string }) => {
+  const isOk = status === 'ok';
+  const isPending = status === 'checking';
+  
+  return (
+    <div className="flex justify-between items-center p-4 bg-stone-50/50 rounded-2xl border border-stone-100">
+      <div>
+        <p className={`font-bold text-sm ${isOk ? 'text-stone-800' : 'text-stone-400'}`}>{label}</p>
+        <p className="text-[9px] text-stone-400 font-black uppercase tracking-widest">{description}</p>
+      </div>
+      <div className="flex items-center space-x-3">
+        <span className={`text-[9px] font-black uppercase tracking-widest ${isOk ? 'text-emerald-500' : isPending ? 'text-stone-300' : 'text-red-500'}`}>
+          {isPending ? 'Pinging...' : isOk ? 'Found' : 'Missing'}
+        </span>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm transition-all duration-500 ${isOk ? 'bg-emerald-500 scale-100' : isPending ? 'bg-stone-200 scale-90' : 'bg-red-500 scale-100'}`}>
+          {isPending ? '...' : isOk ? '✓' : '✕'}
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -9,7 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="application-name" content="CalmRelaxFlow">
+  
+  <!-- Icon Definitions -->
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="apple-touch-icon" href="/icon.png">
   <link rel="manifest" href="metadata.json">
+  
   <title>CalmRelaxFlow - Your Mindfulness Companion</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,7 +39,7 @@
     }
     #root {
       width: 100%;
-      max-width: 480px; /* Limits width on desktop only */
+      max-width: 480px;
       background: #fdfcfb;
       min-height: 100vh;
       position: relative;
@@ -54,9 +59,15 @@
     ::-webkit-scrollbar {
       display: none;
     }
-    /* Fixed navigation at bottom */
     nav {
       max-width: 480px;
+    }
+    @keyframes pulse-emerald {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-emerald 3s infinite ease-in-out;
     }
   </style>
   <script type="importmap">

@@ -4,7 +4,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.calmrelaxflow.twa",
+      "package_name": "com.calmrelaxflow.app",
       "sha256_cert_fingerprints": ["YOUR_CERT_FINGERPRINT"]
     }
   }
