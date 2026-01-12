@@ -62,31 +62,27 @@ const App: React.FC = () => {
     setIsCheckingAssets(true);
     const cleanHost = remoteHost.replace(/\/$/, "");
     
-    // Check critical deployment files
-    const targets = ['/icon.png', '/mmc.jpg', '/metadata.json', '/.well-known/assetlinks.json'];
+    const targets = ['/icon.png', '/mmc.jpg', '/metadata.json'];
     const results: Record<string, any> = {};
 
     for (const path of targets) {
       const remoteUrl = `${cleanHost}${path}`;
       try {
-        const res = await fetch(remoteUrl, { method: 'HEAD' });
+        const res = await fetch(remoteUrl, { method: 'GET' });
         const contentType = res.headers.get('Content-Type') || 'unknown';
-        const contentLength = parseInt(res.headers.get('Content-Length') || '0');
         const isHtml = contentType.includes('text/html');
         
         let isActuallyValid = res.ok && !isHtml;
         
-        // Deep check for images
         if (isActuallyValid && (path.endsWith('.png') || path.endsWith('.jpg'))) {
           isActuallyValid = await validateImage(remoteUrl);
         }
 
         results[path] = {
           ok: isActuallyValid,
-          status: isActuallyValid ? "Live & Valid" : (isHtml ? "Server Error (404/HTML)" : "Invalid/Missing"),
+          status: isActuallyValid ? "Live & Valid" : (isHtml ? "404 (Returns HTML index)" : "Missing File"),
           contentType: contentType,
-          size: contentLength,
-          details: !isActuallyValid ? `File '${path}' is not accessible as a raw asset. Move it to the 'public/' folder and push to GitHub.` : "",
+          details: !isActuallyValid ? `Error: Server is returning a web page instead of file ${path}. Move the file to your 'public/' directory.` : "Verified binary asset.",
           remoteUrl
         };
       } catch (e) {
@@ -290,53 +286,54 @@ const App: React.FC = () => {
           <div className="space-y-12 animate-in fade-in duration-700">
             <header className="flex justify-between items-center">
               <div>
-                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Admin Console</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Deep Asset Audit</p>
+                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Zen Control</h2>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Asset Verification System</p>
               </div>
               <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">DIAGNOSTIC</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Audit</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Deep Scan</button>
               <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Asset Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
-                <div className="p-8 bg-amber-50 border-4 border-amber-200 rounded-[40px] animate-in bounce-in">
-                  <h3 className="text-xl font-black text-amber-900 mb-2 uppercase tracking-tight">Vercel Deployment Fix:</h3>
-                  <p className="text-xs text-amber-800/80 leading-relaxed font-bold">
-                    The green lights below confirm the server responded. If an image is "Valid" but shows broken in the browser, check its extension case (e.g., <code className="bg-amber-200/50 px-1">.jpg</code> vs <code className="bg-amber-200/50 px-1">.JPG</code>).
+                <div className="p-8 bg-amber-50 border-4 border-amber-200 rounded-[40px]">
+                  <h3 className="text-lg font-black text-amber-900 mb-2 uppercase tracking-tight">The "False Ready" Problem:</h3>
+                  <p className="text-[11px] text-amber-800/80 leading-relaxed font-bold">
+                    Vercel servers often return a 200 OK code with an HTML page if a file is missing. This makes basic scans look green even when the image is broken. **Our new "Deep Scan" verifies if the data is actually an image.**
                   </p>
                 </div>
 
                 <div className="space-y-6">
                   <div className="flex justify-between items-center px-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Live Asset Scan</h4>
-                    <button onClick={checkAssetIntegrity} className="text-[10px] font-black text-emerald-500 uppercase tracking-widest underline">Rerun Deep Scan</button>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Current Deployment Health</h4>
+                    <button onClick={checkAssetIntegrity} className="text-[10px] font-black text-emerald-500 uppercase tracking-widest underline" disabled={isCheckingAssets}>
+                      {isCheckingAssets ? 'Scanning...' : 'Run Deep Scan'}
+                    </button>
                   </div>
                   
-                  {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string, contentType?: string, size?: number }]>).map(([path, info]) => (
-                    <div key={path} className={`p-8 rounded-[40px] border flex flex-col space-y-4 transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100 shadow-lg'}`}>
+                  {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string, contentType?: string }]>).map(([path, info]) => (
+                    <div key={path} className={`p-8 rounded-[40px] border transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100 shadow-sm' : 'bg-red-50 border-red-200 shadow-xl scale-105'}`}>
                       <div className="flex justify-between items-start w-full">
                         <div className="flex items-center space-x-4">
                            <div className={`w-4 h-4 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                            <div>
                               <p className="text-[11px] font-black text-stone-800 uppercase tracking-widest">{path}</p>
-                              <p className={`text-[10px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
+                              <p className={`text-[10px] font-black mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
                            </div>
                         </div>
-                        {info.size !== undefined && info.size > 0 && (
-                          <span className="text-[9px] font-bold text-stone-400">{(info.size / 1024).toFixed(1)} KB</span>
-                        )}
                       </div>
                       
                       {!info.ok && (
-                        <div className="bg-white/80 p-5 rounded-3xl border border-red-50 space-y-2">
-                          <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Diagnostic Details:</p>
-                          <p className="text-[11px] text-stone-600 font-medium leading-relaxed">{info.details}</p>
-                          <p className="text-[9px] text-stone-400 font-mono">Type: {info.contentType}</p>
-                          <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="inline-block pt-2 text-[9px] font-black uppercase text-emerald-600 underline">Open Link directly</a>
+                        <div className="mt-6 bg-white/90 p-6 rounded-3xl border border-red-100 space-y-3">
+                          <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Diagnostic Detail:</p>
+                          <p className="text-[11px] text-stone-700 font-bold leading-relaxed">{info.details}</p>
+                          <div className="pt-2 flex space-x-2">
+                            <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-stone-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest">Open Link</a>
+                            <button onClick={() => setAdminTab('deployment')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest">Fix in Studio</button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -350,7 +347,7 @@ const App: React.FC = () => {
                 <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-12">
                    <div className="space-y-2">
                      <h3 className="text-2xl font-black serif text-stone-900 tracking-tight">Zen Asset Studio</h3>
-                     <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Download and place in /public folder</p>
+                     <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Generate missing icons for your /public folder</p>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
@@ -395,6 +392,10 @@ const App: React.FC = () => {
                                  Download Asset
                               </button>
                           </div>
+                        </div>
+                        <div className="bg-emerald-50 p-8 rounded-[40px] border border-emerald-100">
+                           <p className="text-[10px] font-black text-emerald-800 uppercase mb-2">Final Step:</p>
+                           <p className="text-[11px] text-emerald-700 leading-relaxed font-bold">1. Download the icon above. <br/> 2. Name it <code className="bg-white/50 px-1 font-black">icon.png</code>. <br/> 3. Move it to the <code className="bg-white/50 px-1 font-black">public/</code> folder in your project. <br/> 4. Sync to GitHub and Vercel.</p>
                         </div>
                      </div>
                    )}

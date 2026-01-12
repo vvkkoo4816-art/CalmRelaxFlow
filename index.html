@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   
-  <!-- Icon Definitions with absolute paths -->
   <link rel="icon" type="image/png" href="/icon.png">
   <link rel="apple-touch-icon" href="/icon.png">
+  <!-- Ensure we point to the public-hosted manifest -->
   <link rel="manifest" href="/metadata.json">
   
   <title>CalmRelaxFlow - Professional Mindfulness</title>
@@ -33,7 +33,6 @@
       margin: 0;
       color: #1c1917;
       -webkit-tap-highlight-color: transparent;
-      /* user-select: none removed to allow copy-paste as requested */
       user-select: auto;
     }
     .serif {
@@ -45,22 +44,6 @@
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
-    }
-    /* Fallback for missing icon.png images */
-    img[src="/icon.png"], img[src="/icon1.png"] {
-      background: #10b981;
-      position: relative;
-      min-height: 40px;
-      min-width: 40px;
-      display: block;
-    }
-    img[src="/icon.png"]:after, img[src="/icon1.png"]:after {
-      content: "🧘";
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; color: white;
-      background: #10b981;
     }
   </style>
   <script type="importmap">
