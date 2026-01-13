@@ -13,7 +13,9 @@ const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
-  const [scanResult, setScanResult] = useState<{ status: string; type: string; snippet: string; color: string; headers: string } | null>(null);
+  
+  // Diagnostic state
+  const [results, setResults] = useState<Record<string, any>>({});
   const [isScanning, setIsScanning] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,53 +33,38 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const runDeepScan = async () => {
-    setIsScanning(true);
-    // Use a unique name to bypass any generic "icon.png" redirect rules on the server
-    const targetFile = '/meditation-app-icon.png';
+  const checkFile = async (path: string) => {
     try {
-      const res = await fetch(targetFile, { cache: 'no-store' });
+      const res = await fetch(path, { cache: 'no-store' });
       const contentType = res.headers.get('Content-Type') || 'unknown';
       const blob = await res.blob();
       const textSample = await blob.slice(0, 200).text();
+      const isHtml = textSample.toLowerCase().includes('<html') || textSample.toLowerCase().includes('<!doctype');
       
-      let headersStr = "";
-      res.headers.forEach((v, k) => { headersStr += `${k}: ${v}\n`; });
-
-      if (textSample.toLowerCase().includes('<html') || textSample.toLowerCase().includes('<!doctype')) {
-        setScanResult({
-          status: "CRITICAL: SERVER ERROR",
-          type: `Server is sending a Webpage (HTML) instead of the Image. Content-Type: ${contentType}`,
-          snippet: textSample.substring(0, 100),
-          headers: headersStr,
-          color: "text-red-500 bg-red-50 border-red-200"
-        });
-      } else if (res.ok && (contentType.includes('image') || blob.size > 1000)) {
-        setScanResult({
-          status: "VERIFIED: IMAGE FOUND",
-          type: `Correctly identified as ${contentType}. Size: ${(blob.size / 1024).toFixed(1)}KB`,
-          snippet: "Binary Data Signature Detected (Valid PNG)",
-          headers: headersStr,
-          color: "text-emerald-600 bg-emerald-50 border-emerald-200"
-        });
-      } else {
-        setScanResult({
-          status: "ERROR: FILE NOT SERVED",
-          type: `Status ${res.status}. The server couldn't find ${targetFile} or it is empty.`,
-          snippet: textSample || "No data received from server.",
-          headers: headersStr,
-          color: "text-amber-600 bg-amber-50 border-amber-200"
-        });
-      }
+      return {
+        path,
+        status: res.status,
+        ok: res.ok && !isHtml && blob.size > 0,
+        contentType,
+        size: blob.size,
+        isHtml,
+        error: isHtml ? "REDIRECT LOOP (Server sent a webpage instead of an image)" : (res.ok ? null : `Status ${res.status}`)
+      };
     } catch (e) {
-      setScanResult({
-        status: "SCAN FAILED",
-        type: "Network error occurred while trying to reach the asset.",
-        snippet: String(e),
-        headers: "N/A",
-        color: "text-red-600 bg-red-50 border-red-200"
-      });
+      return { path, ok: false, error: String(e) };
     }
+  };
+
+  const runDeepScan = async () => {
+    setIsScanning(true);
+    const paths = ['/icon.png', '/meditation-app-icon.png', '/manifest.json'];
+    const newResults: Record<string, any> = {};
+    
+    for (const path of paths) {
+      newResults[path] = await checkFile(path);
+    }
+    
+    setResults(newResults);
     setIsScanning(false);
   };
 
@@ -87,24 +74,25 @@ const App: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Draw high quality 512x512 icon
     ctx.fillStyle = '#10B981';
     ctx.fillRect(0, 0, 512, 512);
     ctx.fillStyle = 'white';
     ctx.beginPath();
-    ctx.arc(256, 256, 120, 0, Math.PI * 2);
+    ctx.arc(256, 256, 140, 0, Math.PI * 2);
     ctx.fill();
-    ctx.font = 'bold 200px serif';
+    ctx.font = 'bold 220px serif';
     ctx.fillStyle = '#10B981';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🧘', 256, 270);
+    ctx.fillText('🧘', 256, 275);
 
     const link = document.createElement('a');
-    // Renamed for unique identification
+    // Using meditation-app-icon.png as the primary standard to avoid generic "icon.png" cache/redirect issues
     link.download = 'meditation-app-icon.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-    alert("Step 1 Complete: 'meditation-app-icon.png' downloaded.\nStep 2: Upload this to your /public folder. Ensure the filename matches exactly.");
+    alert("CRITICAL INSTRUCTION:\n1. Rename your local file to 'meditation-app-icon.png'.\n2. Place it in the 'public/' folder.\n3. DELETE any old 'icon.png'.\n4. Push to GitHub.");
   };
 
   const loginAsAdmin = () => {
@@ -125,7 +113,7 @@ const App: React.FC = () => {
       <div className="h-screen bg-white flex flex-col items-center justify-center p-10 text-center">
         <h1 className="text-4xl font-black serif mb-4">CalmRelaxFlow</h1>
         <p className="text-stone-400 text-sm mb-12">Deployment Asset Management</p>
-        <button onClick={loginAsAdmin} className="bg-emerald-500 text-white px-12 py-5 rounded-[32px] font-black shadow-2xl shadow-emerald-100">Enter Admin Repair</button>
+        <button onClick={loginAsAdmin} className="bg-emerald-500 text-white px-12 py-5 rounded-[32px] font-black shadow-2xl shadow-emerald-100">Enter Admin Mode</button>
       </div>
     );
   }
@@ -136,54 +124,51 @@ const App: React.FC = () => {
         {view === 'admin' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <header className="flex justify-between items-center">
-              <h2 className="text-3xl font-black serif">Asset Recovery</h2>
+              <h2 className="text-3xl font-black serif">Icon Repair Hub</h2>
               <div className="flex space-x-2">
-                <button onClick={() => setAdminTab('status')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'status' ? 'bg-stone-900 text-white' : 'bg-stone-100'}`}>Verify</button>
-                <button onClick={() => setAdminTab('repair')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'repair' ? 'bg-emerald-500 text-white' : 'bg-stone-100'}`}>Fix Tools</button>
+                <button onClick={() => setAdminTab('status')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'status' ? 'bg-stone-900 text-white' : 'bg-stone-100'}`}>Status</button>
+                <button onClick={() => setAdminTab('repair')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'repair' ? 'bg-emerald-500 text-white' : 'bg-stone-100'}`}>Repair</button>
               </div>
             </header>
 
             {adminTab === 'status' && (
               <div className="space-y-6">
                 <div className="p-8 bg-stone-50 rounded-[48px] border border-stone-100 text-center">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 mb-6">Target: /meditation-app-icon.png</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">Server Diagnostic</h3>
                   <button 
                     onClick={runDeepScan} 
                     disabled={isScanning}
-                    className="bg-white border-2 border-stone-900 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all"
+                    className="bg-white border-2 border-stone-900 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all shadow-xl shadow-stone-200"
                   >
-                    {isScanning ? 'Inspecting Bytes...' : 'Run Forensic Scan'}
+                    {isScanning ? 'Pinging Assets...' : 'Deep Scan Server'}
                   </button>
 
-                  {scanResult && (
-                    <div className={`mt-8 p-8 rounded-[32px] border text-left space-y-4 ${scanResult.color}`}>
-                      <div>
-                        <p className="font-black text-lg">{scanResult.status}</p>
-                        <p className="text-xs font-bold opacity-80">{scanResult.type}</p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="text-[9px] font-black uppercase opacity-50">Content Snippet</p>
-                        <div className="bg-white/50 p-4 rounded-xl font-mono text-[10px] break-all">
-                          {scanResult.snippet}
+                  <div className="mt-8 grid gap-4">
+                    {Object.entries(results).map(([path, res]) => (
+                      <div key={path} className={`p-6 rounded-[24px] border text-left flex justify-between items-center ${res.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                        <div>
+                          <p className="font-black text-xs tracking-tight">{path}</p>
+                          <p className={`text-[10px] font-bold ${res.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {res.ok ? `Verified (${(res.size/1024).toFixed(1)}KB)` : res.error || 'Missing'}
+                          </p>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${res.ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                          {res.ok ? '✓' : '!'}
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <p className="text-[9px] font-black uppercase opacity-50">Server Headers</p>
-                        <pre className="bg-stone-900 text-emerald-400 p-4 rounded-xl font-mono text-[9px] overflow-auto max-h-32">
-                          {scanResult.headers}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
 
-                <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
-                  <p className="text-blue-900 text-xs font-bold leading-relaxed">
-                    💡 <b>Why it says Missing:</b> Your server sees "/icon.png" and thinks you are trying to visit a page on your website, so it sends the homepage instead. Using a unique name like <b>meditation-app-icon.png</b> forces the server to treat it as a real file.
-                  </p>
-                </div>
+                {!results['/meditation-app-icon.png']?.ok && results['/icon.png']?.ok && (
+                  <div className="p-6 bg-amber-50 rounded-[32px] border border-amber-200 animate-pulse">
+                    <p className="text-amber-900 text-xs font-black uppercase mb-2">⚠️ Critical Mismatch Found</p>
+                    <p className="text-amber-800 text-xs leading-relaxed">
+                      You have <b>icon.png</b> but the app is looking for <b>meditation-app-icon.png</b>. 
+                      Go to the Repair tab, download the new file, and rename it correctly.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -192,17 +177,18 @@ const App: React.FC = () => {
                 <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-xl text-center">
                   <canvas ref={canvasRef} width="512" height="512" className="hidden" />
                   <div className="w-40 h-40 bg-emerald-500 rounded-[40px] mx-auto mb-8 flex items-center justify-center text-6xl shadow-2xl border-4 border-white">🧘</div>
-                  <h3 className="text-xl font-black serif mb-2">Nuclear Reset Tool</h3>
-                  <p className="text-stone-400 text-xs mb-8 max-w-xs mx-auto">This tool generates the file with a specific name that bypasses common server redirect loops.</p>
-                  <button onClick={downloadFixIcon} className="w-full py-6 bg-stone-900 text-white rounded-[32px] font-black uppercase text-xs tracking-widest shadow-xl">Get meditation-app-icon.png</button>
+                  <h3 className="text-xl font-black serif mb-2">Asset Generator</h3>
+                  <p className="text-stone-400 text-xs mb-8 max-w-xs mx-auto">Click below to generate a real, high-resolution 512x512 PNG file in your browser.</p>
+                  <button onClick={downloadFixIcon} className="w-full py-6 bg-stone-900 text-white rounded-[32px] font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">Download meditation-app-icon.png</button>
                 </div>
 
-                <div className="p-8 bg-emerald-900 text-white rounded-[40px] space-y-4">
-                  <h4 className="font-black serif">Final Steps:</h4>
-                  <ul className="text-xs space-y-3 opacity-80 list-disc ml-4">
-                    <li>Upload the new <b>meditation-app-icon.png</b> to your <b>public/</b> folder.</li>
-                    <li>The code is already updated to look for this specific file.</li>
-                    <li>Once uploaded, the "Forensic Scan" in the Verify tab should turn Green.</li>
+                <div className="bg-stone-900 text-white p-8 rounded-[48px] space-y-4">
+                  <h4 className="font-black text-emerald-400 serif">Final Deployment Check:</h4>
+                  <ul className="text-[11px] font-bold space-y-3 opacity-90 list-decimal ml-4">
+                    <li>Open your computer's <b>public/</b> folder.</li>
+                    <li>Ensure there is a file named exactly <b>meditation-app-icon.png</b>.</li>
+                    <li>If you see <b>icon.png</b>, rename it or replace it.</li>
+                    <li>Ensure <b>manifest.json</b> has "src": "/meditation-app-icon.png".</li>
                   </ul>
                 </div>
               </div>
