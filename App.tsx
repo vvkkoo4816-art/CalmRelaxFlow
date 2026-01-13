@@ -11,7 +11,7 @@ import { translations } from './translations';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
-  const [adminTab, setAdminTab] = useState<'status' | 'deployment'>('status');
+  const [adminTab, setAdminTab] = useState<'status' | 'deployment' | 'playstore'>('status');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -62,12 +62,12 @@ const App: React.FC = () => {
     setIsCheckingAssets(true);
     const cleanHost = remoteHost.replace(/\/$/, "");
     
-    // We check both lowercase and uppercase because Vercel is case-sensitive!
-    const targets = ['/icon.png', '/ICON.PNG', '/mmc.jpg', '/metadata.json'];
+    // Targets for Google Play & PWA Health
+    const targets = ['/icon.png', '/mmc.jpg', '/public/metadata.json', '/.well-known/assetlinks.json'];
     const results: Record<string, any> = {};
 
     for (const path of targets) {
-      const remoteUrl = `${cleanHost}${path}`;
+      const remoteUrl = `${cleanHost}${path.replace(/^\/public/, "")}`;
       try {
         const res = await fetch(remoteUrl, { method: 'GET', cache: 'no-store' });
         const contentType = res.headers.get('Content-Type') || 'unknown';
@@ -75,22 +75,21 @@ const App: React.FC = () => {
         
         let isActuallyValid = res.ok && !isHtml;
         
-        // If it's an image path, do a deep check
         if (isActuallyValid && (path.toLowerCase().endsWith('.png') || path.toLowerCase().endsWith('.jpg'))) {
           isActuallyValid = await validateImage(remoteUrl);
         }
 
         results[path] = {
           ok: isActuallyValid,
-          status: isActuallyValid ? "Reachabe & Valid" : (isHtml ? "Case Error / 404" : "Missing"),
+          status: isActuallyValid ? "Healthy" : "Broken",
           contentType: contentType,
           details: !isActuallyValid 
-            ? `Vercel cannot find this file. Ensure it is in the 'public/' folder and named exactly '${path.slice(1)}' (Case Sensitive!).` 
-            : "Asset is live and correctly served as a binary file.",
+            ? `Vercel cannot serve ${path}. Verify it exists in your 'public/' folder and is all lowercase.` 
+            : "Verified.",
           remoteUrl
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Blocked/Unreachable', contentType: 'none', details: "Connection refused or CORS issue." };
+        results[path] = { ok: false, status: 'Unreachable', details: "Connection refused." };
       }
     }
     setAssetHealth(results);
@@ -290,60 +289,93 @@ const App: React.FC = () => {
           <div className="space-y-12 animate-in fade-in duration-700">
             <header className="flex justify-between items-center">
               <div>
-                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Vercel Asset Fixer</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Solving PNG Reachability Issues</p>
+                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">Deployment Hub</h2>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Google Play & PWA Control</p>
               </div>
-              <span className="bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">ROOT CAUSE AUDIT</span>
+              <span className="bg-stone-900 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">V2.4</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Reachability Scan</button>
-              <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Regenerate Assets</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>PWA Health</button>
+              <button onClick={() => setAdminTab('playstore')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'playstore' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Google Play</button>
+              <button onClick={() => setAdminTab('deployment')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all ${adminTab === 'deployment' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
-                <div className="p-8 bg-red-50 border-4 border-red-200 rounded-[40px]">
-                  <h3 className="text-lg font-black text-red-900 mb-2 uppercase tracking-tight">Critical Deployment Rule:</h3>
-                  <p className="text-[11px] text-red-800/80 leading-relaxed font-bold">
-                    1. Files MUST be in the <code className="bg-white/50 px-1 font-black">public/</code> directory. <br/>
-                    2. Filenames MUST be lowercase (e.g. <code className="bg-white/50 px-1 font-black text-red-600">ICON.PNG</code> will fail on Vercel). <br/>
-                    3. Delete the <code className="bg-white/50 px-1 font-black">metadata.json</code> from your project root.
+                <div className="p-8 bg-blue-50 border border-blue-100 rounded-[40px] space-y-4">
+                  <h3 className="text-lg font-black text-blue-900 uppercase tracking-tight">Vercel Setup Guide</h3>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    If your icon is still "Missing", you likely haven't created a folder named <strong>public</strong> in your root directory. Move your images there.
                   </p>
                 </div>
+                
+                <div className="space-y-4">
+                   {/* Fix: Explicitly type the entry to resolve property access on 'unknown' errors (lines 315, 318, 320) */}
+                   {Object.entries(assetHealth).map(([path, info]: [string, any]) => (
+                     <div key={path} className={`p-6 rounded-[32px] border flex justify-between items-center ${info.ok ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'}`}>
+                        <div>
+                           <p className="text-[11px] font-black text-stone-900 uppercase">{path}</p>
+                           <p className={`text-[9px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-500'}`}>{info.status} — {info.details}</p>
+                        </div>
+                        <div className={`w-3 h-3 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                     </div>
+                   ))}
+                   <button onClick={checkAssetIntegrity} className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 border border-stone-100 rounded-3xl">Refresh Health</button>
+                </div>
+              </div>
+            )}
 
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center px-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Deep Deployment Scan</h4>
-                    <button onClick={checkAssetIntegrity} className="text-[10px] font-black text-emerald-500 uppercase tracking-widest underline" disabled={isCheckingAssets}>
-                      {isCheckingAssets ? 'Scanning...' : 'Rerun Reachability Test'}
-                    </button>
-                  </div>
-                  
-                  {(Object.entries(assetHealth) as Array<[string, { ok: boolean; status: string; details?: string, remoteUrl?: string, contentType?: string }]>).map(([path, info]) => (
-                    <div key={path} className={`p-8 rounded-[40px] border transition-all ${info.ok ? 'bg-emerald-50 border-emerald-100 shadow-sm opacity-50' : 'bg-red-50 border-red-200 shadow-xl scale-100'}`}>
-                      <div className="flex justify-between items-start w-full">
-                        <div className="flex items-center space-x-4">
-                           <div className={`w-4 h-4 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
-                           <div>
-                              <p className="text-[11px] font-black text-stone-800 uppercase tracking-widest">{path}</p>
-                              <p className={`text-[10px] font-black mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-600'}`}>{info.status}</p>
-                           </div>
+            {adminTab === 'playstore' && (
+              <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
+                <div className="p-10 bg-emerald-900 text-white rounded-[56px] shadow-2xl space-y-6">
+                   <h3 className="text-2xl font-black serif">Deploy to Google Play</h3>
+                   <p className="text-xs text-emerald-100/80 leading-relaxed font-bold">Follow these steps to convert your web app into a real Android App (.aab).</p>
+                   
+                   <div className="space-y-4 pt-4">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-1">1</div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider">Pass PWA Health</p>
+                          <p className="text-[10px] text-emerald-200 mt-1">Ensure all items in the "PWA Health" tab are green.</p>
                         </div>
                       </div>
-                      
-                      {!info.ok && (
-                        <div className="mt-6 bg-white p-6 rounded-3xl border border-red-100 space-y-3">
-                          <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Why is this failing?</p>
-                          <p className="text-[11px] text-stone-700 font-bold leading-relaxed">{info.details}</p>
-                          <div className="pt-2 flex flex-col space-y-2">
-                            <a href={info.remoteUrl} target="_blank" rel="noreferrer" className="text-center px-4 py-3 bg-stone-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest">Test Link Manually</a>
-                            <p className="text-[9px] text-stone-400 text-center uppercase tracking-widest">If link returns your app, the file is MISSING.</p>
-                          </div>
+
+                      <div className="flex items-start space-x-4">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-1">2</div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider">Use Bubblewrap CLI</p>
+                          <p className="text-[10px] text-emerald-200 mt-1">Install via terminal: <code className="bg-black/30 px-1 rounded">npm install -g @bubblewrap/cli</code></p>
                         </div>
+                      </div>
+
+                      <div className="flex items-start space-x-4">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-1">3</div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider">Initialize Project</p>
+                          <p className="text-[10px] text-emerald-200 mt-1">Run: <code className="bg-black/30 px-1 rounded">bubblewrap init --manifest {window.location.origin}/metadata.json</code></p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start space-x-4">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-1">4</div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-wider">Build AAB</p>
+                          <p className="text-[10px] text-emerald-200 mt-1">Run: <code className="bg-black/30 px-1 rounded">bubblewrap build</code> to get your .aab file.</p>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="bg-white p-8 rounded-[48px] border border-stone-100 shadow-sm space-y-4">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Digital Asset Link Status</h4>
+                   <div className={`p-6 rounded-[32px] border ${assetHealth['/.well-known/assetlinks.json']?.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                      <p className="text-xs font-black text-stone-800">Verification Link:</p>
+                      <p className="text-[10px] text-stone-500 mt-1 truncate">{window.location.origin}/.well-known/assetlinks.json</p>
+                      {!assetHealth['/.well-known/assetlinks.json']?.ok && (
+                        <p className="text-[9px] text-amber-600 font-bold mt-4">⚠️ Google Play will show a URL bar if this file is missing or contains the wrong fingerprint.</p>
                       )}
-                    </div>
-                  ))}
+                   </div>
                 </div>
               </div>
             )}
@@ -353,30 +385,22 @@ const App: React.FC = () => {
                 <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-12">
                    <div className="space-y-2">
                      <h3 className="text-2xl font-black serif text-stone-900 tracking-tight">Asset Generator</h3>
-                     <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">If the PNG is unreachable, generate a new one here.</p>
+                     <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Generate icons for your /public folder</p>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
-                      <button 
-                        onClick={() => handleGenerateAsset('icon')} 
-                        disabled={isGeneratingAsset}
-                        className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
-                      >
-                        New icon.png
+                      <button onClick={() => handleGenerateAsset('icon')} disabled={isGeneratingAsset} className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm">
+                        Gen icon.png
                       </button>
-                      <button 
-                        onClick={() => handleGenerateAsset('feature')} 
-                        disabled={isGeneratingAsset}
-                        className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm"
-                      >
-                        New mmc.jpg
+                      <button onClick={() => handleGenerateAsset('feature')} disabled={isGeneratingAsset} className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-[0.2em] text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-sm">
+                        Gen mmc.jpg
                       </button>
                    </div>
 
                    {isGeneratingAsset && (
                      <div className="flex flex-col items-center space-y-6 py-20 animate-pulse">
                         <div className="w-20 h-20 border-[8px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin"></div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.5em] text-emerald-600">Generating serentity...</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.5em] text-emerald-600">Creating Serenity...</p>
                      </div>
                    )}
 
@@ -397,10 +421,6 @@ const App: React.FC = () => {
                                  Download PNG
                               </button>
                           </div>
-                        </div>
-                        <div className="bg-emerald-50 p-8 rounded-[40px] border border-emerald-100">
-                           <p className="text-[10px] font-black text-emerald-800 uppercase mb-2">Final Fix Instructions:</p>
-                           <p className="text-[11px] text-emerald-700 leading-relaxed font-bold">1. Download the file. <br/> 2. Name it <code className="bg-white/50 px-1 font-black">icon.png</code> (all lowercase!). <br/> 3. Put it in the <code className="bg-white/50 px-1 font-black">public/</code> folder. <br/> 4. Delete <code className="bg-white/50 px-1 font-black">ICON.PNG</code> if you have one.</p>
                         </div>
                      </div>
                    )}
