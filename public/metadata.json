@@ -11,13 +11,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "/meditation-app-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.png",
+      "src": "/meditation-app-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -32,7 +32,7 @@
       "url": "/?view=today",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "/meditation-app-icon.png",
           "sizes": "192x192"
         }
       ]

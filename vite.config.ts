@@ -4,11 +4,15 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  publicDir: 'public', // Ensures anything in /public is copied to the root of the site
+  publicDir: 'public',
   build: {
     outDir: 'dist',
-    minify: 'esbuild',
-    sourcemap: false,
-    emptyOutDir: true
+    assetsDir: 'assets',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
   }
 });
