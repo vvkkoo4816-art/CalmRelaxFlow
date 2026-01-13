@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import { AppView, User, MeditationSession, Language } from './types';
@@ -8,17 +8,14 @@ import { translations } from './translations';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
-  const [adminTab, setAdminTab] = useState<'status' | 'repair'>('status');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   
   // Diagnostic state
-  const [results, setResults] = useState<Record<string, any>>({});
-  const [isScanning, setIsScanning] = useState(false);
-  
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [imgStatus, setImgStatus] = useState<'loading' | 'ok' | 'fail'>('loading');
+  const [imgError, setImgError] = useState<string | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('calmrelax_active_user');
@@ -33,66 +30,18 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const checkFile = async (path: string) => {
-    try {
-      const res = await fetch(path, { cache: 'no-store' });
-      const contentType = res.headers.get('Content-Type') || 'unknown';
-      const blob = await res.blob();
-      const textSample = await blob.slice(0, 200).text();
-      const isHtml = textSample.toLowerCase().includes('<html') || textSample.toLowerCase().includes('<!doctype');
-      
-      return {
-        path,
-        status: res.status,
-        ok: res.ok && !isHtml && blob.size > 0,
-        contentType,
-        size: blob.size,
-        isHtml,
-        error: isHtml ? "REDIRECT LOOP (Server sent a webpage instead of an image)" : (res.ok ? null : `Status ${res.status}`)
-      };
-    } catch (e) {
-      return { path, ok: false, error: String(e) };
-    }
-  };
-
-  const runDeepScan = async () => {
-    setIsScanning(true);
-    const paths = ['/icon.png', '/meditation-app-icon.png', '/manifest.json'];
-    const newResults: Record<string, any> = {};
+  const validateIcon = () => {
+    setImgStatus('loading');
+    const img = new Image();
+    // Cache bust to ensure we see the latest server version
+    const testUrl = `/icon.png?t=${Date.now()}`;
     
-    for (const path of paths) {
-      newResults[path] = await checkFile(path);
-    }
-    
-    setResults(newResults);
-    setIsScanning(false);
-  };
-
-  const downloadFixIcon = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Draw high quality 512x512 icon
-    ctx.fillStyle = '#10B981';
-    ctx.fillRect(0, 0, 512, 512);
-    ctx.fillStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(256, 256, 140, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.font = 'bold 220px serif';
-    ctx.fillStyle = '#10B981';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🧘', 256, 275);
-
-    const link = document.createElement('a');
-    // Using meditation-app-icon.png as the primary standard to avoid generic "icon.png" cache/redirect issues
-    link.download = 'meditation-app-icon.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    alert("CRITICAL INSTRUCTION:\n1. Rename your local file to 'meditation-app-icon.png'.\n2. Place it in the 'public/' folder.\n3. DELETE any old 'icon.png'.\n4. Push to GitHub.");
+    img.onload = () => setImgStatus('ok');
+    img.onerror = () => {
+      setImgStatus('fail');
+      setImgError("The server found the file but it's not a valid image (likely it's sending HTML text instead). Check your Netlify deployment logs.");
+    };
+    img.src = testUrl;
   };
 
   const loginAsAdmin = () => {
@@ -112,8 +61,8 @@ const App: React.FC = () => {
     return (
       <div className="h-screen bg-white flex flex-col items-center justify-center p-10 text-center">
         <h1 className="text-4xl font-black serif mb-4">CalmRelaxFlow</h1>
-        <p className="text-stone-400 text-sm mb-12">Deployment Asset Management</p>
-        <button onClick={loginAsAdmin} className="bg-emerald-500 text-white px-12 py-5 rounded-[32px] font-black shadow-2xl shadow-emerald-100">Enter Admin Mode</button>
+        <p className="text-stone-400 text-sm mb-12">Asset Debug Mode</p>
+        <button onClick={loginAsAdmin} className="bg-emerald-500 text-white px-12 py-5 rounded-[32px] font-black shadow-2xl shadow-emerald-100">Enter Admin Repair</button>
       </div>
     );
   }
@@ -124,75 +73,54 @@ const App: React.FC = () => {
         {view === 'admin' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <header className="flex justify-between items-center">
-              <h2 className="text-3xl font-black serif">Icon Repair Hub</h2>
-              <div className="flex space-x-2">
-                <button onClick={() => setAdminTab('status')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'status' ? 'bg-stone-900 text-white' : 'bg-stone-100'}`}>Status</button>
-                <button onClick={() => setAdminTab('repair')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-full ${adminTab === 'repair' ? 'bg-emerald-500 text-white' : 'bg-stone-100'}`}>Repair</button>
-              </div>
+              <h2 className="text-3xl font-black serif">Icon Live Preview</h2>
+              <button onClick={validateIcon} className="bg-stone-100 px-4 py-2 rounded-full text-[10px] font-black uppercase">Refresh Check</button>
             </header>
 
-            {adminTab === 'status' && (
-              <div className="space-y-6">
-                <div className="p-8 bg-stone-50 rounded-[48px] border border-stone-100 text-center">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">Server Diagnostic</h3>
-                  <button 
-                    onClick={runDeepScan} 
-                    disabled={isScanning}
-                    className="bg-white border-2 border-stone-900 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-stone-900 hover:text-white transition-all shadow-xl shadow-stone-200"
-                  >
-                    {isScanning ? 'Pinging Assets...' : 'Deep Scan Server'}
-                  </button>
-
-                  <div className="mt-8 grid gap-4">
-                    {Object.entries(results).map(([path, res]) => (
-                      <div key={path} className={`p-6 rounded-[24px] border text-left flex justify-between items-center ${res.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                        <div>
-                          <p className="font-black text-xs tracking-tight">{path}</p>
-                          <p className={`text-[10px] font-bold ${res.ok ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {res.ok ? `Verified (${(res.size/1024).toFixed(1)}KB)` : res.error || 'Missing'}
-                          </p>
-                        </div>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${res.ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                          {res.ok ? '✓' : '!'}
-                        </div>
-                      </div>
-                    ))}
+            <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-xl text-center">
+              <div className="mb-8 relative mx-auto w-48 h-48">
+                {/* This actually tries to load the image from your server */}
+                <img 
+                  src={`/icon.png?t=${Date.now()}`} 
+                  className={`w-full h-full rounded-[48px] shadow-2xl object-cover transition-opacity duration-500 ${imgStatus === 'ok' ? 'opacity-100' : 'opacity-20'}`}
+                  onLoad={() => setImgStatus('ok')}
+                  onError={() => setImgStatus('fail')}
+                  alt="Server Icon"
+                />
+                {imgStatus === 'fail' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-red-500 font-bold text-xs p-4 bg-red-50 rounded-[48px]">
+                    Image Broken
                   </div>
-                </div>
-
-                {!results['/meditation-app-icon.png']?.ok && results['/icon.png']?.ok && (
-                  <div className="p-6 bg-amber-50 rounded-[32px] border border-amber-200 animate-pulse">
-                    <p className="text-amber-900 text-xs font-black uppercase mb-2">⚠️ Critical Mismatch Found</p>
-                    <p className="text-amber-800 text-xs leading-relaxed">
-                      You have <b>icon.png</b> but the app is looking for <b>meditation-app-icon.png</b>. 
-                      Go to the Repair tab, download the new file, and rename it correctly.
-                    </p>
+                )}
+                {imgStatus === 'loading' && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
               </div>
-            )}
 
-            {adminTab === 'repair' && (
-              <div className="space-y-8">
-                <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-xl text-center">
-                  <canvas ref={canvasRef} width="512" height="512" className="hidden" />
-                  <div className="w-40 h-40 bg-emerald-500 rounded-[40px] mx-auto mb-8 flex items-center justify-center text-6xl shadow-2xl border-4 border-white">🧘</div>
-                  <h3 className="text-xl font-black serif mb-2">Asset Generator</h3>
-                  <p className="text-stone-400 text-xs mb-8 max-w-xs mx-auto">Click below to generate a real, high-resolution 512x512 PNG file in your browser.</p>
-                  <button onClick={downloadFixIcon} className="w-full py-6 bg-stone-900 text-white rounded-[32px] font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">Download meditation-app-icon.png</button>
-                </div>
-
-                <div className="bg-stone-900 text-white p-8 rounded-[48px] space-y-4">
-                  <h4 className="font-black text-emerald-400 serif">Final Deployment Check:</h4>
-                  <ul className="text-[11px] font-bold space-y-3 opacity-90 list-decimal ml-4">
-                    <li>Open your computer's <b>public/</b> folder.</li>
-                    <li>Ensure there is a file named exactly <b>meditation-app-icon.png</b>.</li>
-                    <li>If you see <b>icon.png</b>, rename it or replace it.</li>
-                    <li>Ensure <b>manifest.json</b> has "src": "/meditation-app-icon.png".</li>
-                  </ul>
-                </div>
+              <div className={`p-6 rounded-3xl border ${imgStatus === 'ok' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                <h3 className={`font-black text-sm uppercase mb-1 ${imgStatus === 'ok' ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {imgStatus === 'ok' ? '✓ Icon is Live' : '✗ Icon is Blocked'}
+                </h3>
+                <p className="text-[11px] opacity-70 font-medium">
+                  {imgStatus === 'ok' 
+                    ? "Great! Netlify is correctly serving the image. You can now proceed with your app build." 
+                    : imgError || "The file exists in your project but the server is returning a 404 or a redirect."}
+                </p>
               </div>
-            )}
+            </div>
+
+            <div className="bg-stone-900 text-white p-8 rounded-[48px] space-y-4">
+              <h4 className="font-black text-emerald-400 serif">Manual Verification Link:</h4>
+              <p className="text-[11px] opacity-80 leading-relaxed">
+                Open this in a new tab: <br/>
+                <a href="/icon.png" target="_blank" className="underline font-mono text-emerald-300">https://calmrelaxflow.netlify.app/icon.png</a>
+              </p>
+              <p className="text-[10px] text-stone-400">
+                If the link above shows your Buddha image, everything is fixed. If it shows your website home page, Netlify is still misconfigured.
+              </p>
+            </div>
           </div>
         )}
 
