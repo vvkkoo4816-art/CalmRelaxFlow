@@ -1,0 +1,26 @@
+
+{
+  "name": "CalmRelaxFlow",
+  "short_name": "CalmRelaxFlow",
+  "id": "com.calmrelaxflow.app",
+  "start_url": "/",
+  "description": "Professional mindfulness companion.",
+  "theme_color": "#10b981",
+  "background_color": "#fdfcfb",
+  "display": "standalone",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
