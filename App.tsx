@@ -1,30 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
-import SoundMixer from './components/SoundMixer';
-import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, Language } from './types';
-import { MEDITATION_SESSIONS, DAILY_MEDITATION, SLEEP_STORIES } from './constants';
-import { getPersonalizedRecommendation, generateAppAsset } from './services/geminiService';
+import { DAILY_MEDITATION } from './constants';
+import { getPersonalizedRecommendation } from './services/geminiService';
 import { translations } from './translations';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
-  const [adminTab, setAdminTab] = useState<'status' | 'playstore' | 'hosting' | 'studio'>('status');
+  const [adminTab, setAdminTab] = useState<'status' | 'playstore' | 'studio'>('status');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [lang, setLang] = useState<Language>('en');
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [recommendation, setRecommendation] = useState<string | null>(null);
-
-  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, details?: string, mime?: string, isHtml: boolean }>>({});
-  const [isCheckingAssets, setIsCheckingAssets] = useState(false);
-  const [generatedAsset, setGeneratedAsset] = useState<string | null>(null);
-  const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
-
+  const [assetHealth, setAssetHealth] = useState<Record<string, any>>({});
+  const [isChecking, setIsChecking] = useState(false);
+  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const t = translations[lang] || translations['en'];
 
   useEffect(() => {
@@ -42,35 +36,61 @@ const App: React.FC = () => {
   }, []);
 
   const checkAssetIntegrity = async () => {
-    setIsCheckingAssets(true);
-    const host = window.location.origin;
-    const targets = ['/icon.png', '/manifest.json', '/.well-known/assetlinks.json'];
+    setIsChecking(true);
+    const targets = ['/icon.png', '/manifest.json'];
     const results: Record<string, any> = {};
 
     for (const path of targets) {
       try {
-        const res = await fetch(host + path, { method: 'GET', cache: 'no-store' });
-        const contentType = res.headers.get('Content-Type') || 'unknown';
+        const res = await fetch(window.location.origin + path, { cache: 'no-store' });
         const text = await res.clone().text();
-        const isHtml = text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html');
-        
-        let isOk = res.ok && !isHtml;
+        const isHtml = text.trim().toLowerCase().startsWith('<html') || text.trim().toLowerCase().startsWith('<!doctype');
         
         results[path] = {
-          ok: isOk,
-          mime: contentType,
-          isHtml: isHtml,
-          status: isOk ? "Verified" : "Corrupted",
-          details: isHtml 
-            ? "CRITICAL: Server is sending a Webpage instead of a file. Bubblewrap will CRASH." 
-            : (isOk ? "Valid binary/JSON data found." : "File missing (404).")
+          ok: res.ok && !isHtml,
+          status: isHtml ? "FAKE (HTML Content)" : (res.ok ? "REAL IMAGE" : "MISSING (404)"),
+          details: isHtml ? "Your server is sending a webpage instead of an image. Bubblewrap will fail." : "File is valid.",
+          color: isHtml ? 'text-red-500' : (res.ok ? 'text-emerald-500' : 'text-amber-500')
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Error', details: "Network failure.", isHtml: false };
+        results[path] = { ok: false, status: 'Error', details: "Network failure.", color: 'text-red-500' };
       }
     }
     setAssetHealth(results);
-    setIsCheckingAssets(false);
+    setIsChecking(false);
+  };
+
+  const generateEmergencyIcon = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Background
+    ctx.fillStyle = '#10B981';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Zen Circle (Ensō)
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 40;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(256, 256, 160, 0, Math.PI * 1.8);
+    ctx.stroke();
+
+    // Human silhouette
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(256, 200, 40, 0, Math.PI * 2); // Head
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(256, 300, 60, 80, 0, 0, Math.PI * 2); // Body
+    ctx.fill();
+
+    const link = document.createElement('a');
+    link.download = 'icon.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
   const loginAsAdmin = () => {
@@ -79,217 +99,114 @@ const App: React.FC = () => {
       name: "Zen Master",
       email: "vvkkoo4816@gmail.com",
       photoUrl: "https://ui-avatars.com/api/?name=Zen+Master&background=10b981&color=fff",
-      isLoggedIn: true,
-      streak: 15,
-      minutesMeditated: 1240,
-      role: 'admin'
+      isLoggedIn: true, streak: 15, minutesMeditated: 1240, role: 'admin'
     };
     setUser(adminUser);
     setIsLoggedIn(true);
-    setShowLoginModal(false);
     localStorage.setItem('calmrelax_active_user', JSON.stringify(adminUser));
-  };
-
-  const handleMoodSelect = async (mood: string) => {
-    setRecommendation("Analyzing your mood...");
-    const advice = await getPersonalizedRecommendation(mood, lang);
-    setRecommendation(advice);
-  };
-
-  const handleGenerateAsset = async (type: 'icon' | 'feature') => {
-    setIsGeneratingAsset(true);
-    const img = await generateAppAsset(type);
-    setGeneratedAsset(img);
-    setIsGeneratingAsset(false);
-  };
-
-  const generateManifestJson = () => {
-    return JSON.stringify({
-      packageId: "com.calmrelaxflow.app",
-      host: window.location.hostname,
-      name: "CalmRelaxFlow",
-      launcherName: "CalmRelaxFlow",
-      display: "standalone",
-      themeColor: "#10B981",
-      backgroundColor: "#10B981",
-      startUrl: "/",
-      iconUrl: `${window.location.origin}/icon.png`,
-      maskableIconUrl: `${window.location.origin}/icon.png`,
-      webManifestUrl: `${window.location.origin}/manifest.json`
-    }, null, 2);
   };
 
   if (!isLoggedIn || !user) {
     return (
-      <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2/3 bg-emerald-500/10 blur-[150px] pointer-events-none animate-pulse"></div>
-        <div className="w-28 h-28 bg-emerald-500 rounded-[36px] flex items-center justify-center mb-10 shadow-2xl relative z-10 overflow-hidden border-4 border-white/50">
-           <span className="text-5xl">🧘</span>
-        </div>
-        <h1 className="text-6xl font-black serif mb-4 tracking-tighter text-stone-900 leading-none">CalmRelaxFlow</h1>
-        <p className="text-stone-500 text-sm font-medium mb-16 max-w-[280px] leading-relaxed uppercase tracking-[0.2em] font-bold">{t.personalized_paths}</p>
-        
-        <button onClick={() => setShowLoginModal(true)} className="w-full max-w-[340px] bg-stone-900 text-white py-6 rounded-[32px] font-black shadow-2xl flex items-center justify-center space-x-3 transition-all active:scale-95 group relative">
-          <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5" />
-          <span className="uppercase text-xs tracking-widest">Sign in to Zen Hub</span>
-        </button>
-
-        {showLoginModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-6">
-            <div className="bg-white w-full max-w-sm rounded-[48px] p-12 shadow-2xl">
-              <h2 className="text-3xl font-black mb-8 serif">Login</h2>
-              <button onClick={loginAsAdmin} className="w-full p-6 bg-emerald-50 border border-emerald-100 rounded-[32px] flex items-center space-x-4 mb-4 text-left">
-                <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-xl">V</div>
-                <div>
-                  <p className="font-black text-stone-900 text-sm">vvkkoo4816@gmail.com</p>
-                  <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Zen Master</p>
-                </div>
-              </button>
-              <button onClick={() => setShowLoginModal(false)} className="mt-8 text-stone-400 text-[10px] font-black uppercase tracking-[0.3em]">Cancel</button>
-            </div>
-          </div>
-        )}
+      <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10">
+        <h1 className="text-4xl font-black serif mb-10">CalmRelaxFlow</h1>
+        <button onClick={loginAsAdmin} className="bg-stone-900 text-white px-8 py-4 rounded-full font-bold">Sign in to Fix Icon</button>
       </div>
     );
   }
 
   return (
     <Layout activeView={view} setActiveView={setView} user={user} lang={lang}>
-      <div className="w-full space-y-12 animate-in fade-in duration-500 pb-20">
+      <div className="max-w-2xl mx-auto space-y-12 pb-24">
         {view === 'admin' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
-            <header className="flex justify-between items-center">
-              <div>
-                <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">System Hub</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Cross-Platform Readiness</p>
-              </div>
-              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">V5.0-Netlify</span>
-            </header>
-
-            <div className="flex space-x-2 border-b border-stone-100 pb-2 overflow-x-auto no-scrollbar">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Health Check</button>
-              <button onClick={() => setAdminTab('hosting')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'hosting' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Netlify/GitHub</button>
-              <button onClick={() => setAdminTab('playstore')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'playstore' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Bubblewrap Fix</button>
-              <button onClick={() => setAdminTab('studio')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'studio' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Studio</button>
+          <div className="space-y-8">
+            <div className="flex space-x-4 border-b border-stone-100">
+              {['status', 'playstore', 'studio'].map((tab: any) => (
+                <button key={tab} onClick={() => setAdminTab(tab)} className={`pb-4 text-xs font-black uppercase tracking-widest ${adminTab === tab ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>
+                  {tab}
+                </button>
+              ))}
             </div>
 
             {adminTab === 'status' && (
-              <div className="space-y-8">
-                <div className="p-8 bg-red-50 border border-red-200 rounded-[40px] space-y-4">
-                  <h3 className="text-sm font-black text-red-900 uppercase tracking-tighter">Your "Broken Icon" Error Explained</h3>
-                  <p className="text-[11px] text-red-800 leading-relaxed font-bold">
-                    I see you are using <b>Netlify</b>. I have updated your <b>application.json</b> to point to netlify.app instead of vercel.app. 
-                  </p>
-                  <p className="text-[11px] text-red-700 italic">
-                    If you don't update application.json, Bubblewrap will try to fetch the icon from Vercel, find nothing, and fail.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                   {Object.entries(assetHealth).map(([path, info]: [string, any]) => (
-                     <div key={path} className={`p-6 rounded-[32px] border flex justify-between items-center ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                        <div className="max-w-[80%]">
-                           <p className="text-[11px] font-black text-stone-900 uppercase">{path}</p>
-                           <p className={`text-[9px] font-bold mt-1 ${info.ok ? 'text-emerald-600' : 'text-red-500'}`}>
-                              {info.mime} — {info.details}
-                           </p>
-                        </div>
-                        <div className={`w-3 h-3 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
-                     </div>
-                   ))}
-                   <button onClick={checkAssetIntegrity} className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 border border-stone-100 rounded-3xl">Verify Server Assets</button>
-                </div>
-              </div>
-            )}
-
-            {adminTab === 'hosting' && (
-              <div className="space-y-8 animate-in slide-in-from-right-4">
-                <div className="p-8 bg-stone-900 text-white rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif">Netlify "Strict Mode"</h3>
-                   <p className="text-[11px] opacity-70 leading-relaxed">
-                     I added a <b>_redirects</b> and <b>netlify.toml</b>. These tell Netlify: "If someone asks for icon.png, do NOT send them to the home page."
-                   </p>
-                </div>
-              </div>
-            )}
-
-            {adminTab === 'playstore' && (
               <div className="space-y-6">
-                 <div className="bg-stone-50 p-6 rounded-[32px] border border-stone-100 overflow-hidden shadow-sm">
-                    <h3 className="text-[10px] font-black uppercase text-stone-400 mb-4 tracking-widest">application.json (UPDATED FOR NETLIFY)</h3>
-                    <div className="bg-stone-900 p-4 rounded-2xl">
-                       <pre className="text-[9px] text-emerald-400 font-mono overflow-x-auto whitespace-pre-wrap">{generateManifestJson()}</pre>
-                    </div>
-                 </div>
-                 <button onClick={() => { navigator.clipboard.writeText(generateManifestJson()); alert("Copied!"); }} className="w-full py-5 bg-stone-900 text-white rounded-[32px] font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Copy Bubblewrap JSON</button>
+                <div className="bg-red-50 p-8 rounded-[40px] border border-red-100">
+                  <h3 className="text-red-900 font-black serif text-xl mb-2">Why your icon is "Broken"</h3>
+                  <p className="text-sm text-red-800 leading-relaxed mb-4">
+                    Your server is confusing the <b>icon.png</b> request with your app code. When Bubblewrap downloads it, it gets 1,000 lines of code instead of an image.
+                  </p>
+                  <div className="space-y-3">
+                    {Object.entries(assetHealth).map(([path, info]: [string, any]) => (
+                      <div key={path} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-200">
+                        <span className="text-[10px] font-black uppercase">{path}</span>
+                        <span className={`text-[10px] font-black uppercase ${info.color}`}>{info.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={checkAssetIntegrity} className="mt-6 w-full py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Re-Scan Server Now</button>
+                </div>
               </div>
             )}
 
             {adminTab === 'studio' && (
               <div className="space-y-8">
-                <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-8">
-                   <h3 className="text-2xl font-black serif text-stone-900">Asset Studio</h3>
-                   <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Step 1: Generate the 512px Icon</p>
-                   <div className="grid grid-cols-1 gap-4">
-                      <button onClick={() => handleGenerateAsset('icon')} disabled={isGeneratingAsset} className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50">
-                        {isGeneratingAsset ? 'Working...' : 'Create Android Icon (512px)'}
-                      </button>
-                   </div>
-                   {generatedAsset && !isGeneratingAsset && (
-                     <div className="space-y-6 animate-in zoom-in-95">
-                        <div className="relative rounded-[64px] overflow-hidden border-[16px] border-white shadow-3xl aspect-square">
-                          <img src={generatedAsset} alt="icon" className="w-full h-full object-cover" />
-                        </div>
-                        <a href={generatedAsset} download="icon.png" className="block w-full text-center py-6 bg-emerald-500 text-white rounded-[32px] font-black uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-100">Download icon.png</a>
-                     </div>
-                   )}
+                <div className="bg-white p-8 rounded-[40px] border border-stone-100 shadow-xl text-center">
+                  <h3 className="text-2xl font-black serif mb-4">Step 1: Get a Real Image</h3>
+                  <p className="text-stone-500 text-sm mb-8">This button creates a 100% valid PNG file on your computer. Use THIS file, do not use old ones.</p>
+                  
+                  <canvas ref={canvasRef} width="512" height="512" className="hidden" />
+                  <div className="w-48 h-48 bg-emerald-500 rounded-[48px] mx-auto mb-8 flex items-center justify-center shadow-2xl border-8 border-white">
+                    <span className="text-6xl text-white">🧘</span>
+                  </div>
+                  
+                  <button onClick={generateEmergencyIcon} className="w-full py-6 bg-emerald-500 text-white rounded-[32px] font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-100 active:scale-95 transition-all">
+                    Generate & Download Real icon.png
+                  </button>
                 </div>
+
+                <div className="bg-stone-900 text-white p-8 rounded-[40px]">
+                  <h3 className="text-lg font-black serif mb-4">Step 2: Deployment Fix</h3>
+                  <ol className="text-xs space-y-4 list-decimal ml-4 opacity-80">
+                    <li>Take the <b>icon.png</b> you just downloaded.</li>
+                    <li>Put it in your <b>public/</b> folder.</li>
+                    <li>Open <b>netlify.toml</b> and make sure the "Redirects" section is correct (see below).</li>
+                    <li>Push to GitHub and wait for the "Health Check" to turn <b>Green</b>.</li>
+                  </ol>
+                </div>
+              </div>
+            )}
+            
+            {adminTab === 'playstore' && (
+              <div className="p-8 bg-stone-50 rounded-[40px] border border-stone-100">
+                <h3 className="font-black text-xs uppercase tracking-widest mb-4">Bubblewrap JSON</h3>
+                <pre className="bg-stone-900 text-emerald-400 p-6 rounded-2xl text-[10px] overflow-auto">
+                  {JSON.stringify({
+                    packageId: "com.calmrelaxflow.app",
+                    host: window.location.hostname,
+                    iconUrl: `${window.location.origin}/icon.png`,
+                    maskableIconUrl: `${window.location.origin}/icon.png`
+                  }, null, 2)}
+                </pre>
               </div>
             )}
           </div>
         )}
 
         {view === 'today' && (
-          <div className="space-y-12 animate-in fade-in duration-500">
-            <section className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Daily Reflection</p>
-              <h2 className="text-4xl font-black serif text-stone-900 leading-tight">Welcome, {user.name.split(' ')[0]}</h2>
-            </section>
-            
-            <section className="relative h-96 rounded-[56px] overflow-hidden shadow-2xl border-8 border-white cursor-pointer group" onClick={() => setActiveSession(DAILY_MEDITATION)}>
-              <img src={DAILY_MEDITATION.imageUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="daily" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+          <div className="space-y-8 py-10">
+            <h2 className="text-4xl font-black serif">Daily Path</h2>
+            <div className="aspect-video bg-emerald-500 rounded-[56px] relative overflow-hidden shadow-2xl border-8 border-white cursor-pointer" onClick={() => setActiveSession(DAILY_MEDITATION)}>
+              <img src={DAILY_MEDITATION.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="daily" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               <div className="absolute bottom-10 left-10">
-                <span className="bg-emerald-500 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block">Daily Zen</span>
+                <p className="text-[10px] font-black uppercase text-emerald-300 tracking-widest mb-2">Today's Session</p>
                 <h3 className="text-3xl font-black text-white serif">{DAILY_MEDITATION.title}</h3>
               </div>
-            </section>
-
-            <section className="space-y-4">
-              <h4 className="text-xl font-black serif text-stone-800">Mindset Check-in</h4>
-              <div className="grid grid-cols-2 gap-4">
-                {['Stressed', 'Calm', 'Focus', 'Tired'].map(mood => (
-                  <button key={mood} onClick={() => handleMoodSelect(mood)} className="p-6 bg-white border border-stone-100 rounded-[32px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all shadow-sm active:scale-95">
-                    {mood}
-                  </button>
-                ))}
-              </div>
-              {recommendation && <div className="p-8 bg-emerald-50 border border-emerald-100 rounded-[40px] text-sm italic font-bold text-emerald-900 leading-relaxed shadow-inner">"{recommendation}"</div>}
-            </section>
-          </div>
-        )}
-        
-        {view !== 'today' && view !== 'admin' && (
-          <div className="py-20 text-center space-y-6">
-             <div className="w-20 h-20 bg-stone-100 rounded-[32px] mx-auto flex items-center justify-center text-3xl animate-pulse">🧘</div>
-             <p className="text-[11px] font-black uppercase tracking-[0.3em] text-stone-300">{view} view active</p>
+            </div>
           </div>
         )}
       </div>
-
-      {activeSession && (
-        <AudioPlayer url={activeSession.audioUrl} title={activeSession.title} onClose={() => setActiveSession(null)} />
-      )}
+      {activeSession && <AudioPlayer url={activeSession.audioUrl} title={activeSession.title} onClose={() => setActiveSession(null)} />}
     </Layout>
   );
 };
