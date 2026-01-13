@@ -20,7 +20,7 @@ const App: React.FC = () => {
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [recommendation, setRecommendation] = useState<string | null>(null);
 
-  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, details?: string, mime?: string }>>({});
+  const [assetHealth, setAssetHealth] = useState<Record<string, { ok: boolean, status: string, details?: string, mime?: string, isHtml: boolean }>>({});
   const [isCheckingAssets, setIsCheckingAssets] = useState(false);
   const [generatedAsset, setGeneratedAsset] = useState<string | null>(null);
   const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
@@ -51,18 +51,22 @@ const App: React.FC = () => {
       try {
         const res = await fetch(host + path, { method: 'GET', cache: 'no-store' });
         const contentType = res.headers.get('Content-Type') || 'unknown';
-        const isHtml = contentType.includes('text/html');
+        const text = await res.clone().text();
+        const isHtml = text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html');
         
         let isOk = res.ok && !isHtml;
         
         results[path] = {
           ok: isOk,
           mime: contentType,
-          status: isOk ? "Healthy" : "Corrupted/Missing",
-          details: isHtml ? "Warning: Server returned HTML (likely a 404 page). Bubblewrap will FAIL." : (isOk ? "Verified PNG/JSON." : "File not found.")
+          isHtml: isHtml,
+          status: isOk ? "Verified" : "Corrupted",
+          details: isHtml 
+            ? "CRITICAL: Server is sending a Webpage instead of a file. Bubblewrap will CRASH." 
+            : (isOk ? "Valid binary/JSON data found." : "File missing (404).")
         };
       } catch (e) {
-        results[path] = { ok: false, status: 'Network Error', details: "Failed to connect." };
+        results[path] = { ok: false, status: 'Error', details: "Network failure.", isHtml: false };
       }
     }
     setAssetHealth(results);
@@ -123,11 +127,11 @@ const App: React.FC = () => {
            <span className="text-5xl">🧘</span>
         </div>
         <h1 className="text-6xl font-black serif mb-4 tracking-tighter text-stone-900 leading-none">CalmRelaxFlow</h1>
-        <p className="text-stone-500 text-sm font-medium mb-16 max-w-[280px] leading-relaxed uppercase tracking-[0.2em]">{t.personalized_paths}</p>
+        <p className="text-stone-500 text-sm font-medium mb-16 max-w-[280px] leading-relaxed uppercase tracking-[0.2em] font-bold">{t.personalized_paths}</p>
         
         <button onClick={() => setShowLoginModal(true)} className="w-full max-w-[340px] bg-stone-900 text-white py-6 rounded-[32px] font-black shadow-2xl flex items-center justify-center space-x-3 transition-all active:scale-95 group relative">
           <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5" />
-          <span className="uppercase text-xs tracking-widest">{t.sign_in_google}</span>
+          <span className="uppercase text-xs tracking-widest">Sign in to Zen Hub</span>
         </button>
 
         {showLoginModal && (
@@ -157,26 +161,30 @@ const App: React.FC = () => {
             <header className="flex justify-between items-center">
               <div>
                 <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">System Hub</h2>
-                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Android App Readiness</p>
+                <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Cross-Platform Readiness</p>
               </div>
-              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">V4.0</span>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">V4.5-Stable</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2 overflow-x-auto no-scrollbar">
-              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Diagnostic</button>
-              <button onClick={() => setAdminTab('hosting')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'hosting' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Hosting Fixes</button>
-              <button onClick={() => setAdminTab('playstore')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'playstore' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Bubblewrap JSON</button>
+              <button onClick={() => setAdminTab('status')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'status' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Health Check</button>
+              <button onClick={() => setAdminTab('hosting')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'hosting' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Netlify/GitHub</button>
+              <button onClick={() => setAdminTab('playstore')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'playstore' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Bubblewrap Fix</button>
               <button onClick={() => setAdminTab('studio')} className={`px-6 py-3 text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${adminTab === 'studio' ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-stone-300'}`}>Studio</button>
             </div>
 
             {adminTab === 'status' && (
               <div className="space-y-8">
-                <div className="p-8 bg-amber-50 border border-amber-200 rounded-[40px] space-y-4">
-                  <h3 className="text-sm font-black text-amber-900 uppercase">Live MIME Check</h3>
-                  <p className="text-[11px] text-amber-800 leading-relaxed font-bold">
-                    If any file below says "text/html", Bubblewrap will fail to download it. This usually means your Hosting provider (Vercel/GitHub) can't find the file in your public folder.
+                <div className="p-8 bg-red-50 border border-red-200 rounded-[40px] space-y-4">
+                  <h3 className="text-sm font-black text-red-900 uppercase tracking-tighter">Your "Broken Icon" Error Explained</h3>
+                  <p className="text-[11px] text-red-800 leading-relaxed font-bold">
+                    Your screenshot shows the browser trying to view `/icon.png` and seeing nothing. This happens because Netlify doesn't find the image file and sends your app's code instead.
+                  </p>
+                  <p className="text-[11px] text-red-700 italic">
+                    Solution: Generate the icon in the <b>Studio</b> tab, name it <b>exactly icon.png</b>, and put it in your <b>public/</b> folder.
                   </p>
                 </div>
+
                 <div className="space-y-4">
                    {Object.entries(assetHealth).map(([path, info]: [string, any]) => (
                      <div key={path} className={`p-6 rounded-[32px] border flex justify-between items-center ${info.ok ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
@@ -189,7 +197,7 @@ const App: React.FC = () => {
                         <div className={`w-3 h-3 rounded-full ${info.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                      </div>
                    ))}
-                   <button onClick={checkAssetIntegrity} className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 border border-stone-100 rounded-3xl">Force Re-Scan</button>
+                   <button onClick={checkAssetIntegrity} className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 border border-stone-100 rounded-3xl">Verify Server Assets</button>
                 </div>
               </div>
             )}
@@ -197,31 +205,21 @@ const App: React.FC = () => {
             {adminTab === 'hosting' && (
               <div className="space-y-8 animate-in slide-in-from-right-4">
                 <div className="p-8 bg-stone-900 text-white rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif">Firebase (Best Success Rate)</h3>
+                   <h3 className="text-lg font-black serif">Netlify Fix (For your specific case)</h3>
                    <p className="text-[11px] opacity-70 leading-relaxed">
-                     Firebase Hosting is the gold standard for Android TWA apps. It handles MIME types perfectly.
+                     I have added a <b>netlify.toml</b> file. This ensures Netlify correctly serves static files from your <b>public/</b> folder.
                    </p>
                    <ol className="text-[11px] space-y-2 list-decimal ml-4 opacity-90">
-                     <li>Install Firebase CLI: <code className="bg-white/10 px-1">npm i -g firebase-tools</code></li>
-                     <li>Run <code className="bg-white/10 px-1">firebase init hosting</code> (Select "dist" as public folder)</li>
-                     <li>The <code className="bg-white/10 px-1">firebase.json</code> I provided handles all headers.</li>
-                     <li>Run <code className="bg-white/10 px-1">firebase deploy</code></li>
+                     <li>Ensure `public/icon.png` exists in your code.</li>
+                     <li>Ensure `public/manifest.json` exists.</li>
+                     <li>Deploy again. If the Diagnostic tab still says "Corrupted", your build process is deleting these files.</li>
                    </ol>
                 </div>
 
-                <div className="p-8 bg-emerald-50 border border-emerald-100 rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif text-emerald-900">Netlify (Easier than Vercel)</h3>
-                   <p className="text-[11px] text-emerald-800 leading-relaxed">
-                     1. Run <code className="bg-stone-100 px-1">npm run build</code>.<br/>
-                     2. Drag the <code className="bg-stone-100 px-1">dist</code> folder into Netlify Drop.<br/>
-                     3. Netlify will use the <code className="bg-stone-100 px-1">netlify.toml</code> file automatically.
-                   </p>
-                </div>
-
                 <div className="p-8 bg-blue-50 border border-blue-100 rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif text-blue-900">GitHub Pages (Must Do)</h3>
+                   <h3 className="text-lg font-black serif text-blue-900">GitHub Pages Tip</h3>
                    <p className="text-[11px] text-blue-800 leading-relaxed">
-                     Ensure you have an empty file named <code className="bg-white/50 px-1">.nojekyll</code> in your root. This tells GitHub NOT to hide the <code className="bg-white/50 px-1">.well-known</code> folder.
+                     GitHub hides folders starting with a dot. I added a <b>.nojekyll</b> file to ensure <b>.well-known</b> is visible to Google Play.
                    </p>
                 </div>
               </div>
@@ -229,24 +227,24 @@ const App: React.FC = () => {
 
             {adminTab === 'playstore' && (
               <div className="space-y-6">
-                 <div className="bg-stone-50 p-6 rounded-[32px] border border-stone-100 overflow-hidden">
+                 <div className="bg-stone-50 p-6 rounded-[32px] border border-stone-100 overflow-hidden shadow-sm">
                     <h3 className="text-[10px] font-black uppercase text-stone-400 mb-4 tracking-widest">application.json for Bubblewrap</h3>
                     <div className="bg-stone-900 p-4 rounded-2xl">
                        <pre className="text-[9px] text-emerald-400 font-mono overflow-x-auto whitespace-pre-wrap">{generateManifestJson()}</pre>
                     </div>
                  </div>
-                 <button onClick={() => { navigator.clipboard.writeText(generateManifestJson()); alert("Copied to clipboard!"); }} className="w-full py-5 bg-stone-900 text-white rounded-[32px] font-black text-[10px] uppercase tracking-widest shadow-xl">Copy JSON for Android</button>
+                 <button onClick={() => { navigator.clipboard.writeText(generateManifestJson()); alert("Copied!"); }} className="w-full py-5 bg-stone-900 text-white rounded-[32px] font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Copy Bubblewrap JSON</button>
               </div>
             )}
 
             {adminTab === 'studio' && (
               <div className="space-y-8">
                 <div className="bg-white p-10 rounded-[56px] border border-stone-100 shadow-2xl space-y-8">
-                   <h3 className="text-2xl font-black serif text-stone-900">Icon Laboratory</h3>
-                   <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Generate a valid 512px PNG</p>
+                   <h3 className="text-2xl font-black serif text-stone-900">Asset Studio</h3>
+                   <p className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">Step 1: Generate the 512px Icon</p>
                    <div className="grid grid-cols-1 gap-4">
                       <button onClick={() => handleGenerateAsset('icon')} disabled={isGeneratingAsset} className="p-10 bg-stone-50 border border-stone-100 rounded-[48px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all disabled:opacity-50">
-                        {isGeneratingAsset ? 'Generating...' : 'Generate New Android Icon'}
+                        {isGeneratingAsset ? 'Working...' : 'Create Android Icon (512px)'}
                       </button>
                    </div>
                    {generatedAsset && !isGeneratingAsset && (
@@ -254,10 +252,13 @@ const App: React.FC = () => {
                         <div className="relative rounded-[64px] overflow-hidden border-[16px] border-white shadow-3xl aspect-square">
                           <img src={generatedAsset} alt="icon" className="w-full h-full object-cover" />
                         </div>
-                        <a href={generatedAsset} download="icon.png" className="block w-full text-center py-6 bg-stone-900 text-white rounded-[32px] font-black uppercase text-[11px] tracking-widest">Download icon.png</a>
-                        <p className="text-[10px] text-center text-stone-400 font-bold leading-relaxed">
-                          **Final Action**: After downloading, place this file in <code className="bg-stone-50 px-1">public/icon.png</code> and deploy again.
-                        </p>
+                        <a href={generatedAsset} download="icon.png" className="block w-full text-center py-6 bg-emerald-500 text-white rounded-[32px] font-black uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-100">Download icon.png</a>
+                        <div className="p-6 bg-stone-50 rounded-3xl space-y-2">
+                           <p className="text-[10px] text-stone-900 font-black uppercase">Next Step:</p>
+                           <p className="text-[10px] text-stone-500 leading-relaxed font-medium">
+                             Put the downloaded file in your project's <b>public/</b> folder. Verify it at <b>{window.location.origin}/icon.png</b> after deploying.
+                           </p>
+                        </div>
                      </div>
                    )}
                 </div>
@@ -272,6 +273,7 @@ const App: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Daily Reflection</p>
               <h2 className="text-4xl font-black serif text-stone-900 leading-tight">Welcome, {user.name.split(' ')[0]}</h2>
             </section>
+            
             <section className="relative h-96 rounded-[56px] overflow-hidden shadow-2xl border-8 border-white cursor-pointer group" onClick={() => setActiveSession(DAILY_MEDITATION)}>
               <img src={DAILY_MEDITATION.imageUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="daily" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
@@ -280,24 +282,24 @@ const App: React.FC = () => {
                 <h3 className="text-3xl font-black text-white serif">{DAILY_MEDITATION.title}</h3>
               </div>
             </section>
+
             <section className="space-y-4">
-              <h4 className="text-xl font-black serif text-stone-800">Quick Check-in</h4>
+              <h4 className="text-xl font-black serif text-stone-800">Mindset Check-in</h4>
               <div className="grid grid-cols-2 gap-4">
                 {['Stressed', 'Calm', 'Focus', 'Tired'].map(mood => (
-                  <button key={mood} onClick={() => handleMoodSelect(mood)} className="p-6 bg-white border border-stone-100 rounded-[32px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all">
+                  <button key={mood} onClick={() => handleMoodSelect(mood)} className="p-6 bg-white border border-stone-100 rounded-[32px] text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-900 hover:text-white transition-all shadow-sm active:scale-95">
                     {mood}
                   </button>
                 ))}
               </div>
-              {recommendation && <div className="p-8 bg-emerald-50 border border-emerald-100 rounded-[40px] text-sm italic font-bold text-emerald-900 leading-relaxed">"{recommendation}"</div>}
+              {recommendation && <div className="p-8 bg-emerald-50 border border-emerald-100 rounded-[40px] text-sm italic font-bold text-emerald-900 leading-relaxed shadow-inner">"{recommendation}"</div>}
             </section>
           </div>
         )}
         
-        {/* Placeholder for other views to keep it clean */}
         {view !== 'today' && view !== 'admin' && (
           <div className="py-20 text-center space-y-6">
-             <div className="w-20 h-20 bg-stone-100 rounded-[32px] mx-auto flex items-center justify-center text-3xl">🧘</div>
+             <div className="w-20 h-20 bg-stone-100 rounded-[32px] mx-auto flex items-center justify-center text-3xl animate-pulse">🧘</div>
              <p className="text-[11px] font-black uppercase tracking-[0.3em] text-stone-300">{view} view active</p>
           </div>
         )}
