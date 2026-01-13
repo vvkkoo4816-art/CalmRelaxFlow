@@ -1,7 +1,7 @@
 
 {
   "packageId": "com.calmrelaxflow.app",
-  "host": "calm-relax-flow.vercel.app",
+  "host": "calmrelaxflow.netlify.app",
   "name": "CalmRelaxFlow",
   "launcherName": "CalmRelaxFlow",
   "display": "standalone",
@@ -14,18 +14,18 @@
   "backgroundColor": "#10B981",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://calm-relax-flow.vercel.app/icon.png",
-  "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon.png",
+  "iconUrl": "https://calmrelaxflow.netlify.app/icon.png",
+  "maskableIconUrl": "https://calmrelaxflow.netlify.app/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "calmrelaxkey",
     "alias": "calmrelaxkey"
   },
-  "appVersionName": "2",
-  "appVersionCode": 2,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://calm-relax-flow.vercel.app/metadata.json",
+  "webManifestUrl": "https://calmrelaxflow.netlify.app/manifest.json",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -34,9 +34,9 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://calm-relax-flow.vercel.app/",
+  "fullScopeUrl": "https://calmrelaxflow.netlify.app/",
   "minSdkVersion": 21,
-  "orientation": "default",
+  "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
@@ -44,5 +44,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "2"
+  "appVersion": "1"
 }

@@ -163,7 +163,7 @@ const App: React.FC = () => {
                 <h2 className="text-4xl font-black serif text-stone-900 tracking-tight">System Hub</h2>
                 <p className="text-[10px] text-stone-400 font-black uppercase tracking-widest mt-1">Cross-Platform Readiness</p>
               </div>
-              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">V4.5-Stable</span>
+              <span className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">V5.0-Netlify</span>
             </header>
 
             <div className="flex space-x-2 border-b border-stone-100 pb-2 overflow-x-auto no-scrollbar">
@@ -178,10 +178,10 @@ const App: React.FC = () => {
                 <div className="p-8 bg-red-50 border border-red-200 rounded-[40px] space-y-4">
                   <h3 className="text-sm font-black text-red-900 uppercase tracking-tighter">Your "Broken Icon" Error Explained</h3>
                   <p className="text-[11px] text-red-800 leading-relaxed font-bold">
-                    Your screenshot shows the browser trying to view `/icon.png` and seeing nothing. This happens because Netlify doesn't find the image file and sends your app's code instead.
+                    I see you are using <b>Netlify</b>. I have updated your <b>application.json</b> to point to netlify.app instead of vercel.app. 
                   </p>
                   <p className="text-[11px] text-red-700 italic">
-                    Solution: Generate the icon in the <b>Studio</b> tab, name it <b>exactly icon.png</b>, and put it in your <b>public/</b> folder.
+                    If you don't update application.json, Bubblewrap will try to fetch the icon from Vercel, find nothing, and fail.
                   </p>
                 </div>
 
@@ -205,21 +205,9 @@ const App: React.FC = () => {
             {adminTab === 'hosting' && (
               <div className="space-y-8 animate-in slide-in-from-right-4">
                 <div className="p-8 bg-stone-900 text-white rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif">Netlify Fix (For your specific case)</h3>
+                   <h3 className="text-lg font-black serif">Netlify "Strict Mode"</h3>
                    <p className="text-[11px] opacity-70 leading-relaxed">
-                     I have added a <b>netlify.toml</b> file. This ensures Netlify correctly serves static files from your <b>public/</b> folder.
-                   </p>
-                   <ol className="text-[11px] space-y-2 list-decimal ml-4 opacity-90">
-                     <li>Ensure `public/icon.png` exists in your code.</li>
-                     <li>Ensure `public/manifest.json` exists.</li>
-                     <li>Deploy again. If the Diagnostic tab still says "Corrupted", your build process is deleting these files.</li>
-                   </ol>
-                </div>
-
-                <div className="p-8 bg-blue-50 border border-blue-100 rounded-[40px] space-y-4">
-                   <h3 className="text-lg font-black serif text-blue-900">GitHub Pages Tip</h3>
-                   <p className="text-[11px] text-blue-800 leading-relaxed">
-                     GitHub hides folders starting with a dot. I added a <b>.nojekyll</b> file to ensure <b>.well-known</b> is visible to Google Play.
+                     I added a <b>_redirects</b> and <b>netlify.toml</b>. These tell Netlify: "If someone asks for icon.png, do NOT send them to the home page."
                    </p>
                 </div>
               </div>
@@ -228,7 +216,7 @@ const App: React.FC = () => {
             {adminTab === 'playstore' && (
               <div className="space-y-6">
                  <div className="bg-stone-50 p-6 rounded-[32px] border border-stone-100 overflow-hidden shadow-sm">
-                    <h3 className="text-[10px] font-black uppercase text-stone-400 mb-4 tracking-widest">application.json for Bubblewrap</h3>
+                    <h3 className="text-[10px] font-black uppercase text-stone-400 mb-4 tracking-widest">application.json (UPDATED FOR NETLIFY)</h3>
                     <div className="bg-stone-900 p-4 rounded-2xl">
                        <pre className="text-[9px] text-emerald-400 font-mono overflow-x-auto whitespace-pre-wrap">{generateManifestJson()}</pre>
                     </div>
@@ -253,12 +241,6 @@ const App: React.FC = () => {
                           <img src={generatedAsset} alt="icon" className="w-full h-full object-cover" />
                         </div>
                         <a href={generatedAsset} download="icon.png" className="block w-full text-center py-6 bg-emerald-500 text-white rounded-[32px] font-black uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-100">Download icon.png</a>
-                        <div className="p-6 bg-stone-50 rounded-3xl space-y-2">
-                           <p className="text-[10px] text-stone-900 font-black uppercase">Next Step:</p>
-                           <p className="text-[10px] text-stone-500 leading-relaxed font-medium">
-                             Put the downloaded file in your project's <b>public/</b> folder. Verify it at <b>{window.location.origin}/icon.png</b> after deploying.
-                           </p>
-                        </div>
                      </div>
                    )}
                 </div>
