@@ -11,12 +11,6 @@ const SoundMixer: React.FC = () => {
   const [activeSounds, setActiveSounds] = useState<Record<string, SoundState>>({});
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
-  const getAbsoluteUrl = (path: string) => {
-    if (path.startsWith('http')) return path;
-    const cleanPath = path.replace(/^\/+/, '');
-    return `${window.location.origin}/${cleanPath}`;
-  };
-
   const toggleSound = (id: string, url: string) => {
     const isCurrentlyPlaying = activeSounds[id]?.isPlaying;
     
@@ -28,20 +22,21 @@ const SoundMixer: React.FC = () => {
       }));
     } else {
       if (!audioRefs.current[id]) {
-        const absoluteUrl = getAbsoluteUrl(url);
-        audioRefs.current[id] = new Audio(absoluteUrl);
+        audioRefs.current[id] = new Audio();
         audioRefs.current[id].loop = true;
-        
-        audioRefs.current[id].onerror = () => {
-          console.error(`Ambient sound load failed for: ${absoluteUrl}`);
-        };
       }
       
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
-      audioRefs.current[id].play().catch((err) => {
-        console.warn(`Ambient playback blocked for "${id}":`, err.message);
+      // Try path directly from constant
+      const fullPath = url.startsWith('/') ? url : `/${url}`;
+      audioRefs.current[id].src = fullPath;
+      
+      audioRefs.current[id].play().catch(() => {
+        // Fallback for /public prefix if needed
+        audioRefs.current[id].src = `/public${fullPath}`;
+        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed to load:", e));
       });
       
       setActiveSounds(prev => ({

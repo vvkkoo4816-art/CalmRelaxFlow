@@ -12,58 +12,48 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [attemptIndex, setAttemptIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  /**
-   * Smart Path Resolution
-   * Tries to find the file at the root, and falls back to /public/
-   */
-  const resolveAudioUrl = async (path: string): Promise<string> => {
-    if (path.startsWith('http')) return path;
-    const cleanPath = path.replace(/^\/+/, '');
-    
-    // Attempt 1: Root path (Standard for Vite/Vercel production)
-    const rootUrl = `${window.location.origin}/${cleanPath}`;
-    
-    try {
-      const resp = await fetch(rootUrl, { method: 'HEAD' });
-      const type = resp.headers.get('content-type');
-      if (resp.ok && type && !type.includes('text/html')) {
-        return rootUrl + `?v=${Date.now()}`;
-      }
-    } catch (e) {
-      console.warn("Root check failed, trying /public/ fallback...");
-    }
-
-    // Attempt 2: /public/ path (Often needed in IDE preview environments)
-    return `${window.location.origin}/public/${cleanPath}?v=${Date.now()}`;
+  // We simplify to 2 main attempts. If it's not here, the file is physically missing.
+  const getPossiblePaths = (baseUrl: string) => {
+    if (baseUrl.startsWith('http')) return [baseUrl];
+    const path = baseUrl.startsWith('/') ? baseUrl : `/${baseUrl}`;
+    return [
+      path,             // e.g. /music/morning.mp3 (Standard Vite)
+      `/public${path}`  // e.g. /public/music/morning.mp3 (Some specific dev environments)
+    ];
   };
 
+  const possiblePaths = getPossiblePaths(url);
+
   useEffect(() => {
-    const initAudio = async () => {
-      setError(null);
-      setIsBuffering(true);
-      setIsPlaying(false);
-      setProgress(0);
-
-      const resolvedUrl = await resolveAudioUrl(url);
-      console.log("Resolved Audio URL:", resolvedUrl);
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = resolvedUrl;
-        audioRef.current.load();
-      }
-    };
-
-    initAudio();
+    setError(null);
+    setIsBuffering(true);
+    setIsPlaying(false);
+    setProgress(0);
+    setAttemptIndex(0);
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = possiblePaths[0];
+      audioRef.current.load();
+    }
   }, [url]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.loop = isLooping;
+  const handleAudioError = () => {
+    const nextIndex = attemptIndex + 1;
+    if (nextIndex < possiblePaths.length) {
+      setAttemptIndex(nextIndex);
+      if (audioRef.current) {
+        audioRef.current.src = possiblePaths[nextIndex];
+        audioRef.current.load();
+      }
+    } else {
+      setError("FILE MISSING");
+      setIsBuffering(false);
     }
-  }, [isLooping]);
+  };
 
   const togglePlay = () => {
     if (!audioRef.current || error) return;
@@ -72,33 +62,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      setIsBuffering(true);
-      setError(null);
-      
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-          setIsBuffering(false);
-        })
-        .catch((err: Error) => {
-          console.error("Playback failed:", err.name);
-          if (err.name === 'NotSupportedError') {
-            setError("FORMAT ERROR");
-          } else if (err.name === 'NotAllowedError') {
-            setError("TAP TO PLAY");
-          } else {
-            setError("LOAD FAILED");
-          }
-          setIsBuffering(false);
-          setIsPlaying(false);
-        });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch((err: Error) => {
+            if (err.name === 'NotAllowedError') {
+              setError("TAP TO PLAY");
+            } else {
+              handleAudioError();
+            }
+            setIsBuffering(false);
+            setIsPlaying(false);
+          });
+      }
     }
-  };
-
-  const handleAudioError = () => {
-    // If we've reached this, both root and /public/ fallbacks failed or returned bad data
-    setError("FILE NOT FOUND");
-    setIsBuffering(false);
   };
 
   return (
@@ -135,13 +116,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-1">
              <h4 className="text-white font-black text-lg truncate tracking-tight serif">{title}</h4>
              {error && (
-               <div className="flex items-center space-x-2">
+               <div className="flex flex-col items-center md:items-end">
                  <span className="text-red-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                   {error}
+                   {error === "FILE MISSING" ? "AUDIO FILE NOT FOUND" : error}
                  </span>
-                 <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-200 font-mono">
-                   PATH: /public/{url}
-                 </span>
+                 {error === "FILE MISSING" && (
+                   <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-100 font-mono mt-1">
+                     Place file in: public/{url}
+                   </span>
+                 )}
                </div>
              )}
           </div>
@@ -157,7 +140,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           <button 
             onClick={() => setIsLooping(!isLooping)}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isLooping ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-white/20 hover:text-white/40'}`}
-            title="Loop Session"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -166,7 +148,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
           <button 
             onClick={togglePlay}
-            disabled={error === "FILE NOT FOUND"}
+            disabled={error === "FILE MISSING"}
             className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-30"
           >
             {isPlaying ? (
