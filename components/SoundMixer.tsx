@@ -11,6 +11,12 @@ const SoundMixer: React.FC = () => {
   const [activeSounds, setActiveSounds] = useState<Record<string, SoundState>>({});
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
+  const getAbsoluteUrl = (path: string) => {
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.replace(/^\/+/, '');
+    return `${window.location.origin}/${cleanPath}`;
+  };
+
   const toggleSound = (id: string, url: string) => {
     const isCurrentlyPlaying = activeSounds[id]?.isPlaying;
     
@@ -22,9 +28,7 @@ const SoundMixer: React.FC = () => {
       }));
     } else {
       if (!audioRefs.current[id]) {
-        // Relative path from root is standard for Vite public assets
-        const absoluteUrl = url.startsWith('http') ? url : `/${url}`;
-        
+        const absoluteUrl = getAbsoluteUrl(url);
         audioRefs.current[id] = new Audio(absoluteUrl);
         audioRefs.current[id].loop = true;
         
@@ -37,7 +41,7 @@ const SoundMixer: React.FC = () => {
       audioRefs.current[id].volume = currentVolume;
       
       audioRefs.current[id].play().catch((err) => {
-        console.warn(`Playback blocked for "${id}":`, err.message);
+        console.warn(`Ambient playback blocked for "${id}":`, err.message);
       });
       
       setActiveSounds(prev => ({
@@ -59,7 +63,6 @@ const SoundMixer: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      // Clean up all audio elements on unmount
       Object.values(audioRefs.current).forEach(audio => {
         if (audio) {
           audio.pause();

@@ -1,13 +1,12 @@
 import { MeditationSession, Course } from './types';
 
 /**
- * The "Soulful 4" - Curated for 10MB Limit
- * These 4 tracks cover every spiritual need while staying lightweight.
+ * The "Soulful 4" - Curated for Vercel Deployment
  */
-const AUDIO_MORNING = '/morning.mp3'; // Morning / Uplifting
-const AUDIO_HEALING = '/healing.mp3'; // Emotional / Piano
-const AUDIO_SLEEP = '/sleep.mp3';     // Deep / Theta Waves
-const AUDIO_ZEN = '/zen.mp3';         // Focus / Flute
+const AUDIO_MORNING = 'morning.mp3'; 
+const AUDIO_HEALING = 'healing.mp3'; 
+const AUDIO_SLEEP = 'sleep.mp3';     
+const AUDIO_ZEN = 'zen.mp3';         
 
 // Meaningful Imagery
 const IMG_NATURE = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800';
@@ -61,7 +60,7 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
 ];
 
 export const AMBIENT_SOUNDS = [
-  { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: '/rain.mp3' },
+  { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: 'rain.mp3' },
   { id: 'zen', name: 'Zen Flute', icon: '🧘', url: AUDIO_ZEN }
 ];
 

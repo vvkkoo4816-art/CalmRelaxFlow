@@ -14,22 +14,47 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isBuffering, setIsBuffering] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Vercel/Vite root-relative path resolution
-  const finalUrl = url.startsWith('http') ? url : `/${url.replace(/^\//, '')}`;
+  // Resolution logic
+  const getAbsoluteUrl = (path: string) => {
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.replace(/^\/+/, '');
+    // Using a simpler query param to avoid double-caching issues
+    return `${window.location.origin}/${cleanPath}?rel=${Date.now()}`;
+  };
+
+  const finalUrl = getAbsoluteUrl(url);
 
   useEffect(() => {
-    setError(null);
-    setIsBuffering(true);
-    setIsPlaying(false);
-    setProgress(0);
-    
-    if (audioRef.current) {
-      audioRef.current.pause();
-      // Adding a cache-buster during development can help, but for production, simple root paths are best.
-      audioRef.current.src = finalUrl;
-      audioRef.current.loop = isLooping;
-      audioRef.current.load();
-    }
+    const verifyAndLoad = async () => {
+      setError(null);
+      setIsBuffering(true);
+      setIsPlaying(false);
+      setProgress(0);
+
+      try {
+        // PRE-FLIGHT CHECK: Verify this is actually an audio file
+        const response = await fetch(finalUrl, { method: 'HEAD' });
+        const contentType = response.headers.get('content-type');
+
+        if (!response.ok || (contentType && contentType.includes('text/html'))) {
+          console.error("Server returned HTML instead of Audio. File is likely missing.");
+          setError("FILE MISSING");
+          setIsBuffering(false);
+          return;
+        }
+
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = finalUrl;
+          audioRef.current.load();
+        }
+      } catch (e) {
+        setError("NETWORK ERROR");
+        setIsBuffering(false);
+      }
+    };
+
+    verifyAndLoad();
   }, [finalUrl]);
 
   useEffect(() => {
@@ -39,43 +64,33 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   }, [isLooping]);
 
   const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        setError(null);
-        setIsBuffering(true);
-        const playPromise = audioRef.current.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-              setIsBuffering(false);
-            })
-            .catch((err) => {
-              console.error("Audio playback error:", err);
-              setError("PLAYBACK BLOCKED");
-              setIsBuffering(false);
-              setIsPlaying(false);
-            });
-        }
-      }
-    }
-  };
+    if (!audioRef.current || error) return;
 
-  const onTimeUpdate = () => {
-    if (audioRef.current && audioRef.current.duration) {
-      const p = (audioRef.current.currentTime / audioRef.current.duration) * 100;
-      setProgress(p || 0);
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      setIsBuffering(true);
+      
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          setIsBuffering(false);
+          setError(null);
+        })
+        .catch((err: Error) => {
+          console.error("Playback failed:", err.name);
+          if (err.name === 'NotSupportedError') {
+            setError("BAD FILE FORMAT");
+          } else if (err.name === 'NotAllowedError') {
+            setError("TAP TO PLAY");
+          } else {
+            setError("ERROR");
+          }
+          setIsBuffering(false);
+          setIsPlaying(false);
+        });
     }
-  };
-
-  const handleAudioError = (e: any) => {
-    console.error("Audio Load Error:", e);
-    setError("ASSET MISSING");
-    setIsBuffering(false);
   };
 
   return (
@@ -83,11 +98,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       <div className="bg-stone-900/98 backdrop-blur-3xl rounded-[40px] p-6 shadow-2xl border border-white/10 flex flex-col md:flex-row items-center md:space-x-6 space-y-4 md:space-y-0">
         <audio 
           ref={audioRef} 
-          onTimeUpdate={onTimeUpdate}
+          onTimeUpdate={() => {
+            if (audioRef.current && audioRef.current.duration) {
+              const p = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+              setProgress(p || 0);
+            }
+          }}
           onEnded={() => !isLooping && setIsPlaying(false)}
-          onError={handleAudioError}
           onCanPlay={() => {
             setIsBuffering(false);
+            if (error === "FILE MISSING") return;
             setError(null);
           }}
           onWaiting={() => setIsBuffering(true)}
@@ -112,7 +132,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                    {error}
                  </span>
                  <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-200 font-mono">
-                   verify: {finalUrl}
+                   check /public/{url}
                  </span>
                </div>
              )}
@@ -138,8 +158,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
           <button 
             onClick={togglePlay}
-            disabled={error === "ASSET MISSING"}
-            className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-10"
+            disabled={error === "FILE MISSING"}
+            className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-30"
           >
             {isPlaying ? (
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
