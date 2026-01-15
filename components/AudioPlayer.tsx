@@ -14,6 +14,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Normalize the URL: Ensure it doesn't have double slashes if it started with one
+  const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
+
   useEffect(() => {
     setError(null);
     setIsLoaded(false);
@@ -21,7 +24,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     if (audioRef.current) {
       audioRef.current.load();
     }
-  }, [url]);
+  }, [normalizedUrl]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -34,10 +37,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play().catch(e => {
-          console.error("Playback failed:", e);
-          setError("Browser blocked audio. Click again to play.");
-        });
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            console.error("Playback failed:", e);
+            setError("Playback error. Please try again.");
+            setIsPlaying(false);
+          });
+        }
       }
       setIsPlaying(!isPlaying);
     }
@@ -57,8 +64,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     }
   };
 
-  const handleError = () => {
-    setError("Unable to play music. Please check if the file exists in your root folder.");
+  const handleError = (e: any) => {
+    console.error("Audio Load Error:", e);
+    setError(`Cannot find "${decodeURI(url)}". Ensure it's in your project root folder.`);
     setIsPlaying(false);
     setIsLoaded(false);
   };
@@ -78,7 +86,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
       <audio 
         ref={audioRef} 
-        src={url} 
+        src={normalizedUrl} 
         onTimeUpdate={handleTimeUpdate} 
         onEnded={() => setIsPlaying(false)}
         onError={handleError}
@@ -100,7 +108,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         </div>
 
         {error ? (
-          <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse">
+          <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse leading-relaxed">
             <span className="mr-2">⚠️</span> {error}
           </div>
         ) : (
