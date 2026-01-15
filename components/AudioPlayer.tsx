@@ -3,156 +3,121 @@ import React, { useState, useRef, useEffect } from 'react';
 interface AudioPlayerProps {
   url: string;
   title: string;
-  onClose?: () => void;
+  onClose: () => void;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(0.7);
   const [error, setError] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Normalize the URL: Try absolute path from root first
-  const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
+  // Encode the URL to handle Chinese characters and spaces correctly
+  // We also ensure it starts with a leading slash to point to the public root
+  const encodedUrl = encodeURI(url.startsWith('/') ? url : `/${url}`);
 
   useEffect(() => {
     setError(null);
-    setIsLoaded(false);
-    setIsPlaying(false);
+    setIsBuffering(true);
     if (audioRef.current) {
       audioRef.current.load();
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch(err => {
+            console.error("Playback failed:", err);
+            // Auto-play is often blocked by browsers until user interaction
+            setIsPlaying(false);
+            setIsBuffering(false);
+          });
+      }
     }
   }, [url]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
   const togglePlay = () => {
-    if (audioRef.current && isLoaded) {
+    if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((e) => {
-            console.error("Playback failed", e);
-            setError("Playback blocked. Please click play again.");
-            setIsPlaying(false);
-          });
-        }
+        audioRef.current.play().catch(e => setError("Playback blocked. Click again."));
       }
       setIsPlaying(!isPlaying);
     }
   };
 
-  const handleTimeUpdate = () => {
+  const onTimeUpdate = () => {
     if (audioRef.current) {
-      const currentProgress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
-      setProgress(isNaN(currentProgress) ? 0 : currentProgress);
+      const p = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+      setProgress(p || 0);
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (audioRef.current && audioRef.current.duration) {
-      const time = (parseFloat(e.target.value) / 100) * audioRef.current.duration;
-      audioRef.current.currentTime = time;
-    }
-  };
-
-  const handleError = () => {
-    console.error("Audio failed to load:", normalizedUrl);
-    setError(`Cannot find "${url}". Rename the file in your root folder to exactly this name.`);
-    setIsPlaying(false);
-    setIsLoaded(false);
-  };
-
-  const handleCanPlay = () => {
-    setIsLoaded(true);
-    setError(null);
+  const handleAudioError = () => {
+    setError(`File not found: "${url}". Please ensure it is in the "public" folder.`);
+    setIsBuffering(false);
   };
 
   return (
-    <div className="fixed bottom-[100px] md:bottom-8 left-4 right-4 md:left-auto md:w-96 bg-white/95 backdrop-blur-xl android-card android-shadow p-6 border border-white/20 z-[100] animate-in slide-in-from-bottom-10 duration-500 overflow-hidden">
-      {isPlaying && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 -translate-x-1/2 -translate-y-1/2 bg-emerald-400 rounded-full blur-[100px] pulse-bg opacity-30"></div>
-        </div>
-      )}
-
-      <audio 
-        ref={audioRef} 
-        src={normalizedUrl} 
-        onTimeUpdate={handleTimeUpdate} 
-        onEnded={() => setIsPlaying(false)}
-        onError={handleError}
-        onCanPlay={handleCanPlay}
-        preload="auto"
-      />
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex-1">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600 font-extrabold mb-1">Now Playing</p>
-            <h3 className="font-bold text-stone-800 truncate text-lg">{title}</h3>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 active:scale-90 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+    <div className="fixed bottom-24 left-6 right-6 z-50 animate-in slide-in-from-bottom-10">
+      <div className="bg-stone-900/95 backdrop-blur-2xl rounded-[40px] p-6 shadow-2xl border border-white/10 flex flex-col md:flex-row items-center md:space-x-6 space-y-4 md:space-y-0">
+        <audio 
+          ref={audioRef} 
+          src={encodedUrl} 
+          onTimeUpdate={onTimeUpdate}
+          onEnded={() => setIsPlaying(false)}
+          onError={handleAudioError}
+          onCanPlay={() => setIsBuffering(false)}
+          onWaiting={() => setIsBuffering(true)}
+          preload="auto"
+        />
+        
+        <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0 relative">
+          {isBuffering && (
+            <div className="absolute inset-0 border-4 border-white/20 border-t-white rounded-3xl animate-spin"></div>
           )}
+          <svg className={`w-8 h-8 ${isPlaying ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
         </div>
 
-        {error ? (
-          <div className="bg-red-50 text-red-600 text-[11px] p-4 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse leading-relaxed">
-            <span className="mr-2">⚠️</span> {error}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex justify-between items-end mb-1">
+             <h4 className="text-white font-bold text-lg truncate">{title}</h4>
+             {error && <span className="text-red-400 text-[10px] font-black uppercase animate-pulse">Error</span>}
           </div>
-        ) : (
-          <div className="flex items-center space-x-4 mb-5">
-            <button 
-              onClick={togglePlay}
-              disabled={!isLoaded && !error}
-              className={`w-14 h-14 ${isLoaded ? 'bg-stone-900 shadow-xl shadow-stone-200' : 'bg-stone-100'} rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-50`}
-            >
-              {!isLoaded && !error ? (
-                <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin"></div>
-              ) : isPlaying ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              ) : (
-                <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-              )}
-            </button>
-            <div className="flex-1">
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                step="0.1"
-                value={progress} 
-                onChange={handleSeek}
-                className="w-full accent-emerald-500 h-1.5 rounded-full cursor-pointer bg-stone-100 appearance-none"
-              />
-            </div>
+          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ${error ? 'bg-red-500' : 'bg-emerald-500'}`}
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
-        )}
+          {error && <p className="text-red-300 text-[10px] mt-2 font-medium leading-tight">{error}</p>}
+        </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 text-stone-400">
-            <span className="text-xs">VOL</span>
-            <input 
-              type="range" 
-              min="0" 
-              max="1" 
-              step="0.01" 
-              value={volume} 
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-20 accent-stone-300 h-1 rounded-full bg-stone-100 appearance-none"
-            />
-          </div>
+        <div className="flex items-center space-x-4">
+          <button 
+            onClick={togglePlay}
+            disabled={!!error}
+            className="w-12 h-12 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform disabled:opacity-50"
+          >
+            {isPlaying ? (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            ) : (
+              <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            )}
+          </button>
+          
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 bg-white/10 text-white/40 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { ZenCenter, Language } from "../types";
 
@@ -6,6 +7,7 @@ import { ZenCenter, Language } from "../types";
  * Uses gemini-3-flash-preview for basic text advice.
  */
 export const getPersonalizedRecommendation = async (mood: string, lang: Language = 'en') => {
+  // Create a new instance right before the call to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const langMap: Record<Language, string> = {
@@ -18,6 +20,7 @@ export const getPersonalizedRecommendation = async (mood: string, lang: Language
       model: 'gemini-3-flash-preview',
       contents: `I am feeling ${mood} today. Give me a 3-sentence mindfulness advice and suggest a meditation theme. Please respond in ${langMap[lang]}.`,
     });
+    // Property .text is the standard way to extract output
     return response.text || "Breathe deeply and find your center today.";
   } catch (error) {
     console.error("Error fetching recommendation:", error);
@@ -27,13 +30,14 @@ export const getPersonalizedRecommendation = async (mood: string, lang: Language
 
 /**
  * Finds nearby zen meditation centers using Google Maps grounding.
- * Uses gemini-2.5-flash-preview which supports Maps grounding.
+ * Maps grounding is supported in Gemini 2.5 series models.
  */
 export const findNearbyZenCenters = async (lat: number, lng: number): Promise<ZenCenter[]> => {
+  // Create a new instance right before the call
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview",
+      model: "gemini-2.5-flash",
       contents: "Find 3 highly rated mindfulness or zen meditation centers near this location. Tell me their names and addresses.",
       config: {
         tools: [{ googleMaps: {} }],
@@ -45,6 +49,7 @@ export const findNearbyZenCenters = async (lat: number, lng: number): Promise<Ze
             }
           }
         }
+        // responseMimeType and responseSchema are prohibited when using googleMaps tool
       },
     });
 

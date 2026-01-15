@@ -22,14 +22,14 @@ const SoundMixer: React.FC = () => {
       }));
     } else {
       if (!audioRefs.current[id]) {
-        // Ensure path is correct for local root files
-        const normalizedUrl = url.startsWith('.') || url.startsWith('/') ? url : `./${url}`;
-        audioRefs.current[id] = new Audio(normalizedUrl);
+        // Encode the URL for ambient sounds as well
+        const encodedUrl = encodeURI(url.startsWith('/') ? url : `/${url}`);
+        audioRefs.current[id] = new Audio(encodedUrl);
         audioRefs.current[id].loop = true;
       }
       audioRefs.current[id].volume = activeSounds[id]?.volume ?? 0.5;
-      audioRefs.current[id].play().catch(() => {
-        console.warn(`Mixer sound ${id} blocked or failed.`);
+      audioRefs.current[id].play().catch((err) => {
+        console.warn(`Mixer sound ${id} failed:`, err);
       });
       setActiveSounds(prev => ({
         ...prev,
