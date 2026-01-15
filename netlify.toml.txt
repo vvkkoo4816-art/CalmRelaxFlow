@@ -3,7 +3,7 @@
   publish = "dist"
 
 # Single Page Application (SPA) routing
-# This ensures that when a user refreshes on a page like /profile, 
+# This ensures that when a user refreshes on a sub-page, 
 # Netlify serves the index.html instead of a 404.
 [[redirects]]
   from = "/*"
@@ -20,6 +20,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
+# Specific headers for PWA and Android TWA support
 [[headers]]
   for = "/manifest.json"
   [headers.values]
