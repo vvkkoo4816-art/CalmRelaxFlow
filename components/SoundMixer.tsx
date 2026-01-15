@@ -22,18 +22,27 @@ const SoundMixer: React.FC = () => {
       }));
     } else {
       if (!audioRefs.current[id]) {
-        // Encode the URL for ambient sounds as well
-        const encodedUrl = encodeURI(url.startsWith('/') ? url : `/${url}`);
-        audioRefs.current[id] = new Audio(encodedUrl);
+        // Relative path from root is standard for Vite public assets
+        const absoluteUrl = url.startsWith('http') ? url : `/${url}`;
+        
+        audioRefs.current[id] = new Audio(absoluteUrl);
         audioRefs.current[id].loop = true;
+        
+        audioRefs.current[id].onerror = () => {
+          console.error(`Ambient sound load failed for: ${absoluteUrl}`);
+        };
       }
-      audioRefs.current[id].volume = activeSounds[id]?.volume ?? 0.5;
+      
+      const currentVolume = activeSounds[id]?.volume ?? 0.5;
+      audioRefs.current[id].volume = currentVolume;
+      
       audioRefs.current[id].play().catch((err) => {
-        console.warn(`Mixer sound ${id} failed:`, err);
+        console.warn(`Playback blocked for "${id}":`, err.message);
       });
+      
       setActiveSounds(prev => ({
         ...prev,
-        [id]: { id, isPlaying: true, volume: prev[id]?.volume ?? 0.5 }
+        [id]: { id, isPlaying: true, volume: currentVolume }
       }));
     }
   };
@@ -50,10 +59,12 @@ const SoundMixer: React.FC = () => {
 
   useEffect(() => {
     return () => {
+      // Clean up all audio elements on unmount
       Object.values(audioRefs.current).forEach(audio => {
         if (audio) {
           audio.pause();
           audio.src = "";
+          audio.load();
         }
       });
     };
@@ -83,7 +94,7 @@ const SoundMixer: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="font-bold text-stone-800">{sound.name}</span>
                 <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">
-                  {state.isPlaying ? 'Playing' : 'Off'}
+                  {state.isPlaying ? 'Active' : 'Muted'}
                 </span>
               </div>
               <input 
@@ -95,7 +106,7 @@ const SoundMixer: React.FC = () => {
                 value={state.volume}
                 onChange={(e) => handleVolumeChange(sound.id, parseFloat(e.target.value))}
                 className={`w-full h-1.5 rounded-full appearance-none transition-all ${
-                  state.isPlaying ? 'accent-emerald-500 bg-emerald-100' : 'bg-stone-100'
+                  state.isPlaying ? 'accent-emerald-500 bg-emerald-100' : 'bg-stone-100 opacity-50'
                 }`}
               />
             </div>

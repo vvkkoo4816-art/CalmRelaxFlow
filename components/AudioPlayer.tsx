@@ -8,76 +8,94 @@ interface AudioPlayerProps {
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(true);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isBuffering, setIsBuffering] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Encode the URL to handle Chinese characters and spaces correctly
-  // We also ensure it starts with a leading slash to point to the public root
-  const encodedUrl = encodeURI(url.startsWith('/') ? url : `/${url}`);
+  // Vercel/Vite root-relative path resolution
+  const finalUrl = url.startsWith('http') ? url : `/${url.replace(/^\//, '')}`;
 
   useEffect(() => {
     setError(null);
     setIsBuffering(true);
+    setIsPlaying(false);
+    setProgress(0);
+    
     if (audioRef.current) {
+      audioRef.current.pause();
+      // Adding a cache-buster during development can help, but for production, simple root paths are best.
+      audioRef.current.src = finalUrl;
+      audioRef.current.loop = isLooping;
       audioRef.current.load();
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            setIsBuffering(false);
-          })
-          .catch(err => {
-            console.error("Playback failed:", err);
-            // Auto-play is often blocked by browsers until user interaction
-            setIsPlaying(false);
-            setIsBuffering(false);
-          });
-      }
     }
-  }, [url]);
+  }, [finalUrl]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.loop = isLooping;
+    }
+  }, [isLooping]);
 
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play().catch(e => setError("Playback blocked. Click again."));
+        setError(null);
+        setIsBuffering(true);
+        const playPromise = audioRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+              setIsBuffering(false);
+            })
+            .catch((err) => {
+              console.error("Audio playback error:", err);
+              setError("PLAYBACK BLOCKED");
+              setIsBuffering(false);
+              setIsPlaying(false);
+            });
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
   const onTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && audioRef.current.duration) {
       const p = (audioRef.current.currentTime / audioRef.current.duration) * 100;
       setProgress(p || 0);
     }
   };
 
-  const handleAudioError = () => {
-    setError(`File not found: "${url}". Please ensure it is in the "public" folder.`);
+  const handleAudioError = (e: any) => {
+    console.error("Audio Load Error:", e);
+    setError("ASSET MISSING");
     setIsBuffering(false);
   };
 
   return (
     <div className="fixed bottom-24 left-6 right-6 z-50 animate-in slide-in-from-bottom-10">
-      <div className="bg-stone-900/95 backdrop-blur-2xl rounded-[40px] p-6 shadow-2xl border border-white/10 flex flex-col md:flex-row items-center md:space-x-6 space-y-4 md:space-y-0">
+      <div className="bg-stone-900/98 backdrop-blur-3xl rounded-[40px] p-6 shadow-2xl border border-white/10 flex flex-col md:flex-row items-center md:space-x-6 space-y-4 md:space-y-0">
         <audio 
           ref={audioRef} 
-          src={encodedUrl} 
           onTimeUpdate={onTimeUpdate}
-          onEnded={() => setIsPlaying(false)}
+          onEnded={() => !isLooping && setIsPlaying(false)}
           onError={handleAudioError}
-          onCanPlay={() => setIsBuffering(false)}
+          onCanPlay={() => {
+            setIsBuffering(false);
+            setError(null);
+          }}
           onWaiting={() => setIsBuffering(true)}
           preload="auto"
         />
         
-        <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0 relative">
-          {isBuffering && (
+        <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0 relative overflow-hidden">
+          {isBuffering && !error && (
             <div className="absolute inset-0 border-4 border-white/20 border-t-white rounded-3xl animate-spin"></div>
           )}
           <svg className={`w-8 h-8 ${isPlaying ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,36 +103,54 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           </svg>
         </div>
 
-        <div className="flex-1 min-w-0 w-full">
-          <div className="flex justify-between items-end mb-1">
-             <h4 className="text-white font-bold text-lg truncate">{title}</h4>
-             {error && <span className="text-red-400 text-[10px] font-black uppercase animate-pulse">Error</span>}
+        <div className="flex-1 min-w-0 w-full text-center md:text-left">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-1">
+             <h4 className="text-white font-black text-lg truncate tracking-tight serif">{title}</h4>
+             {error && (
+               <div className="flex items-center space-x-2">
+                 <span className="text-red-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                   {error}
+                 </span>
+                 <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-200 font-mono">
+                   verify: {finalUrl}
+                 </span>
+               </div>
+             )}
           </div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all duration-300 ${error ? 'bg-red-500' : 'bg-emerald-500'}`}
+              className={`h-full transition-all duration-300 ${error ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          {error && <p className="text-red-300 text-[10px] mt-2 font-medium leading-tight">{error}</p>}
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setIsLooping(!isLooping)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isLooping ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-white/20 hover:text-white/40'}`}
+            title="Loop Session"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
           <button 
             onClick={togglePlay}
-            disabled={!!error}
-            className="w-12 h-12 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform disabled:opacity-50"
+            disabled={error === "ASSET MISSING"}
+            className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-10"
           >
             {isPlaying ? (
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             ) : (
-              <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg className="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             )}
           </button>
           
           <button 
             onClick={onClose}
-            className="w-10 h-10 bg-white/10 text-white/40 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="w-10 h-10 bg-white/5 text-white/30 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
