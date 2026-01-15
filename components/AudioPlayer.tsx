@@ -14,48 +14,50 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isBuffering, setIsBuffering] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Resolution logic
-  const getAbsoluteUrl = (path: string) => {
+  /**
+   * Smart Path Resolution
+   * Tries to find the file at the root, and falls back to /public/
+   */
+  const resolveAudioUrl = async (path: string): Promise<string> => {
     if (path.startsWith('http')) return path;
     const cleanPath = path.replace(/^\/+/, '');
-    // Using a simpler query param to avoid double-caching issues
-    return `${window.location.origin}/${cleanPath}?rel=${Date.now()}`;
+    
+    // Attempt 1: Root path (Standard for Vite/Vercel production)
+    const rootUrl = `${window.location.origin}/${cleanPath}`;
+    
+    try {
+      const resp = await fetch(rootUrl, { method: 'HEAD' });
+      const type = resp.headers.get('content-type');
+      if (resp.ok && type && !type.includes('text/html')) {
+        return rootUrl + `?v=${Date.now()}`;
+      }
+    } catch (e) {
+      console.warn("Root check failed, trying /public/ fallback...");
+    }
+
+    // Attempt 2: /public/ path (Often needed in IDE preview environments)
+    return `${window.location.origin}/public/${cleanPath}?v=${Date.now()}`;
   };
 
-  const finalUrl = getAbsoluteUrl(url);
-
   useEffect(() => {
-    const verifyAndLoad = async () => {
+    const initAudio = async () => {
       setError(null);
       setIsBuffering(true);
       setIsPlaying(false);
       setProgress(0);
 
-      try {
-        // PRE-FLIGHT CHECK: Verify this is actually an audio file
-        const response = await fetch(finalUrl, { method: 'HEAD' });
-        const contentType = response.headers.get('content-type');
+      const resolvedUrl = await resolveAudioUrl(url);
+      console.log("Resolved Audio URL:", resolvedUrl);
 
-        if (!response.ok || (contentType && contentType.includes('text/html'))) {
-          console.error("Server returned HTML instead of Audio. File is likely missing.");
-          setError("FILE MISSING");
-          setIsBuffering(false);
-          return;
-        }
-
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = finalUrl;
-          audioRef.current.load();
-        }
-      } catch (e) {
-        setError("NETWORK ERROR");
-        setIsBuffering(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = resolvedUrl;
+        audioRef.current.load();
       }
     };
 
-    verifyAndLoad();
-  }, [finalUrl]);
+    initAudio();
+  }, [url]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -71,26 +73,32 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       setIsPlaying(false);
     } else {
       setIsBuffering(true);
+      setError(null);
       
       audioRef.current.play()
         .then(() => {
           setIsPlaying(true);
           setIsBuffering(false);
-          setError(null);
         })
         .catch((err: Error) => {
           console.error("Playback failed:", err.name);
           if (err.name === 'NotSupportedError') {
-            setError("BAD FILE FORMAT");
+            setError("FORMAT ERROR");
           } else if (err.name === 'NotAllowedError') {
             setError("TAP TO PLAY");
           } else {
-            setError("ERROR");
+            setError("LOAD FAILED");
           }
           setIsBuffering(false);
           setIsPlaying(false);
         });
     }
+  };
+
+  const handleAudioError = () => {
+    // If we've reached this, both root and /public/ fallbacks failed or returned bad data
+    setError("FILE NOT FOUND");
+    setIsBuffering(false);
   };
 
   return (
@@ -105,9 +113,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
             }
           }}
           onEnded={() => !isLooping && setIsPlaying(false)}
+          onError={handleAudioError}
           onCanPlay={() => {
             setIsBuffering(false);
-            if (error === "FILE MISSING") return;
             setError(null);
           }}
           onWaiting={() => setIsBuffering(true)}
@@ -132,7 +140,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                    {error}
                  </span>
                  <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-200 font-mono">
-                   check /public/{url}
+                   PATH: /public/{url}
                  </span>
                </div>
              )}
@@ -158,7 +166,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
           <button 
             onClick={togglePlay}
-            disabled={error === "FILE MISSING"}
+            disabled={error === "FILE NOT FOUND"}
             className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-30"
           >
             {isPlaying ? (
