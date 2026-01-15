@@ -1,4 +1,3 @@
-
 {
   "packageId": "com.calmrelaxflow.app",
   "host": "calmrelaxflow.netlify.app",
@@ -14,8 +13,8 @@
   "backgroundColor": "#10B981",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://calmrelaxflow.netlify.app/meditation-app-icon.png",
-  "maskableIconUrl": "https://calmrelaxflow.netlify.app/meditation-app-icon.png",
+  "iconUrl": "https://calmrelaxflow.netlify.app/icon.png",
+  "maskableIconUrl": "https://calmrelaxflow.netlify.app/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "calmrelaxkey",
