@@ -15,14 +15,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [attemptIndex, setAttemptIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // We simplify to 2 main attempts. If it's not here, the file is physically missing.
+  /**
+   * Generates a list of all reasonable places the audio file might be.
+   * Since the user moved files to the root of /public, we check root first.
+   */
   const getPossiblePaths = (baseUrl: string) => {
     if (baseUrl.startsWith('http')) return [baseUrl];
-    const path = baseUrl.startsWith('/') ? baseUrl : `/${baseUrl}`;
+    
+    // Extract the filename 
+    const fileName = baseUrl.split('/').pop() || baseUrl;
+    
     return [
-      path,             // e.g. /music/morning.mp3 (Standard Vite)
-      `/public${path}`  // e.g. /public/music/morning.mp3 (Some specific dev environments)
-    ];
+      `/${fileName}`,               // Standard: Root level (Maps to public/file.mp3)
+      `./${fileName}`,              // Relative root
+      `/public/${fileName}`,        // Explicit public prefix (for some local environments)
+      baseUrl                       // Fallback to original
+    ].filter((v, i, a) => a.indexOf(v) === i);
   };
 
   const possiblePaths = getPossiblePaths(url);
@@ -50,18 +58,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         audioRef.current.load();
       }
     } else {
-      setError("FILE MISSING");
+      setError("FILE NOT FOUND");
       setIsBuffering(false);
     }
   };
 
   const togglePlay = () => {
-    if (!audioRef.current || error) return;
+    if (!audioRef.current || error === "FILE NOT FOUND") return;
 
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      setIsBuffering(true);
+      setError(null);
+      
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise
@@ -79,6 +90,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
             setIsPlaying(false);
           });
       }
+    }
+  };
+
+  const handleRetry = () => {
+    setAttemptIndex(0);
+    setError(null);
+    setIsBuffering(true);
+    if (audioRef.current) {
+      audioRef.current.src = possiblePaths[0];
+      audioRef.current.load();
     }
   };
 
@@ -118,13 +139,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
              {error && (
                <div className="flex flex-col items-center md:items-end">
                  <span className="text-red-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                   {error === "FILE MISSING" ? "AUDIO FILE NOT FOUND" : error}
+                   {error}
                  </span>
-                 {error === "FILE MISSING" && (
-                   <span className="bg-red-500/20 px-2 py-0.5 rounded text-[8px] text-red-100 font-mono mt-1">
-                     Place file in: public/{url}
-                   </span>
-                 )}
+                 <span className="bg-red-500/20 px-2 py-0.5 rounded text-[7px] text-red-200 font-mono mt-1">
+                   Looking in: /public/{url}
+                 </span>
                </div>
              )}
           </div>
@@ -137,18 +156,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setIsLooping(!isLooping)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isLooping ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-white/20 hover:text-white/40'}`}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
+          {error === "FILE NOT FOUND" && (
+             <button 
+               onClick={handleRetry}
+               className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center hover:bg-emerald-500/30 transition-all"
+             >
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+               </svg>
+             </button>
+          )}
 
           <button 
             onClick={togglePlay}
-            disabled={error === "FILE MISSING"}
+            disabled={error === "FILE NOT FOUND"}
             className="w-14 h-14 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform disabled:opacity-30"
           >
             {isPlaying ? (

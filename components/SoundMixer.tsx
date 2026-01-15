@@ -29,14 +29,16 @@ const SoundMixer: React.FC = () => {
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
-      // Try path directly from constant
-      const fullPath = url.startsWith('/') ? url : `/${url}`;
+      // Clean up the URL to point to the root / of public
+      const fileName = url.split('/').pop() || url;
+      const fullPath = `/${fileName}`;
+      
       audioRefs.current[id].src = fullPath;
       
       audioRefs.current[id].play().catch(() => {
-        // Fallback for /public prefix if needed
-        audioRefs.current[id].src = `/public${fullPath}`;
-        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed to load:", e));
+        // Fallback to explicit /public prefix just in case
+        audioRefs.current[id].src = `/public/${fileName}`;
+        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed at all root paths:", e));
       });
       
       setActiveSounds(prev => ({
