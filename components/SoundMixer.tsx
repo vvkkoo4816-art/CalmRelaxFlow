@@ -60,7 +60,10 @@ const SoundMixer: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      Object.values(audioRefs.current).forEach(audio => {
+      // Fix: Iterating via Object.keys to ensure TypeScript correctly identifies audioRefs.current[key] as HTMLAudioElement
+      // This resolves errors where Object.values might return an 'unknown' type.
+      Object.keys(audioRefs.current).forEach(key => {
+        const audio = audioRefs.current[key];
         if (audio) {
           audio.pause();
           audio.src = "";

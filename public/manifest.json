@@ -1,31 +1,39 @@
+
 {
   "name": "CalmRelaxFlow",
   "short_name": "CalmRelaxFlow",
   "id": "com.calmrelaxflow.app",
   "start_url": "/",
-  "description": "Professional mindfulness companion.",
+  "description": "Professional mindfulness companion with zen music and meditation.",
   "theme_color": "#10b981",
   "background_color": "#fdfcfb",
   "display": "standalone",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/meditation-app-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/meditation-app-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Daily Zen",
+      "url": "/?view=today",
+      "icons": [{ "src": "/icon.png", "sizes": "192x192" }]
     }
   ]
 }

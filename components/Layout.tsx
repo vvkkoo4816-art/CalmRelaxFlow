@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AppView, User, Language } from '../types';
 import { translations } from '../translations';
@@ -18,46 +17,51 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
   const isAdmin = user.email && user.email.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen relative pb-24">
-      {/* Premium Sticky Header */}
-      <header className="px-6 pt-10 pb-4 flex justify-between items-center bg-white/70 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-50">
-        <div className="flex items-center space-x-2">
-           <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    <div className="flex flex-col flex-1 min-h-screen relative pb-32">
+      {/* Premium Boutique Header */}
+      <header className="px-8 pt-12 pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40">
+        <div className="flex items-center space-x-3">
+           <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
            </div>
-           <span className="text-xl font-black tracking-tighter serif text-stone-900">CalmRelaxFlow</span>
+           <div>
+             <span className="text-2xl font-black tracking-tighter serif text-stone-900 block leading-none">CalmRelaxFlow</span>
+             <span className="text-[8px] font-black uppercase tracking-[0.3em] text-emerald-600">Pure Sanctuary</span>
+           </div>
         </div>
-        <button onClick={() => setActiveView('profile')} className="relative">
-          <img src={user.photoUrl} className="w-9 h-9 rounded-full border-2 border-white shadow-md" alt="profile" />
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full"></div>
+        <button onClick={() => setActiveView('profile')} className="relative group">
+          <img src={user.photoUrl} className="w-11 h-11 rounded-[18px] border-2 border-white shadow-lg transition-transform group-active:scale-90" alt="profile" />
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
         </button>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 px-6 py-6 overflow-x-hidden">
+      <main className="flex-1 px-8 py-6 overflow-x-hidden">
         {children}
       </main>
 
-      {/* Responsive Bottom Navigation */}
-      <nav className="flex justify-between items-center px-2 py-3 bg-white/95 backdrop-blur-2xl border-t border-stone-100 fixed bottom-0 left-0 right-0 z-50 mx-auto w-full">
-        <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
-        <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
-        <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
-        <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<ExploreIcon active={activeView === 'explore'} />} label={t.nav_explore} />
-        {isAdmin && (
-          <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
-        )}
-      </nav>
+      {/* Responsive Premium Bottom Navigation */}
+      <div className="fixed bottom-8 left-6 right-6 z-50 flex justify-center pointer-events-none">
+        <nav className="flex justify-between items-center px-4 py-3 bg-stone-900/95 backdrop-blur-2xl rounded-[32px] border border-white/10 shadow-2xl w-full max-w-lg pointer-events-auto">
+          <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
+          <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
+          <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
+          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<ExploreIcon active={activeView === 'explore'} />} label={t.nav_explore} />
+          {isAdmin && (
+            <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
+          )}
+        </nav>
+      </div>
     </div>
   );
 };
 
 const MobileNavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
-  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 min-w-0 group transition-all">
-    <div className={`p-2 rounded-xl mb-1 transition-all duration-300 ${active ? 'bg-emerald-500 text-white shadow-md scale-110' : 'text-stone-300 group-hover:text-stone-400'}`}>
+  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 min-w-0 group transition-all relative">
+    <div className={`p-2.5 rounded-2xl mb-1 transition-all duration-300 ${active ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/40 scale-110' : 'text-stone-500 group-hover:text-stone-300'}`}>
       {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5' })}
     </div>
-    <span className={`text-[9px] font-bold uppercase tracking-wider transition-colors duration-300 truncate w-full text-center ${active ? 'text-emerald-600' : 'text-stone-300'}`}>
+    <span className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors duration-300 truncate w-full text-center ${active ? 'text-white' : 'text-stone-500'}`}>
       {label}
     </span>
   </button>
