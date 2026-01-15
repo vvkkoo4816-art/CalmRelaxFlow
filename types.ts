@@ -1,4 +1,3 @@
-
 export type Language = 'en' | 'zh-Hans' | 'zh-Hant';
 export type UserRole = 'admin' | 'user';
 
@@ -23,6 +22,21 @@ export interface MeditationSession {
   description?: string;
 }
 
+export interface JournalEntry {
+  id: string;
+  date: string;
+  text: string;
+  mood: string;
+}
+
+export interface ZenCenter {
+  name: string;
+  address: string;
+  rating: number;
+  url: string;
+}
+
+// Course interface required by constants.ts for educational content tracks
 export interface Course {
   id: string;
   title: string;
@@ -33,18 +47,4 @@ export interface Course {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
-export interface GroundingChunk {
-  maps?: {
-    uri: string;
-    title: string;
-  };
-}
-
-export interface ZenCenter {
-  name: string;
-  address: string;
-  rating: number;
-  url: string;
-}
-
-export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin';
+export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin' | 'journal';

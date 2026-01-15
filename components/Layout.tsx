@@ -35,17 +35,15 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
         </button>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 px-8 py-6 overflow-x-hidden">
         {children}
       </main>
 
-      {/* Responsive Premium Bottom Navigation */}
       <div className="fixed bottom-8 left-6 right-6 z-50 flex justify-center pointer-events-none">
         <nav className="flex justify-between items-center px-4 py-3 bg-stone-900/95 backdrop-blur-2xl rounded-[32px] border border-white/10 shadow-2xl w-full max-w-lg pointer-events-auto">
           <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
           <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
-          <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
+          <MobileNavItem active={activeView === 'journal'} onClick={() => setActiveView('journal')} icon={<JournalIcon active={activeView === 'journal'} />} label={t.nav_journal} />
           <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<ExploreIcon active={activeView === 'explore'} />} label={t.nav_explore} />
           {isAdmin && (
             <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
@@ -73,8 +71,8 @@ const TodayIcon = ({ active, className }: { active?: boolean, className?: string
 const LibraryIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
 );
-const SleepIcon = ({ active, className }: { active?: boolean, className?: string }) => (
-  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+const JournalIcon = ({ active, className }: { active?: boolean, className?: string }) => (
+  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
 );
 const ExploreIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
