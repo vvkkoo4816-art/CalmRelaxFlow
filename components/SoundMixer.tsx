@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AMBIENT_SOUNDS } from '../constants';
 
@@ -16,18 +15,22 @@ const SoundMixer: React.FC = () => {
     const isCurrentlyPlaying = activeSounds[id]?.isPlaying;
     
     if (isCurrentlyPlaying) {
-      audioRefs.current[id].pause();
+      if (audioRefs.current[id]) audioRefs.current[id].pause();
       setActiveSounds(prev => ({
         ...prev,
         [id]: { ...prev[id], isPlaying: false }
       }));
     } else {
       if (!audioRefs.current[id]) {
-        audioRefs.current[id] = new Audio(url);
+        // Ensure path is correct for local root files
+        const normalizedUrl = url.startsWith('.') || url.startsWith('/') ? url : `./${url}`;
+        audioRefs.current[id] = new Audio(normalizedUrl);
         audioRefs.current[id].loop = true;
       }
       audioRefs.current[id].volume = activeSounds[id]?.volume ?? 0.5;
-      audioRefs.current[id].play().catch(console.error);
+      audioRefs.current[id].play().catch(() => {
+        console.warn(`Mixer sound ${id} blocked or failed.`);
+      });
       setActiveSounds(prev => ({
         ...prev,
         [id]: { id, isPlaying: true, volume: prev[id]?.volume ?? 0.5 }
@@ -46,13 +49,12 @@ const SoundMixer: React.FC = () => {
   };
 
   useEffect(() => {
-    // Cleanup on unmount
     return () => {
-      // Fix: Cast each audio element to HTMLAudioElement to resolve 'unknown' property errors on lines 52 and 53
       Object.values(audioRefs.current).forEach(audio => {
-        const audioElement = audio as HTMLAudioElement;
-        audioElement.pause();
-        audioElement.src = "";
+        if (audio) {
+          audio.pause();
+          audio.src = "";
+        }
       });
     };
   }, []);

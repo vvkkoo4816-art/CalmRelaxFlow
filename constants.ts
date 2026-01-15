@@ -2,17 +2,17 @@ import { MeditationSession, Course } from './types';
 
 /**
  * Local file mapping for the Zen music collection.
- * Using encodeURI to handle Chinese characters and spaces in filenames.
+ * Using simple alphanumeric filenames for maximum browser compatibility.
  */
-const AUDIO_50_XUN = encodeURI('50.随缘-lyg-寒山僧踪-埙.mp3');
-const AUDIO_51_BODHI_HEART = encodeURI('51.闲踏清凉月-梦 菩提心.mp3');
-const AUDIO_52_BODHI_MIRROR = encodeURI('52.悦亲-菩提明镜.mp3');
-const AUDIO_58_GUAN_YIN = encodeURI('58.悦亲-观世音.mp3');
-const AUDIO_59_BODHI_TREE = encodeURI('59.悦亲-菩提树下.mp3');
-const AUDIO_64_XIAO = encodeURI('64.陈伟勋-寒山僧踪 (箫) .mp3');
-const AUDIO_66_ZEN_CHIME = encodeURI('66.楊李榮-寒山钟声.mp3');
-const AUDIO_67_GUZHENG = encodeURI('67.木子兮-云水禅心 (古筝版).mp3');
-const AUDIO_71_PURE_BUDDHA = encodeURI('71.无畏-南无阿弥陀佛.mp3');
+const AUDIO_50_XUN = 'zen-50.mp3';
+const AUDIO_51_BODHI_HEART = 'zen-51.mp3';
+const AUDIO_52_BODHI_MIRROR = 'zen-52.mp3';
+const AUDIO_58_GUAN_YIN = 'zen-58.mp3';
+const AUDIO_59_BODHI_TREE = 'zen-59.mp3';
+const AUDIO_64_XIAO = 'zen-64.mp3';
+const AUDIO_66_ZEN_CHIME = 'zen-66.mp3';
+const AUDIO_67_GUZHENG = 'zen-67.mp3';
+const AUDIO_71_PURE_BUDDHA = 'zen-71.mp3';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',

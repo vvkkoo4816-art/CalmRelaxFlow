@@ -14,7 +14,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Normalize the URL: Ensure it doesn't have double slashes if it started with one
+  // Normalize the URL: Try absolute path from root first
   const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
 
   useEffect(() => {
@@ -24,7 +24,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     if (audioRef.current) {
       audioRef.current.load();
     }
-  }, [normalizedUrl]);
+  }, [url]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -39,9 +39,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       } else {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
-          playPromise.catch(e => {
-            console.error("Playback failed:", e);
-            setError("Playback error. Please try again.");
+          playPromise.catch((e) => {
+            console.error("Playback failed", e);
+            setError("Playback blocked. Please click play again.");
             setIsPlaying(false);
           });
         }
@@ -64,9 +64,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     }
   };
 
-  const handleError = (e: any) => {
-    console.error("Audio Load Error:", e);
-    setError(`Cannot find "${decodeURI(url)}". Ensure it's in your project root folder.`);
+  const handleError = () => {
+    console.error("Audio failed to load:", normalizedUrl);
+    setError(`Cannot find "${url}". Rename the file in your root folder to exactly this name.`);
     setIsPlaying(false);
     setIsLoaded(false);
   };
@@ -108,7 +108,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         </div>
 
         {error ? (
-          <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse leading-relaxed">
+          <div className="bg-red-50 text-red-600 text-[11px] p-4 rounded-2xl mb-4 font-bold border border-red-100 animate-pulse leading-relaxed">
             <span className="mr-2">⚠️</span> {error}
           </div>
         ) : (
