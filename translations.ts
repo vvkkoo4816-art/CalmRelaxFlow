@@ -1,4 +1,3 @@
-
 import { Language } from './types';
 
 export const translations: Record<Language, Record<string, string>> = {
@@ -27,6 +26,7 @@ export const translations: Record<Language, Record<string, string>> = {
     total_minutes: 'Total Minutes',
     settings_language: 'Language',
     sign_in_google: 'Sign in with Google',
+    app_slogan: 'Your personalized sanctuary for mind and soul.',
     personalized_paths: 'Personalized paths to a calmer mind.',
     beginner: 'Beginner',
     intermediate: 'Intermediate',
@@ -53,7 +53,8 @@ export const translations: Record<Language, Record<string, string>> = {
     breathe_exhale: 'Exhale',
     breathe_box: 'Box Breathing',
     breathe_relax: '4-7-8 Relax',
-    breathe_focus: 'Deep Focus'
+    breathe_focus: 'Deep Focus',
+    select_language: 'Select Language'
   },
   'zh-Hans': {
     nav_today: '今日',
@@ -80,6 +81,7 @@ export const translations: Record<Language, Record<string, string>> = {
     total_minutes: '总分钟数',
     settings_language: '语言设置',
     sign_in_google: '使用 Google 登录',
+    app_slogan: '您的身心专属避风港。',
     personalized_paths: '为您量身定制的宁静之路。',
     beginner: '入门',
     intermediate: '中级',
@@ -106,7 +108,8 @@ export const translations: Record<Language, Record<string, string>> = {
     breathe_exhale: '呼气',
     breathe_box: '盒式呼吸',
     breathe_relax: '4-7-8 放松',
-    breathe_focus: '深度专注'
+    breathe_focus: '深度专注',
+    select_language: '选择语言'
   },
   'zh-Hant': {
     nav_today: '今日',
@@ -133,6 +136,7 @@ export const translations: Record<Language, Record<string, string>> = {
     total_minutes: '總分鐘數',
     settings_language: '語言設置',
     sign_in_google: '使用 Google 登錄',
+    app_slogan: '您的身心專屬避風港。',
     personalized_paths: '為您量身定制的寧靜之路。',
     beginner: '入門',
     intermediate: '中級',
@@ -159,6 +163,7 @@ export const translations: Record<Language, Record<string, string>> = {
     breathe_exhale: '呼氣',
     breathe_box: '盒式呼吸',
     breathe_relax: '4-7-8 放鬆',
-    breathe_focus: '深度專注'
+    breathe_focus: '深度專注',
+    select_language: '選擇語言'
   }
 };

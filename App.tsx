@@ -24,6 +24,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('calmrelax_active_user');
+    const savedLang = localStorage.getItem('calmrelax_lang');
+    if (savedLang) setLang(savedLang as Language);
+    
     if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
@@ -36,6 +39,10 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('calmrelax_lang', lang);
+  }, [lang]);
 
   const handleMoodSelect = async (selectedMood: string) => {
     setMood(selectedMood);
@@ -54,7 +61,6 @@ const App: React.FC = () => {
         setIsFindingCenters(false);
       }, (error) => {
         console.error("Location error", error);
-        // Fallback to a default location (e.g., San Francisco) if geo fails
         findNearbyZenCenters(37.7749, -122.4194).then(centers => {
           setNearbyCenters(centers);
           setIsFindingCenters(false);
@@ -90,7 +96,6 @@ const App: React.FC = () => {
     localStorage.removeItem('calmrelax_active_user');
   };
 
-  // Dynamic Background based on mood
   const getMoodColor = () => {
     switch(mood) {
       case 'Happy': return 'bg-amber-50/40';
@@ -114,10 +119,36 @@ const App: React.FC = () => {
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
           <h1 className="text-5xl font-black serif mb-4 text-stone-900 tracking-tight leading-none">CalmRelaxFlow</h1>
-          <p className="text-stone-400 font-medium max-w-xs text-lg">Your personalized sanctuary for mind and soul.</p>
+          <p className="text-stone-400 font-medium max-w-xs text-lg transition-all duration-500">
+            {t.app_slogan}
+          </p>
         </div>
 
-        <div className="w-full max-w-sm space-y-6 relative z-10 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+        <div className="w-full max-w-sm space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+          {/* Enhanced Language Selector on Login Page */}
+          <div className="space-y-3">
+             <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest">{t.select_language}</p>
+             <div className="flex items-center justify-center p-1 bg-white/50 backdrop-blur-md border border-stone-100 rounded-2xl shadow-sm">
+              {[
+                { id: 'en', label: 'English' },
+                { id: 'zh-Hans', label: '简体' },
+                { id: 'zh-Hant', label: '繁體' }
+              ].map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => setLang(l.id as Language)}
+                  className={`flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                    lang === l.id 
+                      ? 'bg-emerald-500 text-white shadow-md' 
+                      : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button 
             onClick={handleGoogleLogin} 
             className="w-full flex items-center justify-center space-x-4 bg-white border border-stone-200 text-stone-700 px-8 py-5 rounded-full font-bold shadow-sm hover:shadow-xl hover:bg-stone-50 active:scale-[0.98] transition-all duration-500 group"
@@ -132,8 +163,9 @@ const App: React.FC = () => {
             </div>
             <span className="text-lg tracking-tight font-extrabold">{t.sign_in_google}</span>
           </button>
+          
           <div className="flex flex-col items-center space-y-2">
-            <p className="text-stone-300 text-[10px] font-black uppercase tracking-[0.3em]">Zen Protocol V1.0</p>
+            <p className="text-stone-300 text-[10px] font-black uppercase tracking-[0.3em]">Zen Protocol V1.3</p>
           </div>
         </div>
       </div>
@@ -150,8 +182,8 @@ const App: React.FC = () => {
               <div>
                 <h2 className="text-4xl font-black serif leading-tight text-stone-900">{t.welcome_back},<br/>{user.name}</h2>
                 <div className="flex items-center space-x-2 mt-4">
-                  <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">{user.streak} Day Streak 🔥</span>
-                  <span className="text-stone-400 font-black text-[10px] uppercase tracking-widest bg-stone-50 px-3 py-1 rounded-full border border-stone-100">{user.minutesMeditated} Minutes Meditated</span>
+                  <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">{user.streak} {t.day_streak} 🔥</span>
+                  <span className="text-stone-400 font-black text-[10px] uppercase tracking-widest bg-stone-50 px-3 py-1 rounded-full border border-stone-100">{user.minutesMeditated} {t.total_minutes}</span>
                 </div>
               </div>
             </header>
@@ -193,7 +225,7 @@ const App: React.FC = () => {
                   <p className="text-stone-700 italic text-sm leading-relaxed mb-3 font-medium serif">"{aiAdvice}"</p>
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-px bg-emerald-200"></div>
-                    <p className="text-emerald-600 text-[9px] font-black uppercase tracking-[0.3em]">Zen Guide Oracle</p>
+                    <p className="text-emerald-600 text-[9px] font-black uppercase tracking-[0.3em]">{t.mindfulness_coach}</p>
                   </div>
                 </div>
               )}
@@ -227,6 +259,28 @@ const App: React.FC = () => {
             <section className="space-y-6 pt-6">
                <h3 className="text-xl font-black text-stone-800 tracking-tight">Quick Breathing Exercises</h3>
                <BreathingExercise lang={lang} />
+            </section>
+
+            <section className="space-y-6 pt-6">
+              <h3 className="text-xl font-black text-stone-800 tracking-tight">{t.explore_topics}</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {MEDITATION_SESSIONS.filter(s => s.category !== 'Sleep').map(session => (
+                  <div 
+                    key={session.id} 
+                    onClick={() => setActiveSession(session)} 
+                    className="p-5 bg-white rounded-[32px] border border-stone-100 flex items-center space-x-4 cursor-pointer hover:shadow-xl transition-all"
+                  >
+                    <img src={session.imageUrl} className="w-16 h-16 rounded-2xl object-cover" alt={session.title} />
+                    <div className="flex-1">
+                      <h4 className="font-bold text-stone-800">{session.title}</h4>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{session.duration} • {session.category}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
           </div>
         )}
@@ -326,11 +380,11 @@ const App: React.FC = () => {
              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm text-center">
                    <p className="text-3xl font-black serif text-emerald-600">{user.streak}</p>
-                   <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest mt-1">Day Streak</p>
+                   <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest mt-1">{t.day_streak}</p>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-sm text-center">
                    <p className="text-3xl font-black serif text-stone-900">{user.minutesMeditated}</p>
-                   <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest mt-1">Total Minutes</p>
+                   <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest mt-1">{t.total_minutes}</p>
                 </div>
              </div>
 
