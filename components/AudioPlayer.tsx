@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
@@ -59,7 +58,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   };
 
   const handleError = () => {
-    setError("Unable to stream music. The link might be blocked or broken.");
+    setError("Unable to play music. Please check if the file exists in your root folder.");
     setIsPlaying(false);
     setIsLoaded(false);
   };
@@ -85,7 +84,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         onError={handleError}
         onCanPlay={handleCanPlay}
         preload="auto"
-        crossOrigin="anonymous"
       />
       
       <div className="relative z-10">
