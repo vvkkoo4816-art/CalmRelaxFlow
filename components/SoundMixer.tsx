@@ -29,16 +29,16 @@ const SoundMixer: React.FC = () => {
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
-      // Clean up the URL to point to the root / of public
+      // Music file names match the public folder assets (e.g., rain.mp3, zen.mp3)
       const fileName = url.split('/').pop() || url;
       const fullPath = `/${fileName}`;
       
       audioRefs.current[id].src = fullPath;
       
       audioRefs.current[id].play().catch(() => {
-        // Fallback to explicit /public prefix just in case
-        audioRefs.current[id].src = `/public/${fileName}`;
-        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed at all root paths:", e));
+        // Simple fallback
+        audioRefs.current[id].src = `./${fileName}`;
+        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed:", e));
       });
       
       setActiveSounds(prev => ({
@@ -60,8 +60,6 @@ const SoundMixer: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      // Fix: Iterating via Object.keys to ensure TypeScript correctly identifies audioRefs.current[key] as HTMLAudioElement
-      // This resolves errors where Object.values might return an 'unknown' type.
       Object.keys(audioRefs.current).forEach(key => {
         const audio = audioRefs.current[key];
         if (audio) {

@@ -1,19 +1,24 @@
 import { MeditationSession, Course } from './types';
 
-/**
- * Audio files are now expected to be directly in the /public folder.
- * Example: /public/morning.mp3
- */
-const AUDIO_MORNING = 'morning.mp3'; 
-const AUDIO_HEALING = 'healing.mp3'; 
-const AUDIO_SLEEP = 'sleep.mp3';     
-const AUDIO_ZEN = 'zen.mp3';         
+export const STATIC_QUOTES = [
+  "Quiet the mind, and the soul will speak.",
+  "Breathe. It's just a bad day, not a bad life.",
+  "The goal of meditation is not to get rid of thoughts, but to realize that they are not you.",
+  "Peace comes from within. Do not seek it without.",
+  "The present moment is the only time over which we have dominion.",
+  "Wherever you are, be there totally.",
+  "Smile, breathe and go slowly.",
+  "Mindfulness isn't difficult, we just need to remember to do it.",
+  "Your calm is your strength.",
+  "The soul usually knows what to do to heal itself. The challenge is to silence the mind."
+];
 
-// Meaningful Imagery
 const IMG_NATURE = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800';
-const IMG_PIANO = 'https://images.unsplash.com/photo-1520529682703-909565f12a1f?auto=format&fit=crop&q=80&w=800';
+const IMG_PIANO = 'https://images.unsplash.com/photo-1552422535-c45813c61732?auto=format&fit=crop&q=80&w=800';
 const IMG_SLEEP = 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800';
 const IMG_ZEN = 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=800';
+const IMG_FOREST = 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800';
+const IMG_OCEAN = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',
@@ -21,7 +26,7 @@ export const DAILY_MEDITATION: MeditationSession = {
   duration: 'Infinite',
   category: 'Daily',
   imageUrl: IMG_NATURE, 
-  audioUrl: AUDIO_MORNING,
+  audioUrl: 'morning.mp3',
   description: 'Wake your soul with the resonance of morning bells and nature\'s first breath.'
 };
 
@@ -32,7 +37,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: 'Healing',
     category: 'Anxiety',
     imageUrl: IMG_PIANO,
-    audioUrl: AUDIO_HEALING,
+    audioUrl: 'healing.mp3',
+    description: 'Surrender to the soft, rhythmic waves of a grand piano.'
   },
   {
     id: 's2',
@@ -40,7 +46,7 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: 'Sleep',
     category: 'Sleep',
     imageUrl: IMG_SLEEP,
-    audioUrl: AUDIO_SLEEP,
+    audioUrl: 'sleep.mp3',
   },
   {
     id: 's3',
@@ -48,21 +54,31 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: 'Focus',
     category: 'Focus',
     imageUrl: IMG_ZEN,
-    audioUrl: AUDIO_ZEN,
+    audioUrl: 'zen.mp3',
   },
   {
     id: 's4',
-    title: 'Mountain Birdsong',
-    duration: 'Morning',
-    category: 'Daily',
-    imageUrl: IMG_NATURE,
-    audioUrl: AUDIO_MORNING,
+    title: 'Sunset Forest',
+    duration: 'Relax',
+    category: 'Quick Relief',
+    imageUrl: IMG_FOREST,
+    audioUrl: 'morning.mp3',
+  },
+  {
+    id: 's5',
+    title: 'Ocean Serenity',
+    duration: 'Calm',
+    category: 'Gratitude',
+    imageUrl: IMG_OCEAN,
+    audioUrl: 'rain.mp3',
   }
 ];
 
 export const AMBIENT_SOUNDS = [
   { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: 'rain.mp3' },
-  { id: 'zen', name: 'Zen Flute', icon: '🧘', url: AUDIO_ZEN }
+  { id: 'zen', name: 'Zen Flute', icon: '🧘', url: 'zen.mp3' },
+  { id: 'healing', name: 'Deep Calm', icon: '🕊️', url: 'healing.mp3' },
+  { id: 'birds', name: 'Forest Birds', icon: '🐦', url: 'morning.mp3' }
 ];
 
 export const COURSES: Course[] = [
