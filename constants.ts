@@ -55,6 +55,7 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     category: 'Focus',
     imageUrl: IMG_ZEN,
     audioUrl: 'zen.mp3',
+    isLocked: false 
   },
   {
     id: 's4',

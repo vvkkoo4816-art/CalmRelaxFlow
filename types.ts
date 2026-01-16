@@ -10,6 +10,7 @@ export interface User {
   streak: number;
   minutesMeditated: number;
   role: UserRole;
+  isPremium: boolean;
 }
 
 export interface MeditationSession {
@@ -20,6 +21,7 @@ export interface MeditationSession {
   imageUrl: string;
   audioUrl: string;
   description?: string;
+  isLocked?: boolean;
 }
 
 export interface JournalEntry {
@@ -36,7 +38,6 @@ export interface ZenCenter {
   url: string;
 }
 
-// Course interface required by constants.ts for educational content tracks
 export interface Course {
   id: string;
   title: string;
@@ -47,4 +48,4 @@ export interface Course {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
-export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin' | 'journal' | 'calm';
+export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin' | 'journal' | 'calm' | 'premium';
