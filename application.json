@@ -1,3 +1,4 @@
+
 {
   "packageId": "com.calmrelaxflow.app",
   "host": "calmrelaxflow.netlify.app",
@@ -20,8 +21,8 @@
     "path": "calmrelaxkey",
     "alias": "calmrelaxkey"
   },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersionName": "1.0.1",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://calmrelaxflow.netlify.app/manifest.json",
@@ -36,7 +37,9 @@
   "fullScopeUrl": "https://calmrelaxflow.netlify.app/",
   "minSdkVersion": 21,
   "orientation": "portrait",
-  "fingerprints": [],
+  "fingerprints": [
+    "AE:14:47:C9:AF:B4:47:37:43:1B:3B:0C:9D:DB:71:47:42:72:17:AA:3D:47:6C:A5:EA:2E:97:BD:4E:28:53:D4"
+  ],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],
