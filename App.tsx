@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
@@ -63,7 +62,7 @@ const App: React.FC = () => {
       setIsShowingInterstitial(false);
       setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1000); 
+    }, 800); 
   };
 
   const handleMoodSelect = async (mood: string) => {
