@@ -1,9 +1,9 @@
-
-const CACHE_NAME = 'calm-relax-flow-v1';
+const CACHE_NAME = 'calm-relax-flow-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/icon.png',
   '/morning.mp3',
   '/sleep.mp3',
   '/healing.mp3',
