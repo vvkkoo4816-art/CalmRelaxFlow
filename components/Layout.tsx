@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppView, User, Language } from '../types';
 import { translations } from '../translations';
@@ -18,7 +19,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 
   return (
     <div className="flex flex-col flex-1 min-h-screen relative pb-32 max-w-full overflow-x-hidden">
-      {/* Refined Responsive Header */}
       <header className="px-6 pt-12 pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-100/50">
         <div className="flex items-center space-x-3 min-w-0 flex-1">
            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex-shrink-0 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
@@ -29,13 +29,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 block mt-0.5 truncate">Pure Sanctuary</span>
            </div>
         </div>
-        <button onClick={() => setActiveView('profile')} className="ml-4 relative group shrink-0">
-          <img src={user.photoUrl} className="w-12 h-12 rounded-2xl border-2 border-white shadow-lg transition-transform group-active:scale-90" alt="profile" />
-          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
+        <button onClick={() => setActiveView('profile')} className="ml-4 shrink-0">
+          <img src={user.photoUrl} className="w-12 h-12 rounded-2xl border-2 border-white shadow-lg active:scale-90 transition-transform" alt="profile" />
         </button>
       </header>
 
-      <main className="flex-1 px-6 py-6 overflow-x-hidden w-full max-w-full">
+      <main className="flex-1 px-6 py-6 w-full max-w-full">
         {children}
       </main>
 
@@ -43,9 +42,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
         <nav className="flex justify-between items-center px-2 py-2 bg-stone-900/95 backdrop-blur-2xl rounded-[28px] border border-white/10 shadow-2xl w-full max-w-xl pointer-events-auto">
           <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
           <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
-          <MobileNavItem active={activeView === 'calm'} onClick={() => setActiveView('calm')} icon={<CalmIcon active={activeView === 'calm'} />} label={t.nav_calm} />
+          <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
           <MobileNavItem active={activeView === 'journal'} onClick={() => setActiveView('journal')} icon={<JournalIcon active={activeView === 'journal'} />} label={t.nav_journal} />
-          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<BreatheIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
+          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<CourseIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
           {isAdmin && (
             <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
           )}
@@ -56,11 +55,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 };
 
 const MobileNavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
-  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 min-w-0 group transition-all relative py-1">
-    <div className={`p-2.5 rounded-xl mb-1 transition-all duration-300 ${active ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'text-stone-500 group-hover:text-stone-300'}`}>
+  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 min-w-0 py-1">
+    <div className={`p-2.5 rounded-xl mb-1 transition-all duration-300 ${active ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'text-stone-500 hover:text-stone-300'}`}>
       {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5 md:w-6 md:h-6' })}
     </div>
-    <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] transition-colors duration-300 truncate w-full text-center ${active ? 'text-white' : 'text-stone-500'}`}>
+    <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] truncate w-full text-center ${active ? 'text-white' : 'text-stone-500'}`}>
       {label}
     </span>
   </button>
@@ -72,14 +71,14 @@ const TodayIcon = ({ active, className }: { active?: boolean, className?: string
 const LibraryIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z"/></svg>
 );
+const SleepIcon = ({ active, className }: { active?: boolean, className?: string }) => (
+  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+);
 const JournalIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
 );
-const BreatheIcon = ({ active, className }: { active?: boolean, className?: string }) => (
-  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-);
-const CalmIcon = ({ active, className }: { active?: boolean, className?: string }) => (
-  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+const CourseIcon = ({ active, className }: { active?: boolean, className?: string }) => (
+  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
 );
 const AdminIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>

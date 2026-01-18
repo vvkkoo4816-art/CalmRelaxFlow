@@ -1,3 +1,4 @@
+
 import { MeditationSession, Course } from './types';
 
 export const STATIC_QUOTES = [
@@ -19,6 +20,7 @@ const IMG_SLEEP = 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?
 const IMG_ZEN = 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=800';
 const IMG_FOREST = 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800';
 const IMG_OCEAN = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800';
+const IMG_STARS = 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=800';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',
@@ -75,11 +77,34 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
   }
 ];
 
+export const SLEEP_STORIES: MeditationSession[] = [
+  {
+    id: 'st1',
+    title: 'The Silent Nebula',
+    duration: '25 min',
+    category: 'Sleep',
+    imageUrl: IMG_STARS,
+    audioUrl: 'sleep.mp3',
+    description: 'A journey through the quietest corners of the galaxy.'
+  },
+  {
+    id: 'st2',
+    title: 'Midnight in Kyoto',
+    duration: '30 min',
+    category: 'Sleep',
+    imageUrl: IMG_ZEN,
+    audioUrl: 'zen.mp3',
+    description: 'Walking through rain-soaked temples in ancient Kyoto.'
+  }
+];
+
 export const AMBIENT_SOUNDS = [
   { id: 'rain', name: 'Soft Rain', icon: '🌧️', url: 'rain.mp3' },
   { id: 'zen', name: 'Zen Flute', icon: '🧘', url: 'zen.mp3' },
   { id: 'healing', name: 'Deep Calm', icon: '🕊️', url: 'healing.mp3' },
-  { id: 'birds', name: 'Forest Birds', icon: '🐦', url: 'morning.mp3' }
+  { id: 'birds', name: 'Forest Birds', icon: '🐦', url: 'morning.mp3' },
+  { id: 'alpha', name: 'Alpha Focus', icon: '🧠', url: 'zen.mp3' }, // Placeholder paths
+  { id: 'theta', name: 'Theta Sleep', icon: '✨', url: 'sleep.mp3' }
 ];
 
 export const COURSES: Course[] = [
@@ -91,5 +116,14 @@ export const COURSES: Course[] = [
     completedSteps: 1,
     imageUrl: IMG_ZEN,
     difficulty: 'Beginner'
+  },
+  {
+    id: 'c2',
+    title: 'Sleep Science',
+    description: 'Master the art of falling asleep quickly and deeply.',
+    steps: 7,
+    completedSteps: 0,
+    imageUrl: IMG_SLEEP,
+    difficulty: 'Intermediate'
   }
 ];

@@ -1,9 +1,9 @@
 
 {
-  "packageId": "com.calmrelaxflow.app",
-  "host": "calmrelaxflow.netlify.app",
+  "packageId": "app.vercel.calm_relax_flow.twa",
+  "host": "calm-relax-flow.vercel.app",
   "name": "CalmRelaxFlow",
-  "launcherName": "CalmRelaxFlow",
+  "launcherName": "CalmRelax",
   "display": "standalone",
   "themeColor": "#10B981",
   "themeColorDark": "#000000",
@@ -11,35 +11,44 @@
   "navigationColorDark": "#000000",
   "navigationDividerColor": "#000000",
   "navigationDividerColorDark": "#000000",
-  "backgroundColor": "#10B981",
+  "backgroundColor": "#FDFCFB",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://calmrelaxflow.netlify.app/icon.png",
-  "maskableIconUrl": "https://calmrelaxflow.netlify.app/icon.png",
+  "iconUrl": "https://calm-relax-flow.vercel.app/icon.png",
+  "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "calmrelaxkey",
-    "alias": "calmrelaxkey"
+    "path": "C:\\CalmRelaxFlow\\CalmRelaxFlow\\calmrelx.keystore",
+    "alias": "calmrelx.keystore"
   },
-  "appVersionName": "1.0.5",
-  "appVersionCode": 6,
-  "shortcuts": [],
+  "appVersionName": "1.0.9",
+  "appVersionCode": 10,
+  "shortcuts": [
+    {
+      "name": "Daily Zen",
+      "shortName": "Daily Zen",
+      "url": "https://calm-relax-flow.vercel.app/?view=today",
+      "chosenIconUrl": "https://calm-relax-flow.vercel.app/icon.png"
+    }
+  ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://calmrelaxflow.netlify.app/manifest.json",
+  "webManifestUrl": "https://calm-relax-flow.vercel.app/manifest.json",
   "fallbackType": "customtabs",
-  "features": {},
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
   "alphaDependencies": {
     "enabled": false
   },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://calmrelaxflow.netlify.app/",
+  "fullScopeUrl": "https://calm-relax-flow.vercel.app/",
   "minSdkVersion": 21,
   "orientation": "portrait",
-  "fingerprints": [
-    "AE:14:47:C9:AF:B4:47:37:43:1B:3B:0C:9D:DB:71:47:42:72:17:AA:3D:47:6C:A5:EA:2E:97:BD:4E:28:53:D4"
-  ],
+  "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],

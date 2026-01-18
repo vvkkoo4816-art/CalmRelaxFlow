@@ -5,9 +5,9 @@ import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, Language, JournalEntry } from './types';
-import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES } from './constants';
+import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES } from './constants';
 import { translations } from './translations';
-import { GoogleGenAI } from "@google/genai";
+import { getPersonalizedRecommendation } from './services/geminiService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
@@ -21,18 +21,16 @@ const App: React.FC = () => {
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
   const [gratitudeInput, setGratitudeInput] = useState('');
   const [gratitudeSaved, setGratitudeSaved] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [aiTip, setAiTip] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Auth States
-  const [pendingLoginProvider, setPendingLoginProvider] = useState<'google' | 'facebook' | null>(null);
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [pendingLoginProvider, setPendingLoginProvider] = useState<'google' | 'facebook' | null>(null);
 
-  // Ad States
+  // Ad / Transition States
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
-  const [pendingView, setPendingView] = useState<AppView | null>(null);
-
-  // Asset Generation States (Admin Only)
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedAsset, setGeneratedAsset] = useState<{ url: string, type: 'icon' | 'feature' | 'play_asset' } | null>(null);
 
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
@@ -60,13 +58,25 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
-    setPendingView(newView);
     setIsShowingInterstitial(true);
     setTimeout(() => {
       setIsShowingInterstitial(false);
       setView(newView);
-      setPendingView(null);
-    }, 2000); 
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1000); 
+  };
+
+  const handleMoodSelect = async (mood: string) => {
+    setSelectedMood(mood);
+    setIsAiLoading(true);
+    try {
+      const tip = await getPersonalizedRecommendation(mood, lang);
+      setAiTip(tip);
+    } catch (e) {
+      setAiTip("Focus on your breath. This moment is all that matters.");
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const startLoginFlow = (provider: 'google' | 'facebook') => {
@@ -75,15 +85,14 @@ const App: React.FC = () => {
   };
 
   const finalizeLogin = () => {
-    if (!pendingLoginProvider) return;
     const mockUser: User = {
       id: `${pendingLoginProvider}-123`,
-      name: "Zen Explorer",
+      name: "Zen Seeker",
       email: "vvkkoo4816@gmail.com",
-      photoUrl: `https://ui-avatars.com/api/?name=Zen+Explorer&background=10b981&color=fff`,
+      photoUrl: `https://ui-avatars.com/api/?name=Zen+Seeker&background=10b981&color=fff`,
       isLoggedIn: true,
-      streak: 7,
-      minutesMeditated: 840,
+      streak: 12,
+      minutesMeditated: 2450,
       role: 'admin',
       isPremium: true
     };
@@ -92,11 +101,6 @@ const App: React.FC = () => {
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
     setZenQuote(STATIC_QUOTES[Math.floor(Math.random() * STATIC_QUOTES.length)]);
     setIsConsentModalOpen(false);
-    setPendingLoginProvider(null);
-  };
-
-  const handleSessionClick = (session: MeditationSession) => {
-    setActiveSession(session);
   };
 
   const saveJournal = () => {
@@ -113,7 +117,7 @@ const App: React.FC = () => {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
         text: newJournalText,
-        mood: 'Normal'
+        mood: selectedMood || 'Neutral'
       };
       updatedJournals = [newEntry, ...journals];
     }
@@ -128,7 +132,7 @@ const App: React.FC = () => {
     const newEntry: JournalEntry = {
       id: Date.now().toString(),
       date: new Date().toLocaleDateString(),
-      text: `Gratitude: ${gratitudeInput}`,
+      text: `Grateful for: ${gratitudeInput}`,
       mood: 'Grateful'
     };
     const updatedJournals = [newEntry, ...journals];
@@ -139,38 +143,6 @@ const App: React.FC = () => {
     setTimeout(() => setGratitudeSaved(false), 3000);
   };
 
-  const generateAsset = async (type: 'icon' | 'feature' | 'play_asset') => {
-    setIsGenerating(true);
-    setGeneratedAsset(null);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = type === 'icon' 
-        ? "Minimalist lotus app icon, green theme."
-        : type === 'feature'
-        ? "Serene lake background for app feature graphic."
-        : "Google Play Store vertical app graphic, 500x1024, serene nature.";
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: prompt }] },
-        config: { imageConfig: { aspectRatio: type === 'icon' ? "1:1" : (type === 'feature' ? "16:9" : "9:16") } }
-      });
-
-      let foundImageUrl = "";
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          foundImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          break;
-        }
-      }
-      if (foundImageUrl) setGeneratedAsset({ url: foundImageUrl, type });
-    } catch (err: any) {
-      console.error("Asset Gen Failed:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   if (!isLoggedIn || !user) {
     return (
       <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-12 text-center relative overflow-hidden">
@@ -179,287 +151,221 @@ const App: React.FC = () => {
           <button onClick={() => changeLanguage('zh-Hans')} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'zh-Hans' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400'}`}>简体</button>
           <button onClick={() => changeLanguage('zh-Hant')} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${lang === 'zh-Hant' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400'}`}>繁體</button>
         </div>
-
-        {isConsentModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" onClick={() => setIsConsentModalOpen(false)}></div>
-            <div className="bg-white w-full max-w-sm rounded-[40px] p-10 shadow-2xl relative z-10 animate-in zoom-in duration-300">
-               <h3 className="text-xl font-black serif text-stone-900 mb-2">{t.auth_permission_title}</h3>
-               <p className="text-stone-500 text-sm mb-6 leading-relaxed">{t.auth_permission_desc}</p>
-               <button onClick={finalizeLogin} className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-sm uppercase tracking-widest hover:bg-stone-800 transition-all">
-                 {t.auth_allow}
-               </button>
-            </div>
-          </div>
-        )}
         
-        <div className="flex flex-col items-center relative z-10">
+        <div className="flex flex-col items-center relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center text-white mb-8 shadow-2xl shadow-emerald-500/20">
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
-          <h1 className="text-4xl font-black serif mb-2 text-stone-900">CalmRelaxFlow</h1>
-          <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.4em] mb-8">Pure Sanctuary</p>
+          <h1 className="text-4xl font-black serif mb-2 text-stone-900 tracking-tight">CalmRelaxFlow</h1>
           <p className="text-stone-400 font-medium mb-12 max-w-xs leading-relaxed">{t.app_slogan}</p>
-          
-          <div className="w-full max-w-sm space-y-4">
-            <button onClick={() => startLoginFlow('google')} className="w-full bg-white border border-stone-200 text-stone-700 px-8 py-4 rounded-full font-bold shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-3 active:scale-95">
-               <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5" alt="google" />
-               <span>{t.sign_in_google}</span>
-            </button>
-            <button onClick={() => startLoginFlow('facebook')} className="w-full bg-[#1877F2] text-white px-8 py-4 rounded-full font-bold shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-3 active:scale-95">
-               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
-               <span>{t.sign_in_facebook}</span>
-            </button>
-          </div>
+          <button onClick={() => startLoginFlow('google')} className="w-full max-w-sm bg-white border border-stone-200 text-stone-700 px-8 py-4 rounded-full font-bold shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-3 active:scale-95">
+             <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5" alt="google" />
+             <span>{t.sign_in_google}</span>
+          </button>
         </div>
 
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-50 rounded-full blur-3xl opacity-50"></div>
+        {isConsentModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-900/60 backdrop-blur-md">
+            <div className="bg-white w-full max-w-sm rounded-[40px] p-10 shadow-2xl animate-in zoom-in duration-300">
+               <h3 className="text-xl font-black serif text-stone-900 mb-2">{t.auth_permission_title}</h3>
+               <p className="text-stone-500 text-sm mb-8 leading-relaxed">{t.auth_permission_desc}</p>
+               <div className="flex flex-col space-y-3">
+                 <button onClick={finalizeLogin} className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-xs uppercase tracking-widest hover:bg-stone-800 transition-colors">{t.auth_allow}</button>
+                 <button onClick={() => setIsConsentModalOpen(false)} className="w-full text-stone-400 py-2 rounded-full font-black text-xs uppercase tracking-widest">{t.auth_deny}</button>
+               </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  const dailyMinutesGoal = 20;
-  const currentMinutes = user.minutesMeditated % 60; 
-  const progressPercent = Math.min((currentMinutes / dailyMinutesGoal) * 100, 100);
+  const dailyMinutesGoal = 30;
+  const progressPercent = Math.min((user.minutesMeditated % 60 / dailyMinutesGoal) * 100, 100);
 
   return (
     <Layout activeView={view} setActiveView={handleViewChange} user={user} lang={lang}>
-      <div className="max-w-2xl mx-auto pb-24 space-y-12">
+      <div className="max-w-2xl mx-auto pb-32 space-y-12">
         
         {isShowingInterstitial && (
           <div className="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center p-10 text-center ad-interstitial-in">
-             <div className="absolute top-6 right-6 flex items-center space-x-2">
-               <div className="w-6 h-6 border-2 border-stone-100 border-t-emerald-500 rounded-full animate-spin"></div>
-               <span className="text-[10px] font-black text-stone-400">LOADING...</span>
-             </div>
-             <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mb-4 inline-block">Mindful Moment</span>
-                <h2 className="text-3xl font-black serif text-stone-900 mb-4">Discover Sanctuary</h2>
-             </div>
-             <div className="w-full aspect-video bg-stone-100 rounded-[40px] overflow-hidden shadow-2xl relative mb-12 border-4 border-stone-50">
-                <img src="https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover grayscale-[0.2]" alt="advertisement" />
-                <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[2px]">
-                   <div className="bg-white p-8 rounded-[32px] shadow-2xl text-center max-w-[240px]">
-                      <p className="text-stone-900 font-black serif text-lg mb-4">Pure Sleep</p>
-                      <button className="w-full bg-stone-900 text-white px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">Learn More</button>
-                   </div>
-                </div>
-                <div className="absolute top-4 left-4 bg-white/40 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white">AD</div>
-             </div>
+             <div className="w-10 h-10 border-4 border-stone-100 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+             <p className="text-stone-400 font-black text-[10px] uppercase tracking-widest animate-pulse">Entering Silence...</p>
           </div>
         )}
 
         {view === 'today' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-            <header className="flex justify-between items-start">
+          <div className="space-y-10 animate-in fade-in duration-1000">
+            <header className="flex justify-between items-center bg-white/50 backdrop-blur-sm p-6 rounded-[40px] border border-stone-100">
               <div>
-                <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em] mb-2">{t.welcome_back}</p>
-                <h2 className="text-4xl font-black serif text-stone-900 leading-tight">{user.name}</h2>
+                <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em] mb-1">{t.welcome_back}</p>
+                <h2 className="text-3xl font-black serif text-stone-900 leading-tight">{user.name}</h2>
               </div>
-              <div className="relative w-20 h-20 flex items-center justify-center">
+              <div className="relative w-16 h-16 flex items-center justify-center">
                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-stone-100" />
-                    <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="6" fill="transparent" strokeDasharray={213} strokeDashoffset={213 - (213 * progressPercent) / 100} strokeLinecap="round" className="text-emerald-500 transition-all duration-1000 ease-out" />
+                    <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-stone-100" />
+                    <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={176} strokeDashoffset={176 - (176 * progressPercent) / 100} strokeLinecap="round" className="text-emerald-500 transition-all duration-1000" />
                  </svg>
-                 <span className="absolute text-[10px] font-black text-stone-900">{Math.round(progressPercent)}%</span>
+                 <span className="absolute text-[10px] font-black">{Math.round(progressPercent)}%</span>
               </div>
             </header>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-emerald-50 p-6 rounded-[40px] border border-emerald-100/50 shadow-sm">
-                  <span className="block text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Streak</span>
-                  <div className="flex items-baseline space-x-1">
-                    <span className="text-3xl font-black serif text-stone-900">{user.streak}</span>
-                    <span className="text-[10px] font-bold text-stone-400">days</span>
-                  </div>
+            {/* Mood Check-In */}
+            <section className="bg-white rounded-[48px] p-8 border border-stone-100 shadow-xl shadow-stone-200/40">
+               <h3 className="font-black serif text-xl mb-8 text-center">How does your heart feel today?</h3>
+               <div className="flex justify-between items-center mb-10 px-4">
+                  {['Happy', 'Calm', 'Stressed', 'Sad', 'Tired'].map(mood => (
+                    <button key={mood} onClick={() => handleMoodSelect(mood)} className={`flex flex-col items-center space-y-3 group transition-all duration-500 ${selectedMood === mood ? 'scale-125' : 'opacity-30 hover:opacity-100 grayscale hover:grayscale-0'}`}>
+                       <span className="text-4xl transform group-hover:rotate-12 transition-transform">
+                         {mood === 'Happy' ? '😊' : mood === 'Calm' ? '🧘' : mood === 'Stressed' ? '😰' : mood === 'Sad' ? '😔' : '😴'}
+                       </span>
+                       <span className={`text-[8px] font-black uppercase tracking-widest ${selectedMood === mood ? 'text-emerald-600' : 'text-stone-400'}`}>{mood}</span>
+                    </button>
+                  ))}
                </div>
-               <div className="bg-stone-50 p-6 rounded-[40px] border border-stone-100 shadow-sm">
-                  <span className="block text-[10px] font-black uppercase tracking-widest text-stone-400 mb-1">Mindful Minutes</span>
-                  <div className="flex items-baseline space-x-1">
-                    <span className="text-3xl font-black serif text-stone-900">{user.minutesMeditated}</span>
-                    <span className="text-[10px] font-bold text-stone-400">mins</span>
-                  </div>
-               </div>
-            </div>
+               {(selectedMood || isAiLoading) && (
+                 <div className="bg-stone-50 p-8 rounded-[32px] border border-stone-100 animate-in slide-in-from-top-6 duration-700">
+                    {isAiLoading ? (
+                      <div className="flex items-center justify-center space-x-3 text-emerald-600">
+                        <div className="w-5 h-5 border-2 border-emerald-600/20 border-t-emerald-600 rounded-full animate-spin"></div>
+                        <span className="text-xs font-black uppercase tracking-widest italic">Personalizing your path...</span>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <svg className="absolute -top-4 -left-4 w-8 h-8 text-emerald-200/50" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C20.1216 16 21.017 16.8954 21.017 18V21M14.017 21H21.017M14.017 21C14.017 22.1046 13.1216 23 12.017 23H10.017C8.91243 23 8.01705 22.1046 8.01705 21M8.01705 21H12.017M8.01705 21V18C8.01705 16.8954 7.12162 16 6.01705 16H3.01705C1.91248 16 1.01705 16.8954 1.01705 18V21M1.01705 21H8.01705"/></svg>
+                        <p className="text-stone-700 text-base italic font-medium leading-relaxed text-center px-4">"{aiTip}"</p>
+                      </div>
+                    )}
+                 </div>
+               )}
+            </section>
 
-            <section className="bg-stone-900 rounded-[48px] p-10 text-white relative overflow-hidden shadow-2xl">
+            <section className="bg-stone-950 rounded-[56px] p-12 text-white relative overflow-hidden shadow-2xl shadow-emerald-950/20">
                <div className="relative z-10">
-                 <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.4em] mb-4">Daily Insight</p>
-                 <h3 className="text-2xl md:text-3xl font-black serif mb-8 italic leading-relaxed">"{zenQuote}"</h3>
-                 <button onClick={() => handleSessionClick(DAILY_MEDITATION)} className="bg-white text-stone-900 px-8 py-4 rounded-full font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-stone-50 transition-all active:scale-95">Start Meditation</button>
+                 <div className="flex items-center space-x-2 mb-6">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
+                    <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.4em]">Current Wisdom</p>
+                 </div>
+                 <h3 className="text-3xl font-black serif mb-10 italic leading-snug">"{zenQuote}"</h3>
+                 <div className="flex flex-wrap gap-4">
+                   <button onClick={() => setActiveSession(DAILY_MEDITATION)} className="bg-white text-stone-950 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 transition-all active:scale-95">Daily Practice</button>
+                   <button onClick={() => handleViewChange('library')} className="bg-stone-800 text-stone-300 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">Explore All</button>
+                 </div>
                </div>
-               <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl"></div>
-               <div className="absolute top-0 right-0 p-8 opacity-20">
-                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+               <div className="absolute top-0 right-0 p-8 opacity-5">
+                  <svg className="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                </div>
             </section>
 
-            {/* Daily Gratitude Card */}
-            <div className="bg-amber-50 rounded-[40px] p-8 border border-amber-100 shadow-sm relative overflow-hidden">
-               <div className="relative z-10">
-                 <h4 className="font-black serif text-xl text-stone-900 mb-2">Daily Gratitude</h4>
-                 <p className="text-stone-500 text-xs mb-6">What is one thing you are grateful for today?</p>
-                 {gratitudeSaved ? (
-                   <div className="bg-emerald-500 text-white p-4 rounded-2xl flex items-center justify-center space-x-2 animate-in zoom-in">
-                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg>
-                     <span className="font-black text-[10px] uppercase tracking-widest">Reflection Saved</span>
-                   </div>
-                 ) : (
-                   <div className="flex space-x-2">
-                     <input 
-                       type="text" 
-                       value={gratitudeInput} 
-                       onChange={(e) => setGratitudeInput(e.target.value)} 
-                       placeholder="I am grateful for..." 
-                       className="flex-1 bg-white px-5 py-4 rounded-2xl text-stone-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all shadow-sm"
-                     />
-                     <button onClick={saveGratitude} className="bg-stone-900 text-white px-5 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/></svg>
-                     </button>
-                   </div>
-                 )}
-               </div>
-               <div className="absolute -bottom-6 -left-6 opacity-10 rotate-12">
-                  <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-               </div>
-            </div>
-
-            {/* Feature Action: Quick Breathe */}
-            <div onClick={() => setView('explore')} className="bg-white border border-stone-100 rounded-[40px] p-8 shadow-lg shadow-emerald-100/20 flex items-center justify-between cursor-pointer active:scale-95 transition-all">
-               <div className="flex items-center space-x-6">
-                 <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            {/* Gratitude Mini-Feature */}
+            <div className="bg-amber-50/50 rounded-[48px] p-10 border border-amber-100/50 text-center">
+               <h4 className="font-black serif text-xl mb-2">Gratitude Seed</h4>
+               <p className="text-stone-500 text-xs mb-8">What lightened your heart today?</p>
+               {gratitudeSaved ? (
+                 <div className="bg-emerald-500 text-white p-5 rounded-3xl animate-in zoom-in">
+                    <span className="font-black text-[10px] uppercase tracking-[0.2em]">Reflection Saved</span>
                  </div>
-                 <div>
-                    <h4 className="font-black serif text-xl text-stone-900">Quick Breathe</h4>
-                    <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mt-1">Reset in 60 seconds</p>
+               ) : (
+                 <div className="relative">
+                   <input 
+                     value={gratitudeInput}
+                     onChange={(e) => setGratitudeInput(e.target.value)}
+                     className="w-full bg-white px-8 py-5 rounded-full text-stone-700 text-sm focus:outline-none focus:ring-4 focus:ring-amber-200/30 transition-all border border-amber-100 shadow-sm"
+                     placeholder="Write it down..."
+                   />
+                   <button onClick={saveGratitude} className="absolute right-2 top-2 bottom-2 bg-stone-900 text-white px-6 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-stone-800 transition-colors">Plant</button>
                  </div>
-               </div>
-               <div className="text-stone-300">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"/></svg>
-               </div>
-            </div>
-
-            <div>
-               <div className="flex justify-between items-center mb-6 px-1">
-                 <h4 className="text-sm font-black uppercase tracking-widest text-stone-400">Recommended for You</h4>
-                 <button onClick={() => setView('library')} className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">See All</button>
-               </div>
-               <div className="flex space-x-6 overflow-x-auto pb-6 scrollbar-hide -mx-6 px-6">
-                  {MEDITATION_SESSIONS.slice(0, 3).map(session => (
-                    <div key={session.id} onClick={() => handleSessionClick(session)} className="flex-shrink-0 w-64 aspect-[4/5] bg-stone-100 rounded-[40px] relative overflow-hidden cursor-pointer group shadow-lg shadow-stone-200/50">
-                       <img src={session.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={session.title} />
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                       <div className="absolute bottom-8 left-8 right-8">
-                          <p className="text-[8px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-1">{session.category}</p>
-                          <h5 className="text-white font-black serif text-xl leading-tight">{session.title}</h5>
-                       </div>
-                    </div>
-                  ))}
-               </div>
+               )}
             </div>
           </div>
         )}
 
         {view === 'library' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-             <h2 className="text-3xl font-black serif text-stone-900">{t.nav_library}</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-12 animate-in fade-in duration-1000">
+             <header>
+               <h2 className="text-4xl font-black serif text-stone-900">{t.nav_library}</h2>
+               <p className="text-stone-400 text-sm mt-2">Curated sounds for your specific needs.</p>
+             </header>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {MEDITATION_SESSIONS.map(session => (
-                <div key={session.id} onClick={() => handleSessionClick(session)} className="aspect-[16/9] bg-stone-200 rounded-[40px] relative overflow-hidden cursor-pointer group shadow-sm border border-stone-100 hover:shadow-2xl transition-all">
-                  <img src={session.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[10s]" alt={session.title} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-6 left-8 right-8">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-1">{session.category}</p>
-                    <h4 className="text-white font-black text-xl serif leading-tight mb-2">{session.title}</h4>
+                <div key={session.id} onClick={() => setActiveSession(session)} className="aspect-[4/3] bg-stone-100 rounded-[48px] relative overflow-hidden cursor-pointer group shadow-xl border border-stone-200/20 hover:-translate-y-2 transition-all duration-500">
+                  <img src={session.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-[12s] grayscale-[0.2] group-hover:grayscale-0" alt={session.title} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-8 left-8 right-8">
+                    <span className="inline-block px-3 py-1 bg-emerald-500/20 backdrop-blur-md text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest mb-3 border border-emerald-500/30">{session.category}</span>
+                    <h4 className="text-white font-black text-2xl serif leading-tight mb-1">{session.title}</h4>
+                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">{session.duration}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <SoundMixer />
+            <div className="pt-8">
+               <h3 className="text-2xl font-black serif text-stone-900 mb-8">Ambient Mixer</h3>
+               <SoundMixer />
+            </div>
           </div>
         )}
 
-        {view === 'explore' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-            <h2 className="text-3xl font-black serif text-stone-900">{t.nav_breathing}</h2>
-            <BreathingExercise lang={lang} />
-          </div>
-        )}
-
-        {view === 'calm' && (
-          <div className="space-y-10 animate-in fade-in duration-700 text-center">
-             <div className="aspect-[3/4] md:aspect-video rounded-[60px] bg-stone-900 relative overflow-hidden shadow-2xl group">
-               <img src="https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=1200" className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-[20s] scale-110 group-hover:scale-100" alt="Calm" />
-               <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-white">
-                  <h3 className="text-4xl md:text-6xl font-black serif mb-6">Instant Calm</h3>
-                  <button onClick={() => handleSessionClick(MEDITATION_SESSIONS[3])} className="bg-emerald-500 text-white w-24 h-24 rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-transform">
-                    <svg className="w-10 h-10 ml-2" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  </button>
-               </div>
+        {view === 'sleep' && (
+          <div className="space-y-12 animate-in fade-in duration-1000">
+             <header>
+               <h2 className="text-4xl font-black serif text-stone-900">{t.sleep_title}</h2>
+               <p className="text-stone-400 text-sm mt-2">{t.sleep_subtitle}</p>
+             </header>
+             <div className="grid grid-cols-1 gap-8">
+                {SLEEP_STORIES.map(story => (
+                  <div key={story.id} onClick={() => setActiveSession(story)} className="bg-white rounded-[48px] p-8 border border-stone-100 shadow-xl flex flex-col md:flex-row items-center md:space-x-10 cursor-pointer group hover:bg-stone-50 transition-all duration-500">
+                     <div className="w-32 h-32 md:w-40 md:h-40 rounded-[32px] overflow-hidden shrink-0 shadow-lg mb-6 md:mb-0">
+                        <img src={story.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[8s]" alt={story.title} />
+                     </div>
+                     <div className="flex-1 text-center md:text-left">
+                        <span className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.3em] mb-2 block">{story.duration}</span>
+                        <h4 className="text-2xl font-black serif text-stone-900 mb-2">{story.title}</h4>
+                        <p className="text-stone-500 text-sm leading-relaxed max-w-md">{story.description}</p>
+                     </div>
+                     <div className="mt-6 md:mt-0 text-stone-200 group-hover:text-emerald-500 transition-colors">
+                        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                     </div>
+                  </div>
+                ))}
              </div>
           </div>
         )}
 
         {view === 'journal' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-            <h2 className="text-3xl font-black serif text-stone-900">{t.journal_title}</h2>
-            <div className="bg-white rounded-[40px] p-8 border border-stone-100 shadow-xl">
-               <textarea value={newJournalText} onChange={(e) => setNewJournalText(e.target.value)} placeholder={t.journal_placeholder} className="w-full h-40 bg-stone-50 rounded-3xl p-6 text-stone-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none mb-4" />
-               <div className="flex space-x-3">
-                 <button onClick={saveJournal} className="flex-1 bg-emerald-500 text-white py-4 rounded-3xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-200">{editingJournalId ? t.journal_update : t.journal_save}</button>
-                 {editingJournalId && <button onClick={() => { setEditingJournalId(null); setNewJournalText(''); }} className="px-6 bg-stone-100 text-stone-400 py-4 rounded-3xl font-black uppercase tracking-widest text-[10px]">{t.journal_cancel}</button>}
-               </div>
+          <div className="space-y-12 animate-in fade-in duration-1000">
+            <h2 className="text-4xl font-black serif text-stone-900">{t.journal_title}</h2>
+            <div className="bg-white rounded-[56px] p-10 border border-stone-100 shadow-2xl">
+               <textarea 
+                  value={newJournalText} 
+                  onChange={(e) => setNewJournalText(e.target.value)} 
+                  placeholder={t.journal_placeholder} 
+                  className="w-full h-48 bg-stone-50 rounded-[32px] p-8 text-stone-700 font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all resize-none mb-6 border-none text-lg" 
+               />
+               <button onClick={saveJournal} className="w-full bg-stone-900 text-white py-6 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-stone-800 transition-colors">{editingJournalId ? t.journal_update : t.journal_save}</button>
             </div>
-            <div className="space-y-6">
-              {journals.length === 0 ? <p className="text-center text-stone-300 italic py-10">{t.journal_empty}</p> : journals.map(entry => (
-                <div key={entry.id} className="bg-white p-8 rounded-[40px] border border-stone-100 shadow-sm relative group">
-                   <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">{entry.date}</span>
-                      <button onClick={() => { setEditingJournalId(entry.id); setNewJournalText(entry.text); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 px-2 py-1 rounded-lg bg-emerald-50">{t.journal_edit}</button>
+            <div className="space-y-8">
+              {journals.map(entry => (
+                <div key={entry.id} className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-lg relative overflow-hidden group">
+                   <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">{entry.date}</span>
+                        <span className="text-[9px] font-bold text-emerald-600 uppercase mt-1">Mood: {entry.mood}</span>
+                      </div>
+                      <button onClick={() => { setEditingJournalId(entry.id); setNewJournalText(entry.text); }} className="text-[10px] font-black uppercase text-emerald-600 px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 transition-colors">{t.journal_edit}</button>
                    </div>
-                   <p className="text-stone-700 leading-relaxed font-medium serif text-lg">"{entry.text}"</p>
+                   <p className="text-stone-700 leading-relaxed font-medium serif text-xl italic">"{entry.text}"</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {view === 'profile' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
-             <div className="text-center">
-               <img src={user.photoUrl} className="w-28 h-28 rounded-[40px] border-4 border-white shadow-2xl mx-auto" alt="profile" />
-               <h2 className="text-3xl font-black serif text-stone-900 mt-6">{user.name}</h2>
-               <p className="text-stone-400 text-sm">{user.email}</p>
-             </div>
-             <div className="max-w-xs mx-auto space-y-4">
-                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); window.location.reload(); }} className="w-full bg-red-50 text-red-500 px-8 py-5 rounded-[32px] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-100 transition-colors">Sign Out</button>
-             </div>
-          </div>
-        )}
-
-        {view === 'admin' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
-            <h2 className="text-3xl font-black serif text-stone-900">Admin Panel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button disabled={isGenerating} onClick={() => generateAsset('icon')} className="bg-emerald-500 text-white p-6 rounded-[40px] text-left shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50">
-                <span className="font-black serif text-lg block">512x512 Icon</span>
-              </button>
-              <button disabled={isGenerating} onClick={() => generateAsset('feature')} className="bg-stone-800 text-white p-6 rounded-[40px] text-left shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50">
-                <span className="font-black serif text-lg block">Feature Graphic</span>
-              </button>
-              <button disabled={isGenerating} onClick={() => generateAsset('play_asset')} className="bg-emerald-900 text-white p-6 rounded-[40px] text-left shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50">
-                <span className="font-black serif text-lg block">Play Asset</span>
-              </button>
-            </div>
-            {isGenerating && <p className="text-center text-stone-400 mt-6">Creating store assets...</p>}
-            {generatedAsset && (
-              <div className="text-center space-y-4 mt-8 animate-in zoom-in">
-                <img src={generatedAsset.url} className="w-full max-w-xs rounded-3xl mx-auto shadow-2xl" />
-                <p className="text-[10px] font-black uppercase text-stone-400 tracking-widest">Asset Ready for Store Upload</p>
-              </div>
-            )}
+        {view === 'explore' && (
+          <div className="space-y-12 animate-in fade-in duration-1000">
+            <h2 className="text-4xl font-black serif text-stone-900">{t.nav_breathing}</h2>
+            <BreathingExercise lang={lang} />
           </div>
         )}
       </div>
