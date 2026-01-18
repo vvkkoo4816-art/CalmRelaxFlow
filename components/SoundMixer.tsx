@@ -35,7 +35,6 @@ const SoundMixer: React.FC = () => {
       audioRefs.current[id].src = fullPath;
       
       audioRefs.current[id].play().catch(() => {
-        // Simple fallback for local testing
         audioRefs.current[id].src = `./${fileName}`;
         audioRefs.current[id].play().catch(e => console.error("Ambient sound failed:", e));
       });
@@ -71,44 +70,46 @@ const SoundMixer: React.FC = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {AMBIENT_SOUNDS.map(sound => {
         const state = activeSounds[sound.id] || { isPlaying: false, volume: 0.5 };
         return (
           <div 
             key={sound.id} 
-            className={`p-6 rounded-[32px] border transition-all flex items-center space-x-5 ${
-              state.isPlaying ? 'bg-emerald-50 border-emerald-200 shadow-lg shadow-emerald-100/50' : 'bg-white border-stone-100'
+            className={`p-8 rounded-[40px] border transition-all duration-700 flex items-center space-x-6 ${
+              state.isPlaying ? 'bg-emerald-50/50 border-emerald-200 shadow-xl shadow-emerald-500/5 translate-y-[-4px]' : 'bg-white border-stone-100 hover:border-stone-200 shadow-sm'
             }`}
           >
             <button 
               onClick={() => toggleSound(sound.id, sound.url)}
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm transition-all active:scale-90 ${
-                state.isPlaying ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-stone-50 text-stone-400'
+              className={`w-18 h-18 rounded-[24px] flex items-center justify-center text-4xl shadow-2xl transition-all active:scale-90 ${
+                state.isPlaying ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-stone-50 text-stone-300'
               }`}
             >
-              {sound.icon}
+              <span className={state.isPlaying ? 'animate-pulse' : ''}>{sound.icon}</span>
             </button>
             
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-stone-800">{sound.name}</span>
-                <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">
-                  {state.isPlaying ? 'Active' : 'Muted'}
+                <span className="font-black text-stone-900 text-lg tracking-tight">{sound.name}</span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors ${state.isPlaying ? 'text-emerald-600' : 'text-stone-300'}`}>
+                  {state.isPlaying ? 'Resonating' : 'Silent'}
                 </span>
               </div>
-              <input 
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                disabled={!state.isPlaying}
-                value={state.volume}
-                onChange={(e) => handleVolumeChange(sound.id, parseFloat(e.target.value))}
-                className={`w-full h-1.5 rounded-full appearance-none transition-all ${
-                  state.isPlaying ? 'accent-emerald-500 bg-emerald-100' : 'bg-stone-100 opacity-50'
-                }`}
-              />
+              <div className="relative h-2 w-full">
+                <input 
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  disabled={!state.isPlaying}
+                  value={state.volume}
+                  onChange={(e) => handleVolumeChange(sound.id, parseFloat(e.target.value))}
+                  className={`absolute inset-0 w-full h-2 rounded-full appearance-none transition-all cursor-pointer ${
+                    state.isPlaying ? 'accent-emerald-600 bg-emerald-100/50' : 'bg-stone-100 opacity-40 cursor-not-allowed'
+                  }`}
+                />
+              </div>
             </div>
           </div>
         );

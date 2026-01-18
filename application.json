@@ -20,8 +20,8 @@
     "path": "C:\\CalmRelaxFlow\\CalmRelaxFlow\\android.keystore",
     "alias": "android.keystore"
   },
-  "appVersionName": "5.0.0",
-  "appVersionCode": 5,
+  "appVersionName": "5.2.4",
+  "appVersionCode": 11,
   "shortcuts": [
     {
       "name": "Daily Zen",
