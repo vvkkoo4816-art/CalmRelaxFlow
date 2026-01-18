@@ -21,8 +21,8 @@
     "path": "calmrelaxkey",
     "alias": "calmrelaxkey"
   },
-  "appVersionName": "1.0.1",
-  "appVersionCode": 2,
+  "appVersionName": "1.0.5",
+  "appVersionCode": 6,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://calmrelaxflow.netlify.app/manifest.json",
