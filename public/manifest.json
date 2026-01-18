@@ -4,11 +4,12 @@
   "short_name": "CalmRelaxFlow",
   "id": "com.calmrelaxflow.app",
   "start_url": "/",
-  "description": "Professional mindfulness companion with zen music and meditation.",
+  "description": "Professional mindfulness companion with guided meditations and zen music.",
   "theme_color": "#10b981",
   "background_color": "#fdfcfb",
   "display": "standalone",
   "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
       "src": "/icon.png",
