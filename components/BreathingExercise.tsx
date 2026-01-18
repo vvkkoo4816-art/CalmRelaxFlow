@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Language } from '../types';
 import { translations } from '../translations';
@@ -32,7 +31,6 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
       timerRef.current = window.setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            // Switch phases
             setPhase((currentPhase) => {
               if (currentPhase === 'inhale') {
                 if (activeTechnique.hold1 > 0) {
@@ -56,7 +54,7 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
                 return 'inhale';
               }
             });
-            return 0; // Temporary before switch
+            return 0;
           }
           return prev - 1;
         });
@@ -80,10 +78,10 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
 
   const getOrbScale = () => {
     if (!isActive) return 'scale(1)';
-    if (phase === 'inhale') return 'scale(1.5)';
-    if (phase === 'exhale') return 'scale(0.8)';
-    if (phase === 'hold1') return 'scale(1.5)';
-    return 'scale(0.8)';
+    if (phase === 'inhale') return 'scale(1.8)';
+    if (phase === 'exhale') return 'scale(0.7)';
+    if (phase === 'hold1') return 'scale(1.8)';
+    return 'scale(0.7)';
   };
 
   const getOrbColor = () => {
@@ -114,21 +112,18 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
       </div>
 
       <div className="relative flex items-center justify-center w-80 h-80">
-        {/* Animated Background Ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-stone-50 scale-110"></div>
+        <div className="absolute inset-0 rounded-full border border-stone-100 scale-125 opacity-20 animate-pulse"></div>
         
-        {/* The Zen Orb */}
         <div 
-          className={`w-40 h-40 rounded-full transition-all duration-[4000ms] ease-in-out shadow-2xl ${getOrbColor()} ${isActive ? 'opacity-80' : 'opacity-20'}`}
+          className={`w-40 h-40 rounded-full transition-all duration-[4000ms] cubic-bezier(0.4, 0, 0.2, 1) shadow-2xl ${getOrbColor()} ${isActive ? 'opacity-70' : 'opacity-10'}`}
           style={{ transform: getOrbScale() }}
         >
-          <div className="absolute inset-0 bg-white/20 rounded-full blur-xl"></div>
+          <div className="absolute inset-0 bg-white/30 rounded-full blur-2xl"></div>
         </div>
 
-        {/* Center Content */}
         <div className="absolute flex flex-col items-center text-center">
           <span className="text-4xl font-black serif text-stone-900 mb-2">{isActive ? timeLeft : ''}</span>
-          <span className={`text-[12px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${isActive ? 'text-stone-500 opacity-100' : 'text-stone-300 opacity-0'}`}>
+          <span className={`text-[12px] font-black uppercase tracking-[0.3em] transition-all duration-700 ${isActive ? 'text-stone-600 opacity-100' : 'text-stone-300 opacity-0'}`}>
             {getPhaseText()}
           </span>
         </div>
@@ -137,15 +132,12 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
       <div className="flex flex-col items-center space-y-6">
         <button
           onClick={() => setIsActive(!isActive)}
-          className={`px-12 py-5 rounded-[32px] font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-2xl ${
+          className={`px-16 py-6 rounded-full font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-2xl ${
             isActive ? 'bg-stone-100 text-stone-500' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200'
           }`}
         >
-          {isActive ? 'Pause' : 'Start Session'}
+          {isActive ? 'Pause' : 'Start Journey'}
         </button>
-        <p className="text-stone-400 text-[10px] font-bold uppercase tracking-widest">
-          {isActive ? 'Follow the orb' : 'Take a moment for yourself'}
-        </p>
       </div>
     </div>
   );

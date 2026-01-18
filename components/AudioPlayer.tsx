@@ -14,6 +14,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [isBuffering, setIsBuffering] = useState(true);
   const [isImmersive, setIsImmersive] = useState(false);
   const [attemptIndex, setAttemptIndex] = useState(0);
+  const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const getPossiblePaths = (baseUrl: string) => {
@@ -37,6 +38,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
       audioRef.current.load();
     }
   }, [url]);
+
+  useEffect(() => {
+    let timer: number;
+    if (sleepTimer !== null && isPlaying) {
+      timer = window.setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+          setSleepTimer(null);
+        }
+      }, sleepTimer * 60 * 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [sleepTimer, isPlaying]);
 
   const handleAudioError = () => {
     const nextIndex = attemptIndex + 1;
@@ -77,7 +92,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
   return (
     <>
-      {/* Immersive Focus View */}
       {isImmersive && (
         <div className="fixed inset-0 z-[60] bg-stone-950 flex flex-col items-center justify-center p-10 animate-in fade-in zoom-in duration-700">
            <div className="absolute inset-0 bg-emerald-900/10 animate-pulse duration-[10s]"></div>
@@ -94,6 +108,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                 <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.4em]">Inhale . Exhale . Drift</p>
               </div>
               
+              <div className="flex space-x-4">
+                 {[15, 30, 60].map(mins => (
+                   <button 
+                     key={mins}
+                     onClick={() => setSleepTimer(sleepTimer === mins ? null : mins)}
+                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${sleepTimer === mins ? 'bg-white text-stone-900 border-white' : 'text-white/40 border-white/10'}`}
+                   >
+                     {mins}m Timer
+                   </button>
+                 ))}
+              </div>
+
               <div className="w-full space-y-6">
                 <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden relative">
                    <div className="h-full bg-emerald-500 transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.8)]" style={{ width: `${progress}%` }}></div>
@@ -112,7 +138,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
         </div>
       )}
 
-      {/* Mini Player Bar */}
       <div className={`fixed bottom-24 left-6 right-6 z-50 transition-all duration-700 ${isImmersive ? 'opacity-0 pointer-events-none translate-y-20' : 'animate-in slide-in-from-bottom-10'}`}>
         <div className="bg-stone-900/98 backdrop-blur-3xl rounded-[40px] p-6 shadow-2xl border border-white/10 flex flex-col md:flex-row items-center md:space-x-6 space-y-4 md:space-y-0">
           <audio 
@@ -145,7 +170,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           <div className="flex-1 min-w-0 w-full text-center md:text-left">
             <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-1">
                <h4 className="text-white font-black text-lg truncate tracking-tight serif">{title}</h4>
-               {error && <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">{error}</span>}
+               {sleepTimer && <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest">{sleepTimer}m remaining</span>}
             </div>
             <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
               <div className={`h-full transition-all duration-300 ${error ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>

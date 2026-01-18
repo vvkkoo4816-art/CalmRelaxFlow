@@ -1,4 +1,3 @@
-
 import { MeditationSession, Course } from './types';
 
 export const STATIC_QUOTES = [
@@ -95,6 +94,15 @@ export const SLEEP_STORIES: MeditationSession[] = [
     imageUrl: IMG_ZEN,
     audioUrl: 'zen.mp3',
     description: 'Walking through rain-soaked temples in ancient Kyoto.'
+  },
+  {
+    id: 'st3',
+    title: 'Forest Whisper',
+    duration: '45 min',
+    category: 'Sleep',
+    imageUrl: IMG_FOREST,
+    audioUrl: 'morning.mp3',
+    description: 'The gentle sound of leaves rustling as the world dreams.'
   }
 ];
 
@@ -103,7 +111,7 @@ export const AMBIENT_SOUNDS = [
   { id: 'zen', name: 'Zen Flute', icon: '🧘', url: 'zen.mp3' },
   { id: 'healing', name: 'Deep Calm', icon: '🕊️', url: 'healing.mp3' },
   { id: 'birds', name: 'Forest Birds', icon: '🐦', url: 'morning.mp3' },
-  { id: 'alpha', name: 'Alpha Focus', icon: '🧠', url: 'zen.mp3' }, // Placeholder paths
+  { id: 'alpha', name: 'Alpha Focus', icon: '🧠', url: 'zen.mp3' },
   { id: 'theta', name: 'Theta Sleep', icon: '✨', url: 'sleep.mp3' }
 ];
 
