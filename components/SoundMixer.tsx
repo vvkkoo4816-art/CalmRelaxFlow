@@ -29,14 +29,13 @@ const SoundMixer: React.FC = () => {
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
-      // Music file names match the public folder assets (e.g., rain.mp3, zen.mp3)
       const fileName = url.split('/').pop() || url;
       const fullPath = `/${fileName}`;
       
       audioRefs.current[id].src = fullPath;
       
       audioRefs.current[id].play().catch(() => {
-        // Simple fallback
+        // Simple fallback for local testing
         audioRefs.current[id].src = `./${fileName}`;
         audioRefs.current[id].play().catch(e => console.error("Ambient sound failed:", e));
       });

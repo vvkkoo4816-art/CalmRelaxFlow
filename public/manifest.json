@@ -1,7 +1,6 @@
-
 {
   "name": "CalmRelaxFlow",
-  "short_name": "CalmRelaxFlow",
+  "short_name": "CalmRelax",
   "id": "com.calmrelaxflow.app",
   "start_url": "/",
   "description": "Professional mindfulness companion with guided meditations and zen music.",
