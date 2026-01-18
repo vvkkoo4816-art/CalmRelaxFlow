@@ -20,8 +20,8 @@
     "path": "C:\\CalmRelaxFlow\\CalmRelaxFlow\\calmrelx.keystore",
     "alias": "calmrelx.keystore"
   },
-  "appVersionName": "1.1.4",
-  "appVersionCode": 15,
+  "appVersionName": "1.2.0",
+  "appVersionCode": 17,
   "shortcuts": [
     {
       "name": "Daily Zen",

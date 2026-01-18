@@ -4,7 +4,7 @@ import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import { AppView, User, MeditationSession, Language, JournalEntry } from './types';
-import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES } from './constants';
+import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES } from './constants';
 import { translations } from './translations';
 import { getPersonalizedRecommendation } from './services/geminiService';
 
@@ -62,7 +62,7 @@ const App: React.FC = () => {
       setIsShowingInterstitial(false);
       setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 800); 
+    }, 500); 
   };
 
   const handleMoodSelect = async (mood: string) => {
@@ -196,11 +196,11 @@ const App: React.FC = () => {
         {view === 'today' && (
           <div className="space-y-10 animate-in fade-in duration-1000">
             <header className="flex justify-between items-center bg-white/50 backdrop-blur-sm p-6 rounded-[40px] border border-stone-100">
-              <div>
-                <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em] mb-1">{t.welcome_back}</p>
-                <h2 className="text-3xl font-black serif text-stone-900 leading-tight">{user.name}</h2>
+              <div className="min-w-0">
+                <p className="text-emerald-600 font-black text-[9px] uppercase tracking-[0.4em] mb-1">{t.welcome_back}</p>
+                <h2 className="text-3xl font-black serif text-stone-900 leading-tight truncate">{user.name}</h2>
               </div>
-              <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
                  <svg className="w-full h-full transform -rotate-90">
                     <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-stone-100" />
                     <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={176} strokeDashoffset={176 - (176 * progressPercent) / 100} strokeLinecap="round" className="text-emerald-500 transition-all duration-1000" />
@@ -210,69 +210,87 @@ const App: React.FC = () => {
             </header>
 
             {/* Mood Check-In */}
-            <section className="bg-white rounded-[48px] p-8 border border-stone-100 shadow-xl shadow-stone-200/40">
-               <h3 className="font-black serif text-xl mb-8 text-center">How does your heart feel today?</h3>
+            <section className="bg-white rounded-[48px] p-8 border border-stone-100 shadow-xl shadow-stone-200/40 overflow-hidden relative">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/20 via-emerald-500/40 to-emerald-500/20"></div>
+               <h3 className="font-black serif text-xl mb-8 text-center text-stone-800">How is your soul today?</h3>
                <div className="flex justify-between items-center mb-10 px-4">
-                  {['Happy', 'Calm', 'Stressed', 'Sad', 'Tired'].map(mood => (
-                    <button key={mood} onClick={() => handleMoodSelect(mood)} className={`flex flex-col items-center space-y-3 group transition-all duration-500 ${selectedMood === mood ? 'scale-125' : 'opacity-30 hover:opacity-100 grayscale hover:grayscale-0'}`}>
-                       <span className="text-4xl transform group-hover:rotate-12 transition-transform">
-                         {mood === 'Happy' ? '😊' : mood === 'Calm' ? '🧘' : mood === 'Stressed' ? '😰' : mood === 'Sad' ? '😔' : '😴'}
+                  {[
+                    { label: 'Happy', emoji: '😊' },
+                    { label: 'Calm', emoji: '🧘' },
+                    { label: 'Stressed', emoji: '😰' },
+                    { label: 'Sad', emoji: '😔' },
+                    { label: 'Tired', emoji: '😴' }
+                  ].map(mood => (
+                    <button 
+                      key={mood.label} 
+                      onClick={() => handleMoodSelect(mood.label)} 
+                      className={`flex flex-col items-center space-y-3 group transition-all duration-500 ${selectedMood === mood.label ? 'scale-125' : 'opacity-40 hover:opacity-100 grayscale hover:grayscale-0'}`}
+                    >
+                       <span className="text-4xl transform group-hover:rotate-12 transition-transform drop-shadow-sm filter saturate-150">
+                         {mood.emoji}
                        </span>
-                       <span className={`text-[8px] font-black uppercase tracking-widest ${selectedMood === mood ? 'text-emerald-600' : 'text-stone-400'}`}>{mood}</span>
+                       <span className={`text-[8px] font-black uppercase tracking-widest ${selectedMood === mood.label ? 'text-emerald-600' : 'text-stone-400'}`}>{mood.label}</span>
                     </button>
                   ))}
                </div>
                {(selectedMood || isAiLoading) && (
-                 <div className="bg-stone-50 p-8 rounded-[32px] border border-stone-100 animate-in slide-in-from-top-6 duration-700">
+                 <div className="bg-emerald-50/30 p-8 rounded-[32px] border border-emerald-100/30 animate-in slide-in-from-top-6 duration-700 relative">
                     {isAiLoading ? (
-                      <div className="flex items-center justify-center space-x-3 text-emerald-600">
+                      <div className="flex items-center justify-center space-x-3 text-emerald-600 py-4">
                         <div className="w-5 h-5 border-2 border-emerald-600/20 border-t-emerald-600 rounded-full animate-spin"></div>
-                        <span className="text-xs font-black uppercase tracking-widest italic">Personalizing your path...</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest italic opacity-60">Crafting your advice...</span>
                       </div>
                     ) : (
                       <div className="relative">
-                        <svg className="absolute -top-4 -left-4 w-8 h-8 text-emerald-200/50" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C20.1216 16 21.017 16.8954 21.017 18V21M14.017 21H21.017M14.017 21C14.017 22.1046 13.1216 23 12.017 23H10.017C8.91243 23 8.01705 22.1046 8.01705 21M8.01705 21H12.017M8.01705 21V18C8.01705 16.8954 7.12162 16 6.01705 16H3.01705C1.91248 16 1.01705 16.8954 1.01705 18V21M1.01705 21H8.01705"/></svg>
-                        <p className="text-stone-700 text-base italic font-medium leading-relaxed text-center px-4">"{aiTip}"</p>
+                        <svg className="absolute -top-3 -left-3 w-6 h-6 text-emerald-500/10" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C20.1216 16 21.017 16.8954 21.017 18V21M14.017 21H21.017M14.017 21C14.017 22.1046 13.1216 23 12.017 23H10.017C8.91243 23 8.01705 22.1046 8.01705 21M8.01705 21H12.017M8.01705 21V18C8.01705 16.8954 7.12162 16 6.01705 16H3.01705C1.91248 16 1.01705 16.8954 1.01705 18V21M1.01705 21H8.01705"/></svg>
+                        <p className="text-stone-700 text-base italic font-medium leading-relaxed text-center px-4 serif">"{aiTip}"</p>
                       </div>
                     )}
                  </div>
                )}
             </section>
 
-            <section className="bg-stone-950 rounded-[56px] p-12 text-white relative overflow-hidden shadow-2xl shadow-emerald-950/20">
+            <section className="bg-stone-950 rounded-[56px] p-12 text-white relative overflow-hidden shadow-2xl shadow-emerald-950/40 group">
+               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                <div className="relative z-10">
-                 <div className="flex items-center space-x-2 mb-6">
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
-                    <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.4em]">Current Wisdom</p>
+                 <div className="flex items-center space-x-3 mb-6">
+                    <span className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></span>
+                    <p className="text-emerald-400 font-black text-[10px] uppercase tracking-[0.5em]">Current Wisdom</p>
                  </div>
-                 <h3 className="text-3xl font-black serif mb-10 italic leading-snug">"{zenQuote}"</h3>
+                 <h3 className="text-3xl font-light serif mb-10 italic leading-snug tracking-tight text-white/90">"{zenQuote}"</h3>
                  <div className="flex flex-wrap gap-4">
-                   <button onClick={() => setActiveSession(DAILY_MEDITATION)} className="bg-white text-stone-950 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 transition-all active:scale-95">Daily Practice</button>
-                   <button onClick={() => handleViewChange('library')} className="bg-stone-800 text-stone-300 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">Explore All</button>
+                   <button onClick={() => setActiveSession(DAILY_MEDITATION)} className="bg-white text-stone-950 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-emerald-50 transition-all active:scale-95">Daily Practice</button>
+                   <button onClick={() => handleViewChange('library')} className="bg-stone-800/80 backdrop-blur-md text-stone-300 px-8 py-5 rounded-full font-black uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">Explore All</button>
                  </div>
                </div>
-               <div className="absolute top-0 right-0 p-8 opacity-5">
-                  <svg className="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+               <div className="absolute top-0 right-0 p-8 opacity-[0.05]">
+                  <svg className="w-72 h-72" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                </div>
             </section>
 
             {/* Gratitude Mini-Feature */}
-            <div className="bg-amber-50/50 rounded-[48px] p-10 border border-amber-100/50 text-center">
-               <h4 className="font-black serif text-xl mb-2">Gratitude Seed</h4>
-               <p className="text-stone-500 text-xs mb-8">What lightened your heart today?</p>
+            <div className="bg-amber-50/50 rounded-[48px] p-10 border border-amber-200/20 text-center shadow-inner">
+               <h4 className="font-black serif text-xl mb-2 text-stone-800">Gratitude Seed</h4>
+               <p className="text-stone-500 text-[10px] uppercase tracking-widest font-black mb-8 opacity-50">Capture a fragment of joy</p>
                {gratitudeSaved ? (
-                 <div className="bg-emerald-500 text-white p-5 rounded-3xl animate-in zoom-in">
-                    <span className="font-black text-[10px] uppercase tracking-[0.2em]">Reflection Saved</span>
+                 <div className="bg-emerald-500 text-white p-6 rounded-[32px] animate-in zoom-in duration-500 shadow-xl shadow-emerald-500/20 flex flex-col items-center">
+                    <svg className="w-6 h-6 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    <span className="font-black text-[10px] uppercase tracking-[0.3em]">Thought preserved</span>
                  </div>
                ) : (
-                 <div className="relative">
+                 <div className="relative group">
                    <input 
                      value={gratitudeInput}
                      onChange={(e) => setGratitudeInput(e.target.value)}
-                     className="w-full bg-white px-8 py-5 rounded-full text-stone-700 text-sm focus:outline-none focus:ring-4 focus:ring-amber-200/30 transition-all border border-amber-100 shadow-sm"
-                     placeholder="Write it down..."
+                     className="w-full bg-white px-8 py-6 rounded-full text-stone-700 text-sm focus:outline-none focus:ring-4 focus:ring-amber-200/10 transition-all border border-stone-100 shadow-sm placeholder:text-stone-300"
+                     placeholder="A small moment of peace..."
                    />
-                   <button onClick={saveGratitude} className="absolute right-2 top-2 bottom-2 bg-stone-900 text-white px-6 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-stone-800 transition-colors">Plant</button>
+                   <button 
+                     onClick={saveGratitude} 
+                     className="absolute right-2 top-2 bottom-2 bg-stone-900 text-white px-8 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg active:scale-95"
+                   >
+                     Plant
+                   </button>
                  </div>
                )}
             </div>
@@ -283,15 +301,15 @@ const App: React.FC = () => {
           <div className="space-y-12 animate-in fade-in duration-1000">
              <header>
                <h2 className="text-4xl font-black serif text-stone-900">{t.nav_library}</h2>
-               <p className="text-stone-400 text-sm mt-2">Curated sounds for your specific needs.</p>
+               <p className="text-stone-400 text-sm mt-2">Harmonize your environment with curated selections.</p>
              </header>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {MEDITATION_SESSIONS.map(session => (
-                <div key={session.id} onClick={() => setActiveSession(session)} className="aspect-[4/3] bg-stone-100 rounded-[48px] relative overflow-hidden cursor-pointer group shadow-xl border border-stone-200/20 hover:-translate-y-2 transition-all duration-500">
+                <div key={session.id} onClick={() => setActiveSession(session)} className="aspect-[4/3] bg-stone-100 rounded-[48px] relative overflow-hidden cursor-pointer group shadow-xl border border-stone-100 hover:-translate-y-2 transition-all duration-500">
                   <img src={session.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-[12s] grayscale-[0.2] group-hover:grayscale-0" alt={session.title} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-transparent to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/90 via-stone-900/20 to-transparent"></div>
                   <div className="absolute bottom-8 left-8 right-8">
-                    <span className="inline-block px-3 py-1 bg-emerald-500/20 backdrop-blur-md text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest mb-3 border border-emerald-500/30">{session.category}</span>
+                    <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest mb-3 border border-white/10">{session.category}</span>
                     <h4 className="text-white font-black text-2xl serif leading-tight mb-1">{session.title}</h4>
                     <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">{session.duration}</p>
                   </div>
@@ -299,7 +317,7 @@ const App: React.FC = () => {
               ))}
             </div>
             <div className="pt-8">
-               <h3 className="text-2xl font-black serif text-stone-900 mb-8">Ambient Mixer</h3>
+               <h3 className="text-2xl font-black serif text-stone-900 mb-8 px-2">Ambient Composer</h3>
                <SoundMixer />
             </div>
           </div>
@@ -318,12 +336,12 @@ const App: React.FC = () => {
                         <img src={story.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[8s]" alt={story.title} />
                      </div>
                      <div className="flex-1 text-center md:text-left">
-                        <span className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.3em] mb-2 block">{story.duration}</span>
+                        <span className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.4em] mb-2 block">{story.duration}</span>
                         <h4 className="text-2xl font-black serif text-stone-900 mb-2">{story.title}</h4>
                         <p className="text-stone-500 text-sm leading-relaxed max-w-md">{story.description}</p>
                      </div>
-                     <div className="mt-6 md:mt-0 text-stone-200 group-hover:text-emerald-500 transition-colors">
-                        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                     <div className="mt-6 md:mt-0 text-stone-100 group-hover:text-emerald-500 transition-colors">
+                        <svg className="w-14 h-14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                      </div>
                   </div>
                 ))}
@@ -334,29 +352,35 @@ const App: React.FC = () => {
         {view === 'journal' && (
           <div className="space-y-12 animate-in fade-in duration-1000">
             <h2 className="text-4xl font-black serif text-stone-900">{t.journal_title}</h2>
-            <div className="bg-white rounded-[56px] p-10 border border-stone-100 shadow-2xl">
+            <div className="bg-white rounded-[56px] p-10 border border-stone-100 shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-[100%]"></div>
                <textarea 
                   value={newJournalText} 
                   onChange={(e) => setNewJournalText(e.target.value)} 
                   placeholder={t.journal_placeholder} 
-                  className="w-full h-48 bg-stone-50 rounded-[32px] p-8 text-stone-700 font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all resize-none mb-6 border-none text-lg" 
+                  className="w-full h-48 bg-stone-50 rounded-[32px] p-8 text-stone-700 font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all resize-none mb-6 border-none text-lg serif" 
                />
-               <button onClick={saveJournal} className="w-full bg-stone-900 text-white py-6 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-stone-800 transition-colors">{editingJournalId ? t.journal_update : t.journal_save}</button>
+               <button onClick={saveJournal} className="w-full bg-stone-950 text-white py-6 rounded-full font-black uppercase tracking-widest text-[11px] shadow-2xl hover:bg-stone-800 transition-colors">{editingJournalId ? t.journal_update : t.journal_save}</button>
             </div>
             <div className="space-y-8">
               {journals.map(entry => (
-                <div key={entry.id} className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-lg relative overflow-hidden group">
-                   <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                <div key={entry.id} className="bg-white p-10 rounded-[48px] border border-stone-100 shadow-lg relative overflow-hidden group hover:shadow-xl transition-shadow">
+                   <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500/10 group-hover:bg-emerald-500 transition-all"></div>
                    <div className="flex justify-between items-start mb-6">
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">{entry.date}</span>
-                        <span className="text-[9px] font-bold text-emerald-600 uppercase mt-1">Mood: {entry.mood}</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">{entry.date}</span>
+                        <span className="text-[9px] font-bold text-emerald-600 uppercase mt-1">Status: {entry.mood}</span>
                       </div>
-                      <button onClick={() => { setEditingJournalId(entry.id); setNewJournalText(entry.text); }} className="text-[10px] font-black uppercase text-emerald-600 px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 transition-colors">{t.journal_edit}</button>
+                      <button onClick={() => { setEditingJournalId(entry.id); setNewJournalText(entry.text); }} className="text-[10px] font-black uppercase text-emerald-600 px-5 py-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 transition-colors">{t.journal_edit}</button>
                    </div>
-                   <p className="text-stone-700 leading-relaxed font-medium serif text-xl italic">"{entry.text}"</p>
+                   <p className="text-stone-700 leading-relaxed font-medium serif text-xl italic opacity-90">"{entry.text}"</p>
                 </div>
               ))}
+              {journals.length === 0 && (
+                <div className="text-center py-12 opacity-30">
+                  <p className="text-stone-400 font-black uppercase tracking-[0.5em] text-[10px]">{t.journal_empty}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
