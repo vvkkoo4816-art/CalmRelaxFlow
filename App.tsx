@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
+import AdSlot from './components/AdSlot';
 import { AppView, User, MeditationSession, Language, JournalEntry, ZenCenter } from './types';
 import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES } from './constants';
 import { translations } from './translations';
@@ -44,7 +46,6 @@ const App: React.FC = () => {
       }
     }
 
-    // Load nearby centers once on mount
     findNearbyZenCenters(0,0).then(setZenCenters);
   }, []);
 
@@ -55,12 +56,16 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
+    
+    // Show Interstitial (Ad Break)
     setIsShowingInterstitial(true);
+    
+    // Smooth transition
     setTimeout(() => {
       setIsShowingInterstitial(false);
       setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 500); 
+    }, 1500); // Extended slightly to allow Ad to be seen
   };
 
   const handleMoodSelect = async (mood: string) => {
@@ -179,9 +184,14 @@ const App: React.FC = () => {
       <div className="max-w-3xl mx-auto pb-64 space-y-12 px-4">
         
         {isShowingInterstitial && (
-          <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center ad-interstitial-in">
-             <div className="w-24 h-24 border-[10px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-10 shadow-xl shadow-emerald-500/20"></div>
-             <p className="text-emerald-800 font-black text-lg uppercase tracking-[0.5em] animate-pulse italic">Purifying Focus...</p>
+          <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center ad-interstitial-in">
+             <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-xl shadow-emerald-500/20"></div>
+             <p className="text-emerald-800 font-black text-sm uppercase tracking-[0.3em] animate-pulse italic mb-8">Refining Focus...</p>
+             
+             {/* Interstitial Ad Slot */}
+             <div className="w-full max-w-md bg-stone-50 rounded-3xl p-4 border border-stone-100 shadow-inner">
+               <AdSlot />
+             </div>
           </div>
         )}
 
@@ -220,6 +230,9 @@ const App: React.FC = () => {
                  </div>
                </div>
             </section>
+
+            {/* Banner Ad Slot */}
+            <AdSlot className="mb-12" />
 
             <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
@@ -267,6 +280,8 @@ const App: React.FC = () => {
                <h2 className="text-6xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">The Vault</h2>
                <p className="text-stone-400 text-xl md:text-2xl font-medium leading-relaxed max-w-2xl italic opacity-95 serif">Architectural soundscapes engineered for total cognitive surrender.</p>
              </header>
+
+             <AdSlot />
 
              <section className="space-y-8">
                <h3 className="text-2xl md:text-3xl font-black serif text-stone-900 tracking-tighter">Guided Journeys</h3>
@@ -317,6 +332,9 @@ const App: React.FC = () => {
                <h2 className="text-6xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">{t.sleep_title}</h2>
                <p className="text-stone-400 text-xl md:text-2xl mt-4 font-medium leading-relaxed serif italic opacity-95">{t.sleep_subtitle}</p>
              </header>
+
+             <AdSlot />
+
              <div className="grid grid-cols-1 gap-8">
                 {SLEEP_STORIES.map(story => (
                   <div key={story.id} onClick={() => setActiveSession(story)} className="bg-white rounded-[40px] p-6 md:p-8 border border-stone-100 shadow-xl flex flex-col md:flex-row items-center md:space-x-12 cursor-pointer group hover:bg-stone-50 transition-all duration-700">
@@ -355,6 +373,9 @@ const App: React.FC = () => {
                   )}
                 </div>
              </div>
+             
+             <AdSlot />
+
              <div className="space-y-6 pt-8">
                 {journals.map(j => (
                   <div key={j.id} className="bg-white rounded-[32px] p-6 md:p-8 border border-stone-100 shadow-md group hover:shadow-lg transition-all">
@@ -380,6 +401,8 @@ const App: React.FC = () => {
              </header>
              <BreathingExercise lang={lang} />
              
+             <AdSlot />
+
              <section className="pt-12 border-t border-stone-100">
                 <h3 className="text-3xl font-black serif text-stone-900 mb-8">Nearby Presence</h3>
                 <div className="grid grid-cols-1 gap-4">
@@ -424,6 +447,9 @@ const App: React.FC = () => {
                    <span className="text-3xl md:text-5xl font-black serif text-stone-900">{zenLevel}</span>
                 </div>
              </div>
+
+             <AdSlot />
+
              <div className="bg-white rounded-[40px] p-8 md:p-10 border border-stone-100 shadow-xl space-y-8">
                 <h3 className="text-xl md:text-2xl font-black serif text-stone-900 tracking-tighter">{t.settings_language}</h3>
                 <div className="flex flex-col space-y-4">
