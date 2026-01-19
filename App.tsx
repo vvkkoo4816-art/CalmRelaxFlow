@@ -467,20 +467,23 @@ const App: React.FC = () => {
              </header>
              <div className="space-y-6">
                 
+                {/* BUILD ERROR FIX (FILE NOT FOUND) */}
+                <div className="bg-emerald-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-emerald-400">
+                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🚀 Fix Build Error (v32 Sync)</h3>
+                    <p className="text-xs text-emerald-200/70 mb-8 italic serif leading-relaxed">I have updated your keystore path to a <b>Relative Path</b>. This solves the "FileNotFoundException" you saw in your logs.</p>
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
+                        <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Action Required:</p>
+                        <p className="text-[11px] leading-relaxed">Ensure your <b>calmrelax.keystore</b> file is sitting directly inside your main project folder (the same place where `package.json` is). The new code (v32) will now look for it there automatically without needing the long C:\ path.</p>
+                    </div>
+                </div>
+
                 {/* ACCOUNT UPGRADE FIX */}
                 <div className="bg-indigo-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-indigo-400">
                     <h3 className="text-2xl md:text-3xl font-black serif mb-8">🛠️ Force Reveal "Sites" Tab</h3>
-                    <p className="text-xs text-indigo-200/70 mb-8 italic serif leading-relaxed">Your screenshot shows your account is locked to YouTube. Since there is no blue link on the card, follow this <span className="text-indigo-300 font-black">"Invisible Path"</span>:</p>
+                    <p className="text-xs text-indigo-200/70 mb-8 italic serif leading-relaxed">Follow the "Invisible Path" to upgrade your AdSense account from YouTube-only:</p>
                     <div className="space-y-10">
                         <div className="flex items-start space-x-6">
                             <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">1</div>
-                            <div>
-                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Upgrade Account Type</p>
-                                <p className="text-xs text-indigo-300/80 leading-relaxed">Click <span className="bg-white/10 px-2 py-0.5 rounded text-white font-bold">帳戶 (Account)</span> in your left sidebar. Then click <span className="text-white font-bold underline">設定 (Settings)</span> and look for <span className="text-white font-bold underline">帳戶資訊 (Account Info)</span>. You are looking for a button that says "Get Started with Content" or "Upgrade Account".</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-6">
-                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">2</div>
                             <div>
                                 <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Direct Manual URL</p>
                                 <p className="text-xs text-indigo-300/80 leading-relaxed mb-4">Copy and paste this exact link into your browser to bypass the missing menu:</p>
@@ -490,13 +493,6 @@ const App: React.FC = () => {
                                 >
                                   Open Force-Add Link
                                 </button>
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-6">
-                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">3</div>
-                            <div>
-                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Verification Priority</p>
-                                <p className="text-xs text-indigo-300/80 leading-relaxed">Google hides the blue links if you haven't clicked the <span className="bg-rose-500 text-white px-2 py-0.5 rounded font-bold uppercase text-[9px]">驗證身份 (Verify Identity)</span> button at the very top. Click that first and upload your documents.</p>
                             </div>
                         </div>
                     </div>
@@ -511,7 +507,7 @@ const App: React.FC = () => {
                        </div>
                        <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
                           <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">App Version Code</p>
-                          <p className="text-4xl md:text-6xl font-black serif">31</p>
+                          <p className="text-4xl md:text-6xl font-black serif">32</p>
                        </div>
                     </div>
                 </div>
