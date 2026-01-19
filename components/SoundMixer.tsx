@@ -70,33 +70,33 @@ const SoundMixer: React.FC = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
       {AMBIENT_SOUNDS.map(sound => {
         const state = activeSounds[sound.id] || { isPlaying: false, volume: 0.5 };
         return (
           <div 
             key={sound.id} 
-            className={`p-8 rounded-[40px] border transition-all duration-700 flex items-center space-x-6 ${
-              state.isPlaying ? 'bg-emerald-50/50 border-emerald-200 shadow-xl shadow-emerald-500/5 translate-y-[-4px]' : 'bg-white border-stone-100 hover:border-stone-200 shadow-sm'
+            className={`p-4 md:p-6 rounded-[28px] border transition-all duration-500 flex items-center space-x-4 ${
+              state.isPlaying ? 'bg-emerald-50 border-emerald-100 shadow-md' : 'bg-white border-stone-100 hover:border-stone-200 shadow-sm'
             }`}
           >
             <button 
               onClick={() => toggleSound(sound.id, sound.url)}
-              className={`w-18 h-18 rounded-[24px] flex items-center justify-center text-4xl shadow-2xl transition-all active:scale-90 ${
-                state.isPlaying ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-stone-50 text-stone-300'
+              className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition-all active:scale-95 shrink-0 ${
+                state.isPlaying ? 'bg-emerald-600 text-white' : 'bg-stone-50 text-stone-300'
               }`}
             >
               <span className={state.isPlaying ? 'animate-pulse' : ''}>{sound.icon}</span>
             </button>
             
-            <div className="flex-1 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="font-black text-stone-900 text-lg tracking-tight">{sound.name}</span>
-                <span className={`text-[10px] font-black uppercase tracking-[0.3em] transition-colors ${state.isPlaying ? 'text-emerald-600' : 'text-stone-300'}`}>
-                  {state.isPlaying ? 'Resonating' : 'Silent'}
+            <div className="flex-1 space-y-2">
+              <div className="flex justify-between items-center px-1">
+                <span className="font-bold text-stone-900 text-sm tracking-tight">{sound.name}</span>
+                <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${state.isPlaying ? 'text-emerald-600' : 'text-stone-300'}`}>
+                  {state.isPlaying ? 'On' : 'Off'}
                 </span>
               </div>
-              <div className="relative h-2 w-full">
+              <div className="relative h-1.5 w-full">
                 <input 
                   type="range"
                   min="0"
@@ -105,8 +105,8 @@ const SoundMixer: React.FC = () => {
                   disabled={!state.isPlaying}
                   value={state.volume}
                   onChange={(e) => handleVolumeChange(sound.id, parseFloat(e.target.value))}
-                  className={`absolute inset-0 w-full h-2 rounded-full appearance-none transition-all cursor-pointer ${
-                    state.isPlaying ? 'accent-emerald-600 bg-emerald-100/50' : 'bg-stone-100 opacity-40 cursor-not-allowed'
+                  className={`absolute inset-0 w-full h-1.5 rounded-full appearance-none transition-all cursor-pointer ${
+                    state.isPlaying ? 'accent-emerald-600 bg-emerald-100' : 'bg-stone-100 opacity-30 cursor-not-allowed'
                   }`}
                 />
               </div>

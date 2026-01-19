@@ -17,11 +17,11 @@
   "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "C:\\CalmRelaxFlow\\CalmRelaxFlow\\android.keystore",
-    "alias": "android.keystore"
+    "path": "C:\\Users\\cti88\\Desktop\\CalmRelaxFlow\\CalmRelaxFlow\\calmrelax.keystore",
+    "alias": "CalmRelaxKey"
   },
-  "appVersionName": "5.2.5",
-  "appVersionCode": 12,
+  "appVersionName": "5.2.7",
+  "appVersionCode": 14,
   "shortcuts": [
     {
       "name": "Daily Zen",
