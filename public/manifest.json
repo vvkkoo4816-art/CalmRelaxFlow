@@ -1,7 +1,7 @@
 {
   "name": "CalmRelaxFlow",
   "short_name": "CalmRelax",
-  "id": "com.calmrelaxflow.app",
+  "id": "com.clam.relax.app",
   "start_url": "/",
   "description": "Professional mindfulness companion with guided meditations and zen music.",
   "theme_color": "#10b981",

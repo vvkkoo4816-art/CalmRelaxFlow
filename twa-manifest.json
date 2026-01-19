@@ -1,5 +1,5 @@
 {
-  "packageId": "com.calmrelaxflow.app",
+  "packageId": "com.clam.relax.app",
   "host": "calm-relax-flow.vercel.app",
   "name": "CalmRelaxFlow",
   "launcherName": "CalmRelax",
@@ -19,8 +19,8 @@
     "path": "C:\\Users\\cti88\\Desktop\\CalmRelaxFlow\\CalmRelaxFlow\\calmrelax.keystore",
     "alias": "CalmRelaxKey"
   },
-  "appVersionName": "5.3.0",
-  "appVersionCode": 17,
+  "appVersionName": "5.4.0",
+  "appVersionCode": 20,
   "shortcuts": [
     {
       "name": "Daily Zen",

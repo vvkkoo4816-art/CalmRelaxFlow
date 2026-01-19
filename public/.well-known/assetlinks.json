@@ -6,7 +6,7 @@
     ],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.calmrelaxflow.app",
+      "package_name": "com.clam.relax.app",
       "sha256_cert_fingerprints": [
         "AE:14:47:C9:AF:B4:47:37:43:1B:3B:0C:9D:DB:71:47:42:72:17:AA:3D:47:6C:A5:EA:2E:97:BD:4E:28:53:D4"
       ]
