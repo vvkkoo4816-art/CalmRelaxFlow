@@ -57,15 +57,13 @@ const App: React.FC = () => {
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
     
-    // Show Interstitial (Ad Break)
     setIsShowingInterstitial(true);
     
-    // Smooth transition
     setTimeout(() => {
       setIsShowingInterstitial(false);
       setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1500); // Extended slightly to allow Ad to be seen
+    }, 1500); 
   };
 
   const handleMoodSelect = async (mood: string) => {
@@ -187,8 +185,6 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center ad-interstitial-in">
              <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-xl shadow-emerald-500/20"></div>
              <p className="text-emerald-800 font-black text-sm uppercase tracking-[0.3em] animate-pulse italic mb-8">Refining Focus...</p>
-             
-             {/* Interstitial Ad Slot */}
              <div className="w-full max-w-md bg-stone-50 rounded-3xl p-4 border border-stone-100 shadow-inner">
                <AdSlot />
              </div>
@@ -231,7 +227,6 @@ const App: React.FC = () => {
                </div>
             </section>
 
-            {/* Banner Ad Slot */}
             <AdSlot className="mb-12" />
 
             <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
@@ -470,17 +465,55 @@ const App: React.FC = () => {
              <header>
                <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-6">{t.nav_admin}</h2>
              </header>
-             <div className="bg-stone-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl">
-                <h3 className="text-2xl md:text-3xl font-black serif mb-8">System Resonance</h3>
-                <div className="grid grid-cols-1 gap-8">
-                   <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
-                      <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">Total Users (Simulated)</p>
-                      <p className="text-4xl md:text-6xl font-black serif">1,402</p>
-                   </div>
-                   <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
-                      <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">API Latency</p>
-                      <p className="text-4xl md:text-6xl font-black serif">42ms</p>
-                   </div>
+             <div className="space-y-6">
+                
+                {/* ACCOUNT UPGRADE FIX */}
+                <div className="bg-indigo-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-indigo-400">
+                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🛠️ Force Reveal "Sites" Tab</h3>
+                    <p className="text-xs text-indigo-200/70 mb-8 italic serif leading-relaxed">Your screenshot shows your account is locked to YouTube. Since there is no blue link on the card, follow this <span className="text-indigo-300 font-black">"Invisible Path"</span>:</p>
+                    <div className="space-y-10">
+                        <div className="flex items-start space-x-6">
+                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">1</div>
+                            <div>
+                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Upgrade Account Type</p>
+                                <p className="text-xs text-indigo-300/80 leading-relaxed">Click <span className="bg-white/10 px-2 py-0.5 rounded text-white font-bold">帳戶 (Account)</span> in your left sidebar. Then click <span className="text-white font-bold underline">設定 (Settings)</span> and look for <span className="text-white font-bold underline">帳戶資訊 (Account Info)</span>. You are looking for a button that says "Get Started with Content" or "Upgrade Account".</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-6">
+                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">2</div>
+                            <div>
+                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Direct Manual URL</p>
+                                <p className="text-xs text-indigo-300/80 leading-relaxed mb-4">Copy and paste this exact link into your browser to bypass the missing menu:</p>
+                                <button 
+                                  onClick={() => window.open('https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites/my-sites/add-site', '_blank')}
+                                  className="bg-indigo-500 hover:bg-indigo-400 text-indigo-950 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl"
+                                >
+                                  Open Force-Add Link
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-6">
+                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">3</div>
+                            <div>
+                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Verification Priority</p>
+                                <p className="text-xs text-indigo-300/80 leading-relaxed">Google hides the blue links if you haven't clicked the <span className="bg-rose-500 text-white px-2 py-0.5 rounded font-bold uppercase text-[9px]">驗證身份 (Verify Identity)</span> button at the very top. Click that first and upload your documents.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-stone-900 rounded-[48px] p-10 text-white shadow-xl">
+                    <h3 className="text-2xl font-black serif mb-6">System Resonance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
+                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">Total Users</p>
+                          <p className="text-4xl md:text-6xl font-black serif">1,402</p>
+                       </div>
+                       <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
+                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">App Version Code</p>
+                          <p className="text-4xl md:text-6xl font-black serif">31</p>
+                       </div>
+                    </div>
                 </div>
              </div>
           </div>
