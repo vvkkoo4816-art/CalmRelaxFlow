@@ -25,6 +25,10 @@ const App: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [zenCenters, setZenCenters] = useState<ZenCenter[]>([]);
 
+  // States for Dynamic Downloads and Ad Refreshing
+  const [dynamicFileName, setDynamicFileName] = useState('');
+  const [adRefreshKey, setAdRefreshKey] = useState(0);
+
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
 
@@ -57,7 +61,9 @@ const App: React.FC = () => {
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
     
+    // Show interstitial and increment ad refresh key to force new AdSense request
     setIsShowingInterstitial(true);
+    setAdRefreshKey(prev => prev + 1);
     
     setTimeout(() => {
       setIsShowingInterstitial(false);
@@ -128,6 +134,16 @@ const App: React.FC = () => {
     localStorage.setItem('calmrelax_journals', JSON.stringify(updated));
   };
 
+  const handleDynamicDownload = () => {
+    if (!dynamicFileName.trim()) return;
+    const link = document.createElement('a');
+    link.href = dynamicFileName.startsWith('/') ? dynamicFileName : `/${dynamicFileName}`;
+    link.download = dynamicFileName.split('/').pop() || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!isLoggedIn || !user) {
     return (
       <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
@@ -186,7 +202,7 @@ const App: React.FC = () => {
              <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-xl shadow-emerald-500/20"></div>
              <p className="text-emerald-800 font-black text-sm uppercase tracking-[0.3em] animate-pulse italic mb-8">Refining Focus...</p>
              <div className="w-full max-w-md bg-stone-50 rounded-3xl p-4 border border-stone-100 shadow-inner">
-               <AdSlot />
+               <AdSlot key={`interstitial-ad-${adRefreshKey}`} />
              </div>
           </div>
         )}
@@ -227,7 +243,7 @@ const App: React.FC = () => {
                </div>
             </section>
 
-            <AdSlot className="mb-12" />
+            <AdSlot key={`home-ad-${adRefreshKey}`} className="mb-12" />
 
             <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
@@ -276,7 +292,7 @@ const App: React.FC = () => {
                <p className="text-stone-400 text-xl md:text-2xl font-medium leading-relaxed max-w-2xl italic opacity-95 serif">Architectural soundscapes engineered for total cognitive surrender.</p>
              </header>
 
-             <AdSlot />
+             <AdSlot key={`library-ad-top-${adRefreshKey}`} />
 
              <section className="space-y-8">
                <h3 className="text-2xl md:text-3xl font-black serif text-stone-900 tracking-tighter">Guided Journeys</h3>
@@ -328,7 +344,7 @@ const App: React.FC = () => {
                <p className="text-stone-400 text-xl md:text-2xl mt-4 font-medium leading-relaxed serif italic opacity-95">{t.sleep_subtitle}</p>
              </header>
 
-             <AdSlot />
+             <AdSlot key={`sleep-ad-top-${adRefreshKey}`} />
 
              <div className="grid grid-cols-1 gap-8">
                 {SLEEP_STORIES.map(story => (
@@ -360,16 +376,21 @@ const App: React.FC = () => {
                    placeholder={t.journal_placeholder}
                 />
                 <div className="mt-8 flex flex-col space-y-4">
-                  <button onClick={saveJournal} className="w-full bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
-                    {editingJournalId ? t.journal_update : t.journal_save}
-                  </button>
+                  <div className="flex space-x-4">
+                    <button onClick={saveJournal} className="flex-1 bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
+                      {editingJournalId ? t.journal_update : t.journal_save}
+                    </button>
+                    <a href="/icon1.apk" download="CalmRelaxFlowIcon.png" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download App Icon">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </a>
+                  </div>
                   {editingJournalId && (
                     <button onClick={() => { setEditingJournalId(null); setNewJournalText(''); }} className="w-full text-stone-400 font-black text-sm uppercase tracking-[0.1em]">{t.journal_cancel}</button>
                   )}
                 </div>
              </div>
              
-             <AdSlot />
+             <AdSlot key={`journal-ad-middle-${adRefreshKey}`} />
 
              <div className="space-y-6 pt-8">
                 {journals.map(j => (
@@ -396,7 +417,7 @@ const App: React.FC = () => {
              </header>
              <BreathingExercise lang={lang} />
              
-             <AdSlot />
+             <AdSlot key={`explore-ad-top-${adRefreshKey}`} />
 
              <section className="pt-12 border-t border-stone-100">
                 <h3 className="text-3xl font-black serif text-stone-900 mb-8">Nearby Presence</h3>
@@ -443,7 +464,7 @@ const App: React.FC = () => {
                 </div>
              </div>
 
-             <AdSlot />
+             <AdSlot key={`profile-ad-middle-${adRefreshKey}`} />
 
              <div className="bg-white rounded-[40px] p-8 md:p-10 border border-stone-100 shadow-xl space-y-8">
                 <h3 className="text-xl md:text-2xl font-black serif text-stone-900 tracking-tighter">{t.settings_language}</h3>
@@ -465,34 +486,72 @@ const App: React.FC = () => {
              <header>
                <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-6">{t.nav_admin}</h2>
              </header>
-             <div className="space-y-6">
+             <div className="space-y-8">
                 
-                {/* BUILD ERROR FIX (FILE NOT FOUND) */}
-                <div className="bg-emerald-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-emerald-400">
-                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🚀 Fix Build Error (v32 Sync)</h3>
-                    <p className="text-xs text-emerald-200/70 mb-8 italic serif leading-relaxed">I have updated your keystore path to a <b>Relative Path</b>. This solves the "FileNotFoundException" you saw in your logs.</p>
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
-                        <p className="text-xs font-bold uppercase tracking-widest text-emerald-300">Action Required:</p>
-                        <p className="text-[11px] leading-relaxed">Ensure your <b>calmrelax.keystore</b> file is sitting directly inside your main project folder (the same place where `package.json` is). The new code (v32) will now look for it there automatically without needing the long C:\ path.</p>
+                {/* PUBLIC RESOURCE HUB */}
+                <div className="bg-white rounded-[48px] p-10 md:p-14 text-stone-900 shadow-xl border border-stone-100">
+                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">📦 Static Resource Hub</h3>
+                    <p className="text-sm text-stone-500 mb-10 italic serif leading-relaxed">Download your core files for manual builds or offline storage:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ResourceItem 
+                          name="App Icon (PNG)" 
+                          desc="512x512 Master Logo" 
+                          url="/icon.png" 
+                          downloadName="CalmRelax_Icon.png"
+                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>}
+                        />
+                        <ResourceItem 
+                          name="Manifest (JSON)" 
+                          desc="PWA Web Configuration" 
+                          url="/manifest.json" 
+                          downloadName="manifest.json"
+                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>}
+                        />
+                        <ResourceItem 
+                          name="Metadata (JSON)" 
+                          desc="Project Properties" 
+                          url="/metadata.json" 
+                          downloadName="metadata.json"
+                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>}
+                        />
+                        {/* Dynamic Download Interface */}
+                        <div className="flex flex-col space-y-3 p-6 bg-emerald-50/30 rounded-3xl border border-emerald-100 group transition-all">
+                          <p className="font-black text-[13px] text-stone-900 tracking-tight">Dynamic Asset Fetcher</p>
+                          <div className="flex space-x-2">
+                             <input 
+                               type="text" 
+                               value={dynamicFileName} 
+                               onChange={(e) => setDynamicFileName(e.target.value)}
+                               placeholder="e.g. sw.js, morning.mp3"
+                               className="flex-1 px-4 py-2 rounded-xl text-xs bg-white border border-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                             />
+                             <button 
+                               onClick={handleDynamicDownload}
+                               className="p-3 bg-stone-900 text-white rounded-xl hover:bg-black transition-all active:scale-90"
+                             >
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                             </button>
+                          </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* ACCOUNT UPGRADE FIX */}
-                <div className="bg-indigo-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-indigo-400">
-                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🛠️ Force Reveal "Sites" Tab</h3>
-                    <p className="text-xs text-indigo-200/70 mb-8 italic serif leading-relaxed">Follow the "Invisible Path" to upgrade your AdSense account from YouTube-only:</p>
-                    <div className="space-y-10">
-                        <div className="flex items-start space-x-6">
-                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center font-black text-indigo-950 shadow-xl">1</div>
+                <div className="bg-rose-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-rose-500">
+                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🆘 Missing "Sites" (網站) Button?</h3>
+                    <p className="text-xs text-rose-200/70 mb-8 italic serif leading-relaxed">Your account is currently in "YouTube Only" mode or is new. Follow this path to reveal the missing button:</p>
+                    <div className="space-y-8">
+                        <div className="flex items-start space-x-4">
+                            <div className="w-8 h-8 bg-rose-500 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm text-rose-950 shadow-lg">1</div>
                             <div>
-                                <p className="font-black text-indigo-100 uppercase tracking-[0.2em] text-xs mb-3">Direct Manual URL</p>
-                                <p className="text-xs text-indigo-300/80 leading-relaxed mb-4">Copy and paste this exact link into your browser to bypass the missing menu:</p>
-                                <button 
-                                  onClick={() => window.open('https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites/my-sites/add-site', '_blank')}
-                                  className="bg-indigo-500 hover:bg-indigo-400 text-indigo-950 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl"
-                                >
-                                  Open Force-Add Link
-                                </button>
+                                <p className="font-black text-rose-100 uppercase tracking-widest text-sm">Find the "Sites" Card</p>
+                                <p className="text-xs text-rose-300/80 mt-2 leading-relaxed">Go to your <b>"Home" (首頁)</b>. Look for the card labeled <b>"網站" (Sites)</b>. Click the blue link inside it to add your site.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-4">
+                            <div className="w-8 h-8 bg-rose-500 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm text-rose-950 shadow-lg">2</div>
+                            <div>
+                                <p className="font-black text-rose-100 uppercase tracking-widest text-sm">Direct Sidebar URL</p>
+                                <p className="text-xs text-rose-300/80 mt-2 leading-relaxed">Try going directly here: <br/><code className="bg-rose-900/50 p-2 rounded mt-2 block select-all font-mono text-[10px]">https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites</code></p>
                             </div>
                         </div>
                     </div>
@@ -506,8 +565,8 @@ const App: React.FC = () => {
                           <p className="text-4xl md:text-6xl font-black serif">1,402</p>
                        </div>
                        <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
-                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">App Version Code</p>
-                          <p className="text-4xl md:text-6xl font-black serif">32</p>
+                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">API Latency</p>
+                          <p className="text-4xl md:text-6xl font-black serif">42ms</p>
                        </div>
                     </div>
                 </div>
@@ -519,5 +578,22 @@ const App: React.FC = () => {
     </Layout>
   );
 };
+
+const ResourceItem = ({ name, desc, url, downloadName, icon }: { name: string, desc: string, url: string, downloadName: string, icon: React.ReactNode }) => (
+  <div className="flex items-center justify-between p-6 bg-stone-50 rounded-3xl border border-stone-100 group transition-all">
+    <div className="flex items-center space-x-4">
+      <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-stone-400 group-hover:text-emerald-500 transition-colors">
+        {icon}
+      </div>
+      <div>
+        <p className="font-black text-[13px] text-stone-900 tracking-tight">{name}</p>
+        <p className="text-[10px] text-stone-400 font-medium">{desc}</p>
+      </div>
+    </div>
+    <a href={url} download={downloadName} className="p-3 bg-white text-stone-400 rounded-full hover:bg-stone-900 hover:text-white shadow-sm transition-all active:scale-90">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    </a>
+  </div>
+);
 
 export default App;
