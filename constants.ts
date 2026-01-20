@@ -1,3 +1,4 @@
+
 import { MeditationSession, Course } from './types';
 
 export const STATIC_QUOTES = [
@@ -11,6 +12,15 @@ export const STATIC_QUOTES = [
   "Mindfulness isn't difficult, we just need to remember to do it.",
   "Your calm is your strength.",
   "The soul usually knows what to do to heal itself. The challenge is to silence the mind."
+];
+
+// Verified Audio Assets in /public folder
+export const PUBLIC_AUDIO_FILES = [
+  'morning.mp3',
+  'sleep.mp3',
+  'healing.mp3',
+  'zen.mp3',
+  'rain.mp3'
 ];
 
 const IMG_NATURE = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800';

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AMBIENT_SOUNDS } from '../constants';
 
@@ -30,13 +31,21 @@ const SoundMixer: React.FC = () => {
       audioRefs.current[id].volume = currentVolume;
       
       const fileName = url.split('/').pop() || url;
+      // Use absolute path as the primary standard
       const fullPath = `/${fileName}`;
       
       audioRefs.current[id].src = fullPath;
       
       audioRefs.current[id].play().catch(() => {
+        // Fallback for non-standard local environments
         audioRefs.current[id].src = `./${fileName}`;
-        audioRefs.current[id].play().catch(e => console.error("Ambient sound failed:", e));
+        audioRefs.current[id].play().catch(e => {
+          console.error(`Ambient sound resonance failure for ${id}:`, e);
+          setActiveSounds(prev => ({
+            ...prev,
+            [id]: { ...prev[id], isPlaying: false }
+          }));
+        });
       });
       
       setActiveSounds(prev => ({

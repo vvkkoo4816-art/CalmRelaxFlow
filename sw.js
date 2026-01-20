@@ -1,4 +1,5 @@
-const CACHE_NAME = 'calm-relax-flow-v2';
+
+const CACHE_NAME = 'calm-relax-flow-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -14,6 +15,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('Caching sanctuary assets...');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );

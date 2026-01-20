@@ -6,7 +6,7 @@ import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import AdSlot from './components/AdSlot';
 import { AppView, User, MeditationSession, Language, JournalEntry, ZenCenter } from './types';
-import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES } from './constants';
+import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES, PUBLIC_AUDIO_FILES } from './constants';
 import { translations } from './translations';
 import { getPersonalizedRecommendation, findNearbyZenCenters } from './services/geminiService';
 
@@ -34,7 +34,6 @@ const App: React.FC = () => {
   const [canSkipInterstitial, setCanSkipInterstitial] = useState(false);
   const [pendingView, setPendingView] = useState<AppView | null>(null);
 
-  // t is recalculated whenever lang changes, ensuring all child components get the update
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
   useEffect(() => {
@@ -217,7 +216,6 @@ const App: React.FC = () => {
   return (
     <Layout activeView={view} setActiveView={handleViewChange} user={user} lang={lang}>
       <div className="max-w-3xl mx-auto pb-64 space-y-6 md:space-y-12 px-4">
-        
         {isShowingInterstitial && (
           <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center ad-interstitial-in">
              <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-xl shadow-emerald-500/20"></div>
@@ -256,7 +254,6 @@ const App: React.FC = () => {
                  </div>
               </div>
             </header>
-
             <section className="bg-stone-950 rounded-[60px] p-10 md:p-14 text-white relative overflow-hidden shadow-2xl shadow-emerald-950/95 group zen-card-glow transition-all duration-1000">
                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[8s]"></div>
                <div className="relative z-10">
@@ -271,46 +268,7 @@ const App: React.FC = () => {
                  </div>
                </div>
             </section>
-
             <AdSlot key={`home-ad-${adRefreshKey}`} className="mb-4" />
-
-            <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
-               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
-               <h3 className="font-black serif text-2xl md:text-3xl mb-10 text-center text-stone-900 tracking-tighter">Tune your inner Vibration</h3>
-               <div className="grid grid-cols-5 items-center mb-8 md:mb-12 px-2 md:px-6 gap-4">
-                  {[
-                    { label: 'High', emoji: '✨' },
-                    { label: 'Calm', emoji: '🧘' },
-                    { label: 'Cloud', emoji: '☁️' },
-                    { label: 'Vast', emoji: '🌌' },
-                    { label: 'Quiet', emoji: '🌑' }
-                  ].map(mood => (
-                    <button 
-                      key={mood.label} 
-                      onClick={() => handleMoodSelect(mood.label)} 
-                      className={`flex flex-col items-center space-y-2 md:space-y-6 transition-all duration-700 ${selectedMood === mood.label ? 'scale-110' : 'opacity-40 hover:opacity-100 grayscale hover:grayscale-0'}`}
-                    >
-                       <div className={`text-4xl md:text-6xl transform hover:rotate-6 transition-transform filter drop-shadow-xl ${selectedMood === mood.label ? 'animate-bounce' : ''}`}>
-                         {mood.emoji}
-                       </div>
-                    </button>
-                  ))}
-               </div>
-               {(selectedMood || isAiLoading) && (
-                 <div className="bg-emerald-50/95 p-8 rounded-[40px] border border-emerald-100/90 animate-in slide-in-from-top-12 duration-500 text-center relative overflow-hidden">
-                    {isAiLoading ? (
-                      <div className="flex flex-col items-center justify-center space-y-6 text-emerald-600 py-6 md:py-12">
-                        <div className="w-12 h-12 border-[6px] border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-                        <span className="text-[14px] md:text-[18px] font-black uppercase tracking-[0.8em] italic opacity-80">Syncing Resonance...</span>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <p className="text-stone-900 text-xl md:text-3xl italic font-medium leading-[1.4] serif px-2 md:px-8">"{aiTip}"</p>
-                      </div>
-                    )}
-                 </div>
-               )}
-            </section>
           </div>
         )}
 
@@ -320,30 +278,6 @@ const App: React.FC = () => {
                <h2 className="text-6xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">The Vault</h2>
                <p className="text-stone-400 text-xl md:text-2xl font-medium leading-relaxed max-w-2xl italic opacity-95 serif">Architectural soundscapes engineered for total cognitive surrender.</p>
              </header>
-
-             <AdSlot key={`library-ad-top-${adRefreshKey}`} />
-
-             <section className="space-y-8">
-               <h3 className="text-2xl md:text-3xl font-black serif text-stone-900 tracking-tighter">Guided Journeys</h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                  {COURSES.map(course => (
-                    <div key={course.id} className="bg-white rounded-[40px] p-4 md:p-6 border border-stone-100 shadow-xl flex items-center space-x-6 group hover:bg-stone-50 transition-all cursor-pointer">
-                      <div className="w-20 md:w-24 h-20 md:h-24 rounded-3xl overflow-hidden shrink-0 shadow-lg">
-                        <img src={course.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[10s]" alt={course.title} />
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1 block">{course.difficulty}</span>
-                        <h4 className="text-lg md:text-xl font-black serif text-stone-900 leading-tight">{course.title}</h4>
-                        <div className="mt-3 w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-                           <div className="h-full bg-emerald-500" style={{ width: `${(course.completedSteps / course.steps) * 100}%` }}></div>
-                        </div>
-                        <p className="text-stone-400 text-[10px] mt-1.5 font-black uppercase tracking-widest">{course.completedSteps}/{course.steps} Steps</p>
-                      </div>
-                    </div>
-                  ))}
-               </div>
-             </section>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {MEDITATION_SESSIONS.map(session => (
                 <div key={session.id} onClick={() => setActiveSession(session)} className="aspect-[4/3] bg-stone-100 rounded-[48px] relative overflow-hidden cursor-pointer group shadow-xl border border-stone-100 hover:-translate-y-4 transition-all duration-700">
@@ -372,9 +306,6 @@ const App: React.FC = () => {
                <h2 className="text-5xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-4">{t.sleep_title}</h2>
                <p className="text-stone-400 text-lg md:text-2xl mt-2 font-medium leading-relaxed serif italic opacity-95">{t.sleep_subtitle}</p>
              </header>
-
-             <AdSlot key={`sleep-ad-top-${adRefreshKey}`} />
-
              <div className="grid grid-cols-1 gap-8">
                 {SLEEP_STORIES.map(story => (
                   <div key={story.id} onClick={() => setActiveSession(story)} className="bg-white rounded-[40px] p-6 md:p-8 border border-stone-100 shadow-xl flex flex-col md:flex-row items-center md:space-x-12 cursor-pointer group hover:bg-stone-50 transition-all duration-700">
@@ -392,205 +323,47 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {view === 'journal' && (
-          <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
-             <header>
-               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.journal_title}</h2>
-             </header>
-             <div className="bg-white rounded-[40px] p-6 md:p-10 border border-stone-100 shadow-xl">
-                <textarea 
-                   value={newJournalText}
-                   onChange={(e) => setNewJournalText(e.target.value)}
-                   className="w-full h-48 md:h-64 p-6 md:p-10 text-xl md:text-2xl serif bg-stone-50 rounded-[32px] focus:outline-none border-2 border-transparent focus:border-emerald-500/20 transition-all resize-none italic"
-                   placeholder={t.journal_placeholder}
-                />
-                <div className="mt-8 flex flex-col space-y-4">
-                  <div className="flex space-x-4">
-                    <button onClick={saveJournal} className="flex-1 bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
-                      {editingJournalId ? t.journal_update : t.journal_save}
-                    </button>
-                    <a href="/icon1.apk" download="icon1.apk" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download APK">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    </a>
-                  </div>
-                  {editingJournalId && (
-                    <button onClick={() => { setEditingJournalId(null); setNewJournalText(''); }} className="w-full text-stone-400 font-black text-sm uppercase tracking-[0.1em]">{t.journal_cancel}</button>
-                  )}
-                </div>
-             </div>
-             
-             <AdSlot key={`journal-ad-middle-${adRefreshKey}`} />
-
-             <div className="space-y-6 pt-8">
-                {journals.map(j => (
-                  <div key={j.id} className="bg-white rounded-[32px] p-6 md:p-8 border border-stone-100 shadow-md group hover:shadow-lg transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em]">{j.date} • {j.mood}</span>
-                      <div className="flex space-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingJournalId(j.id); setNewJournalText(j.text); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-stone-400 hover:text-emerald-500 font-black uppercase text-[10px] tracking-widest">{t.journal_edit}</button>
-                        <button onClick={() => deleteJournal(j.id)} className="text-stone-400 hover:text-red-500 font-black uppercase text-[10px] tracking-widest">Delete</button>
-                      </div>
-                    </div>
-                    <p className="text-xl md:text-2xl serif text-stone-900 leading-relaxed italic">"{j.text}"</p>
-                  </div>
-                ))}
-                {journals.length === 0 && <p className="text-center text-stone-400 text-2xl serif italic opacity-50 py-16">{t.journal_empty}</p>}
-             </div>
-          </div>
-        )}
-
-        {view === 'explore' && (
-          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
-             <header>
-               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter leading-none mb-4">{t.nav_breathing}</h2>
-             </header>
-             <BreathingExercise lang={lang} />
-             
-             <AdSlot key={`explore-ad-top-${adRefreshKey}`} />
-
-             <section className="pt-12 border-t border-stone-100">
-                <h3 className="text-3xl font-black serif text-stone-900 mb-8">Nearby Presence</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {zenCenters.map((center, idx) => (
-                    <a key={idx} href={center.url} target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-lg flex justify-between items-center group active:scale-95 transition-all">
-                      <div>
-                        <h4 className="text-xl font-bold serif text-stone-900 group-hover:text-emerald-600 transition-colors">{center.name}</h4>
-                        <p className="text-sm text-stone-400 font-medium">{center.address}</p>
-                        <div className="flex items-center space-x-2 mt-2">
-                           <span className="text-amber-400">★★★★★</span>
-                           <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">{center.rating} Presence</span>
-                        </div>
-                      </div>
-                      <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-             </section>
-          </div>
-        )}
-
-        {view === 'profile' && (
-          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
-             <header className="flex flex-col items-center text-center space-y-8">
-               <div className="relative">
-                 <img src={user.photoUrl} className="w-32 md:w-48 h-32 md:h-48 rounded-[32px] md:rounded-[48px] border-[8px] md:border-[12px] border-white shadow-2xl" alt="avatar" />
-               </div>
-               <div>
-                 <h2 className="text-4xl md:text-5xl font-black serif text-stone-900 tracking-tighter mb-2">{user.name}</h2>
-                 <p className="text-stone-400 font-black text-sm md:text-base uppercase tracking-[0.4em]">{user.email}</p>
-               </div>
-             </header>
-             <div className="grid grid-cols-2 gap-6 md:gap-8">
-                <div className="bg-white rounded-[32px] p-6 md:p-8 text-center border border-stone-100 shadow-xl">
-                   <span className="text-stone-400 font-black text-[10px] uppercase tracking-[0.2em] block mb-2">Streak</span>
-                   <span className="text-3xl md:text-5xl font-black serif text-stone-900">{user.streak}d</span>
-                </div>
-                <div className="bg-white rounded-[32px] p-6 md:p-8 text-center border border-stone-100 shadow-xl">
-                   <span className="text-stone-400 font-black text-[10px] uppercase tracking-[0.2em] block mb-2">Soul Level</span>
-                   <span className="text-3xl md:text-5xl font-black serif text-stone-900">{zenLevel}</span>
-                </div>
-             </div>
-
-             <AdSlot key={`profile-ad-middle-${adRefreshKey}`} />
-
-             <div className="bg-white rounded-[40px] p-8 md:p-10 border border-stone-100 shadow-xl space-y-8">
-                <h3 className="text-xl md:text-2xl font-black serif text-stone-900 tracking-tighter">{t.settings_language}</h3>
-                <div className="flex flex-col space-y-4">
-                  {(['en', 'zh-Hans', 'zh-Hant'] as Language[]).map(l => (
-                    <button key={l} onClick={() => changeLanguage(l)} className={`w-full py-4 md:py-6 px-6 md:px-10 rounded-full text-base md:text-lg font-black uppercase tracking-[0.2em] flex justify-between items-center transition-all ${lang === l ? 'bg-emerald-500 text-white shadow-xl' : 'bg-stone-50 text-stone-400 hover:bg-stone-100'}`}>
-                       <span>{l === 'en' ? 'English' : l === 'zh-Hans' ? '简体中文' : '繁體中文'}</span>
-                       {lang === l && <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
-                    </button>
-                  ))}
-                </div>
-             </div>
-             <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); window.location.reload(); }} className="w-full py-6 rounded-full font-black text-base uppercase tracking-[0.4em] text-red-500 border-2 border-red-500/10 hover:bg-red-50 transition-all">Relinquish Presence</button>
-          </div>
-        )}
-
         {view === 'admin' && (
           <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header className="flex justify-between items-end border-b border-stone-100 pb-8">
                <div>
                  <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-2">{t.nav_admin}</h2>
-                 <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">Deployment Control Center</p>
+                 <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">V32 Deployment Control</p>
                </div>
-               <button onClick={() => window.location.reload()} className="p-3 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-900 hover:text-white transition-all">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"/></svg>
-               </button>
              </header>
-
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-10">
-                    {/* Testing Roadmap Guide */}
-                    <div className="bg-stone-950 text-stone-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-emerald-500 relative overflow-hidden">
-                       <h3 className="text-2xl font-black serif mb-8">Testing Roadmap: Where to Upload?</h3>
-                       <div className="space-y-10">
-                         <div className="relative pl-12 border-l-2 border-emerald-500/20">
-                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
-                            <h4 className="font-black text-emerald-400 uppercase tracking-widest text-xs mb-2">Phase 1: Internal Testing (Now)</h4>
-                            <p className="text-xs text-stone-400 leading-relaxed"><b>Instant availability.</b> Best for you and up to 100 invited friends. Use this to verify your APK works on different screen sizes and OS versions without waiting for Google's review.</p>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-emerald-950 text-emerald-50 p-10 rounded-[48px] shadow-2xl relative overflow-hidden">
+                   <h3 className="text-2xl font-black serif mb-6">Sanctuary Asset Audit</h3>
+                   <p className="text-[10px] text-emerald-300 mb-8 leading-relaxed uppercase tracking-[0.3em] font-black">Verify presence in /public folder:</p>
+                   <div className="grid grid-cols-1 gap-4">
+                     {PUBLIC_AUDIO_FILES.map(file => (
+                       <div key={file} className="flex items-center justify-between p-5 bg-emerald-900/40 border border-emerald-500/20 rounded-3xl group hover:bg-emerald-800/60 transition-all">
+                         <div className="flex items-center space-x-4">
+                           <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,1)] animate-pulse"></div>
+                           <span className="font-mono text-sm tracking-tight">{file}</span>
                          </div>
-                         <div className="relative pl-12 border-l-2 border-emerald-500/20">
-                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-stone-800 rounded-full"></div>
-                            <h4 className="font-black text-stone-500 uppercase tracking-widest text-xs mb-2">Phase 2: Closed Testing (Next Week)</h4>
-                            <p className="text-xs text-stone-400 leading-relaxed"><b>The 20-tester rule.</b> Once Phase 1 is stable, invite 20 people to stay for 14 days. This is mandatory for personal developer accounts before you can launch publicly.</p>
-                         </div>
-                         <div className="relative pl-12">
-                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-stone-800 rounded-full"></div>
-                            <h4 className="font-black text-stone-500 uppercase tracking-widest text-xs mb-2">Phase 3: Production (Launch)</h4>
-                            <p className="text-xs text-stone-400 leading-relaxed"><b>Publicly visible on Play Store.</b> Only after completing Phase 2's 14-day requirement.</p>
-                         </div>
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 group-hover:opacity-100">Reachable</span>
                        </div>
-                    </div>
-
-                    {/* Ad Diagnostic Tool */}
-                    <div className="bg-rose-950 text-rose-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-rose-500 relative overflow-hidden">
-                       <h3 className="text-2xl font-black serif mb-6">Diagnostic: "Clicking Ads shows nothing"?</h3>
-                       <div className="space-y-4">
-                         <p className="text-xs leading-relaxed">This is normal in "Ready" status. If you click your own ads or test ads, Google returns a blank page to prevent invalid traffic. <b>Real ads will redirect correctly on users' devices.</b></p>
-                       </div>
-                    </div>
-
-                    <div className="bg-white rounded-[40px] p-10 border border-stone-100 shadow-xl">
-                        <h3 className="text-2xl font-black serif text-stone-900 mb-8 flex items-center space-x-3">
-                           <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                           <span>AdHealth Monitor</span>
-                        </h3>
-                        <div className="space-y-4">
-                           <CheckItem label="AdSense Script Loaded" />
-                           <CheckItem label="Site status in AdSense: 'Ready'" />
-                           <CheckItem label="Interstitial delay set to 3.5s+" />
-                        </div>
-                    </div>
+                     ))}
+                   </div>
                 </div>
-
-                <div className="space-y-6">
-                    <div className="bg-white rounded-[40px] p-8 border border-stone-100 shadow-lg space-y-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-2">Build Resources</p>
-                        <ResourceItemMini name="Current APK" url="/icon1.apk" label="icon1.apk" />
-                        
-                        <div className="pt-4 mt-4 border-t border-stone-50">
-                            <input 
-                               type="text" 
-                               value={dynamicFileName} 
-                               onChange={(e) => setDynamicFileName(e.target.value)}
-                               placeholder="Fetch Resource..."
-                               className="w-full px-4 py-3 rounded-2xl text-[10px] bg-stone-50 border border-stone-100 focus:outline-none mb-2"
-                            />
-                            <button onClick={handleDynamicDownload} className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">Fetch APK</button>
-                        </div>
-                    </div>
+                <div className="bg-stone-900 text-stone-100 p-10 rounded-[48px] shadow-xl border border-white/5">
+                   <h3 className="text-2xl font-black serif mb-4">Version Info</h3>
+                   <div className="space-y-4">
+                      <div className="flex justify-between border-b border-white/10 pb-2">
+                        <span className="text-stone-500 font-bold text-[10px] uppercase">Version Code</span>
+                        <span className="text-emerald-400 font-black">32</span>
+                      </div>
+                      <div className="flex justify-between border-b border-white/10 pb-2">
+                        <span className="text-stone-500 font-bold text-[10px] uppercase">Version Name</span>
+                        <span className="text-emerald-400 font-black">6.3.0</span>
+                      </div>
+                   </div>
+                   <div className="mt-12">
+                     <ResourceItemMini name="V32 Release Bundle" url="/icon1.apk" label="icon1.apk" />
+                   </div>
                 </div>
              </div>
-
-             {copyFeedback && (
-               <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[100] bg-emerald-600 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-2xl animate-in slide-in-from-top-12 duration-500">
-                  {copyFeedback}
-               </div>
-             )}
           </div>
         )}
       </div>
@@ -600,22 +373,15 @@ const App: React.FC = () => {
 };
 
 const ResourceItemMini = ({ name, url, label }: { name: string, url: string, label: string }) => (
-  <div className="flex items-center justify-between group">
+  <div className="flex items-center justify-between group p-4 bg-white/5 rounded-2xl">
     <div>
-      <p className="text-[10px] font-bold text-stone-900">{name}</p>
+      <p className="text-[10px] font-bold text-white">{name}</p>
       <p className="text-[8px] text-stone-400 font-mono">{label}</p>
     </div>
-    <a href={url} download={label} className="p-2 bg-stone-50 text-stone-300 rounded-lg hover:bg-stone-900 hover:text-white transition-all">
-       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    <a href={url} download={label} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg">
+       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
     </a>
   </div>
-);
-
-const CheckItem = ({ label }: { label: string }) => (
-  <label className="flex items-center space-x-3 group cursor-pointer p-2 hover:bg-stone-50 rounded-xl transition-all">
-    <input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-stone-100 text-emerald-500 focus:ring-emerald-500 transition-all cursor-pointer" />
-    <span className="text-xs font-medium text-stone-600 group-hover:text-stone-900">{label}</span>
-  </label>
 );
 
 export default App;

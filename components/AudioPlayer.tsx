@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
@@ -19,8 +20,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
   const getPossiblePaths = (baseUrl: string) => {
     if (baseUrl.startsWith('http')) return [baseUrl];
+    // Strip any existing leading slashes to normalize
     const fileName = baseUrl.split('/').pop() || baseUrl;
-    return [`/${fileName}`, `./${fileName}`, `/public/${fileName}`, baseUrl].filter((v, i, a) => a.indexOf(v) === i);
+    // We prioritize the root absolute path (/) as the most standard for PWA/TWA public assets
+    return [
+      `/${fileName}`,       // Path 1: Root absolute (Highest reliability)
+      fileName,             // Path 2: Relative
+      `./${fileName}`,      // Path 3: Explicit local relative
+      window.location.origin + '/' + fileName // Path 4: Absolute origin
+    ].filter((v, i, a) => a.indexOf(v) === i);
   };
 
   const possiblePaths = getPossiblePaths(url);
@@ -34,6 +42,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     
     if (audioRef.current) {
       audioRef.current.pause();
+      // Start with the most reliable path
       audioRef.current.src = possiblePaths[0];
       audioRef.current.load();
     }
@@ -56,19 +65,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const handleAudioError = () => {
     const nextIndex = attemptIndex + 1;
     if (nextIndex < possiblePaths.length) {
+      console.warn(`Audio attempt ${attemptIndex} failed for ${possiblePaths[attemptIndex]}, trying path ${nextIndex}`);
       setAttemptIndex(nextIndex);
       if (audioRef.current) {
         audioRef.current.src = possiblePaths[nextIndex];
         audioRef.current.load();
+        if (isPlaying) {
+          audioRef.current.play().catch(() => {});
+        }
       }
     } else {
-      setError("FILE NOT FOUND");
+      console.error(`All audio paths failed for: ${url}`);
+      setError("RESONANCE BLOCKED");
       setIsBuffering(false);
+      setIsPlaying(false);
     }
   };
 
   const togglePlay = () => {
-    if (!audioRef.current || error === "FILE NOT FOUND") return;
+    if (!audioRef.current || error) return;
 
     if (isPlaying) {
       audioRef.current.pause();
@@ -83,8 +98,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           setIsBuffering(false);
         }).catch(() => {
           handleAudioError();
-          setIsBuffering(false);
-          setIsPlaying(false);
         });
       }
     }
@@ -169,7 +182,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-center mb-1.5 px-1">
-               <h4 className="text-white font-black text-[13px] md:text-[15px] truncate serif tracking-tight">{title}</h4>
+               <h4 className="text-white font-black text-[13px] md:text-[15px] truncate serif tracking-tight">
+                 {error ? <span className="text-rose-400">{error}</span> : title}
+               </h4>
                {sleepTimer && <span className="text-emerald-400 text-[8px] font-black uppercase tracking-widest">{sleepTimer}m</span>}
             </div>
             <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
