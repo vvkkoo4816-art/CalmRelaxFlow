@@ -25,13 +25,14 @@ const App: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [zenCenters, setZenCenters] = useState<ZenCenter[]>([]);
 
-  // States for Dynamic Downloads and Ad Refreshing
   const [dynamicFileName, setDynamicFileName] = useState('');
   const [adRefreshKey, setAdRefreshKey] = useState(0);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
+  const [canSkipInterstitial, setCanSkipInterstitial] = useState(false);
+  const [pendingView, setPendingView] = useState<AppView | null>(null);
 
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
@@ -61,13 +62,27 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
+    
+    setPendingView(newView);
     setIsShowingInterstitial(true);
+    setCanSkipInterstitial(false);
     setAdRefreshKey(prev => prev + 1);
+
+    // Ads need ~3 seconds to load properly. 1.2s was too short.
     setTimeout(() => {
-      setIsShowingInterstitial(false);
-      setView(newView);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1200); 
+      setCanSkipInterstitial(true);
+    }, 3000);
+
+    setTimeout(() => {
+      if (isShowingInterstitial) completeViewChange(newView);
+    }, 4500); 
+  };
+
+  const completeViewChange = (newView: AppView) => {
+    setIsShowingInterstitial(false);
+    setView(newView);
+    setPendingView(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleMoodSelect = async (mood: string) => {
@@ -204,10 +219,18 @@ const App: React.FC = () => {
         {isShowingInterstitial && (
           <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center ad-interstitial-in">
              <div className="w-16 h-16 border-[6px] border-emerald-50 border-t-emerald-500 rounded-full animate-spin mb-6 shadow-xl shadow-emerald-500/20"></div>
-             <p className="text-emerald-800 font-black text-sm uppercase tracking-[0.3em] animate-pulse italic mb-8">Refining Focus...</p>
-             <div className="w-full max-w-md bg-stone-50 rounded-3xl p-4 border border-stone-100 shadow-inner">
+             <p className="text-emerald-800 font-black text-sm uppercase tracking-[0.3em] animate-pulse italic mb-8">Refining Frequency...</p>
+             <div className="w-full max-w-md bg-stone-50 rounded-3xl p-4 border border-stone-100 shadow-inner mb-8 min-h-[150px] flex items-center justify-center">
                <AdSlot key={`interstitial-ad-${adRefreshKey}`} />
              </div>
+             {canSkipInterstitial && (
+               <button 
+                 onClick={() => pendingView && completeViewChange(pendingView)} 
+                 className="px-8 py-3 bg-stone-900 text-white rounded-full font-black text-xs uppercase tracking-[0.4em] shadow-xl animate-in fade-in duration-500"
+               >
+                 Enter {pendingView}
+               </button>
+             )}
           </div>
         )}
 
@@ -499,28 +522,34 @@ const App: React.FC = () => {
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-10">
-                    {/* CRITICAL: DEPLOYMENT ROADMAP */}
-                    <div className="bg-rose-950 text-rose-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-rose-500 relative overflow-hidden">
-                       <div className="absolute top-0 right-0 p-8 opacity-10">
-                         <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                       </div>
-                       <h3 className="text-2xl font-black serif mb-4">Production Release Rule</h3>
-                       <p className="text-sm opacity-80 mb-8 leading-relaxed italic serif">You are using a Personal Developer Account. Google <strong>forbids</strong> direct Production submission for new accounts.</p>
-                       
+                    {/* CRITICAL: FRIEND ACCESS & TESTING DEBUGGER */}
+                    <div className="bg-emerald-950 text-emerald-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-emerald-500 relative overflow-hidden">
+                       <h3 className="text-2xl font-black serif mb-6">SOS: Link "App Not Found"?</h3>
                        <div className="space-y-6">
-                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 1: Closed Testing Track</h4>
-                            <p className="text-xs">Upload your <code>.aab</code> bundle to the <strong>Closed Testing</strong> track. Do NOT try to go to Production yet.</p>
+                         <div className="bg-emerald-900/40 p-6 rounded-3xl border border-emerald-400/20">
+                            <h4 className="font-black text-xs uppercase tracking-widest text-emerald-400 mb-2 italic underline">1. Use "Internal Testing" track</h4>
+                            <p className="text-xs">If your friend can't see the app, it is because you used the <b>Closed Testing</b> track. Use the <b>Internal Testing</b> track instead—it is instant and doesn't require Google Review for every update.</p>
                          </div>
-                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 2: Recruit 20 Testers</h4>
-                            <p className="text-xs">Invite 20 people. They must click "Join on Web" and keep your app for 14 days without deleting it.</p>
-                         </div>
-                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 3: Apply for Production</h4>
-                            <p className="text-xs">Once 14 days pass, a button will appear in your Console: <strong>"Apply for Production"</strong>.</p>
+                         <div className="bg-emerald-900/40 p-6 rounded-3xl border border-emerald-400/20">
+                            <h4 className="font-black text-xs uppercase tracking-widest text-emerald-400 mb-2 italic underline">2. Must Opt-In via Browser</h4>
+                            <p className="text-xs">Your friend must click "Become a tester" on a <b>Desktop Browser</b> or mobile browser using the specific Gmail you added. They cannot just search for it in the Play Store app.</p>
                          </div>
                        </div>
+                    </div>
+
+                    {/* Ad Health Monitor */}
+                    <div className="bg-white rounded-[40px] p-10 border border-stone-100 shadow-xl">
+                        <h3 className="text-2xl font-black serif text-stone-900 mb-8 flex items-center space-x-3">
+                           <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                           <span>AdHealth Monitor</span>
+                        </h3>
+                        <div className="space-y-4">
+                           <CheckItem label="AdSense Script Loaded" />
+                           <CheckItem label="Site status in AdSense: 'Ready'" />
+                           <CheckItem label="data-ad-slot: Real ID used (not 'auto')" />
+                           <CheckItem label="Interstitial delay set to 3.5s+" />
+                        </div>
+                        <p className="mt-6 text-[10px] text-stone-400 italic">Note: Ads will never show on 'localhost'. You must test on your live Vercel/Netlify URL.</p>
                     </div>
 
                     {/* Pre-flight Checklist */}
@@ -530,10 +559,7 @@ const App: React.FC = () => {
                            <span>Launch Checklist</span>
                         </h3>
                         <div className="space-y-4">
-                           <CheckItem label="Current code uploaded to Closed Testing" />
-                           <CheckItem label="20 Testers invited via Google Group/Email" />
-                           <CheckItem label="Privacy Policy URL set in Console" />
-                           <CheckItem label="icon1.apk tested for PWA functionality" />
+                           <CheckItem label="AAB Uploaded & Status is 'Active'" />
                            <CheckItem label="SHA-256 updated in assetlinks.json" />
                         </div>
                         <div className="mt-10 flex flex-col space-y-3">
@@ -541,21 +567,29 @@ const App: React.FC = () => {
                              onClick={() => copyToClipboard(`${window.location.origin}/privacy.html`, "Privacy Policy")}
                              className="w-full bg-emerald-50 text-emerald-600 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest"
                            >Copy Privacy Policy URL</button>
-                           <button 
-                             onClick={() => copyToClipboard("Help me test: https://play.google.com/apps/testing/com.clam.relax.app", "Invite")}
-                             className="w-full bg-stone-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest"
-                           >Copy Tester Invite</button>
                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    {/* Resource Hub */}
+                    {/* PRODUCTION PATH */}
+                    <div className="bg-stone-900 p-8 rounded-[40px] border border-stone-800 text-white shadow-xl">
+                       <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-4">Production Path</h4>
+                       <ul className="space-y-4 text-[10px] text-stone-400">
+                         <li className="flex items-start space-x-2">
+                           <span className="text-emerald-500 font-bold">●</span>
+                           <span>Pass 20/14 rule (Personal Accts).</span>
+                         </li>
+                         <li className="flex items-start space-x-2">
+                           <span className="text-emerald-500 font-bold">●</span>
+                           <span>Upload <b>this</b> code to Production.</span>
+                         </li>
+                       </ul>
+                    </div>
+
                     <div className="bg-white rounded-[40px] p-8 border border-stone-100 shadow-lg space-y-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-2">Build Resources</p>
                         <ResourceItemMini name="Current Testing APK" url="/icon1.apk" label="icon1.apk" />
-                        <ResourceItemMini name="PWA Manifest" url="/manifest.json" label="manifest.json" />
-                        <ResourceItemMini name="Signing Metadata" url="/metadata.json" label="metadata.json" />
                         
                         <div className="pt-4 mt-4 border-t border-stone-50">
                             <input 
@@ -567,22 +601,6 @@ const App: React.FC = () => {
                             />
                             <button onClick={handleDynamicDownload} className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">Download File</button>
                         </div>
-                    </div>
-
-                    {/* Pro Tip */}
-                    <div className="bg-emerald-50 p-8 rounded-[40px] border border-emerald-100">
-                       <h4 className="font-black text-xs text-emerald-800 mb-2">Version Sync</h4>
-                       <p className="text-[10px] text-emerald-600/70 italic leading-relaxed">Ensure the 'appVersionCode' in your <code>application.json</code> increments every time you upload a new .aab bundle to the Console.</p>
-                    </div>
-
-                    {/* AdSense Access */}
-                    <div className="bg-amber-50 rounded-[40px] p-8 border border-amber-100">
-                        <h4 className="text-sm font-black serif text-amber-900 mb-2">AdSense Control</h4>
-                        <p className="text-[10px] text-amber-700/60 leading-relaxed mb-4">Verification missing? Use the direct portal:</p>
-                        <button 
-                          onClick={() => copyToClipboard("https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites", "AdSense Link")}
-                          className="w-full bg-amber-600 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md"
-                        >Manage Sites</button>
                     </div>
                 </div>
              </div>

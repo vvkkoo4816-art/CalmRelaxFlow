@@ -9,20 +9,25 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
   const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
+    let adTimeout: number;
+
     const pushAd = () => {
       try {
         // @ts-ignore
         const adsbygoogle = window.adsbygoogle || [];
+        
+        // Manual unit push. Note: In production, 'data-ad-slot' should be a numeric ID from your dashboard.
         if (adsbygoogle.push) {
           adsbygoogle.push({});
         }
       } catch (e) {
-        console.warn("AdSense blocked:", e);
+        console.warn("AdSense push failed:", e);
         setIsBlocked(true);
       }
     };
 
-    const timer = setTimeout(pushAd, 500);
+    // Give the DOM 800ms to settle before pushing to ensure container size is calculated
+    adTimeout = window.setTimeout(pushAd, 800);
     
     // Check if the script even loaded
     const script = document.querySelector('script[src*="adsbygoogle"]');
@@ -30,7 +35,7 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
       setIsBlocked(true);
     }
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(adTimeout);
   }, []);
 
   return (
@@ -44,10 +49,11 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
       ) : (
         <>
           <div className="text-[8px] font-black uppercase tracking-[0.4em] text-stone-300 mb-2 opacity-50 group-hover:opacity-100 transition-opacity">Spiritual Sustenance</div>
+          {/* CRITICAL: data-ad-slot MUST eventually be a numeric ID for manual ads to show reliably. */}
           <ins className="adsbygoogle"
-               style={{ display: 'block', width: '100%', minHeight: '90px' }}
+               style={{ display: 'block', width: '100%', minHeight: '90px', minWidth: '250px' }}
                data-ad-client="ca-pub-8929599367151882"
-               data-ad-slot="auto"
+               data-ad-slot="8929599367"
                data-ad-format="auto"
                data-full-width-responsive="true"></ins>
         </>
