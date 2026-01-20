@@ -1,5 +1,12 @@
+
 export type Language = 'en' | 'zh-Hans' | 'zh-Hant';
 export type UserRole = 'admin' | 'user';
+
+export interface LoginRecord {
+  email: string;
+  timestamp: string;
+  location: string;
+}
 
 export interface User {
   id: string;

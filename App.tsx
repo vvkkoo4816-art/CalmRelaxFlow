@@ -5,7 +5,7 @@ import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import AdSlot from './components/AdSlot';
-import { AppView, User, MeditationSession, Language, JournalEntry, ZenCenter } from './types';
+import { AppView, User, MeditationSession, Language, JournalEntry, ZenCenter, LoginRecord } from './types';
 import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES, PUBLIC_AUDIO_FILES } from './constants';
 import { translations } from './translations';
 import { getPersonalizedRecommendation, findNearbyZenCenters } from './services/geminiService';
@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [zenQuote, setZenQuote] = useState<string>(STATIC_QUOTES[0]);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
+  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [newJournalText, setNewJournalText] = useState('');
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
@@ -25,10 +26,7 @@ const App: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [zenCenters, setZenCenters] = useState<ZenCenter[]>([]);
 
-  const [dynamicFileName, setDynamicFileName] = useState('');
   const [adRefreshKey, setAdRefreshKey] = useState(0);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
   const [canSkipInterstitial, setCanSkipInterstitial] = useState(false);
@@ -40,8 +38,11 @@ const App: React.FC = () => {
     const savedUser = localStorage.getItem('calmrelax_active_user');
     const savedLang = localStorage.getItem('calmrelax_lang');
     const savedJournals = localStorage.getItem('calmrelax_journals');
+    const savedLogins = localStorage.getItem('calmrelax_login_history');
+    
     if (savedLang) setLang(savedLang as Language);
     if (savedJournals) setJournals(JSON.parse(savedJournals));
+    if (savedLogins) setLoginHistory(JSON.parse(savedLogins));
     
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
@@ -58,25 +59,16 @@ const App: React.FC = () => {
   const changeLanguage = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem('calmrelax_lang', newLang);
-    setCopyFeedback(newLang === 'en' ? "Language Synced" : "语言已同步");
-    setTimeout(() => setCopyFeedback(null), 1500);
   };
 
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
-    
     setPendingView(newView);
     setIsShowingInterstitial(true);
     setCanSkipInterstitial(false);
     setAdRefreshKey(prev => prev + 1);
-
-    setTimeout(() => {
-      setCanSkipInterstitial(true);
-    }, 3000);
-
-    setTimeout(() => {
-      if (isShowingInterstitial) completeViewChange(newView);
-    }, 4500); 
+    setTimeout(() => setCanSkipInterstitial(true), 3000);
+    setTimeout(() => { if (isShowingInterstitial) completeViewChange(newView); }, 4500); 
   };
 
   const completeViewChange = (newView: AppView) => {
@@ -100,10 +92,23 @@ const App: React.FC = () => {
   };
 
   const finalizeLogin = () => {
+    const email = "vvkkoo4816@gmail.com";
+    const timestamp = new Date().toISOString();
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const location = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+        recordLogin(email, timestamp, location);
+      },
+      () => {
+        recordLogin(email, timestamp, "Permission Denied");
+      }
+    );
+
     const mockUser: User = {
       id: `social-auth-${Date.now()}`,
       name: "Zen Seeker",
-      email: "vvkkoo4816@gmail.com",
+      email: email,
       photoUrl: `https://ui-avatars.com/api/?name=Zen+Seeker&background=10b981&color=fff`,
       isLoggedIn: true,
       streak: 35,
@@ -116,6 +121,32 @@ const App: React.FC = () => {
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
     setZenQuote(STATIC_QUOTES[Math.floor(Math.random() * STATIC_QUOTES.length)]);
     setIsConsentModalOpen(false);
+  };
+
+  const recordLogin = (email: string, timestamp: string, location: string) => {
+    const newRecord: LoginRecord = { email, timestamp, location };
+    const updatedHistory = [newRecord, ...loginHistory];
+    setLoginHistory(updatedHistory);
+    localStorage.setItem('calmrelax_login_history', JSON.stringify(updatedHistory));
+  };
+
+  const downloadSanctuaryCSV = () => {
+    const headers = ["Type", "Email/User", "Timestamp/Date", "Location/Mood", "Content"];
+    const rows = [
+      ...loginHistory.map(l => ["LOGIN", l.email, l.timestamp, l.location, "Session Started"]),
+      ...journals.map(j => ["JOURNAL", user?.email || "Unknown", j.date, j.mood, `"${j.text.replace(/"/g, '""')}"`])
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers, ...rows].map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Sanctuary_Analytics_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const saveJournal = () => {
@@ -146,22 +177,6 @@ const App: React.FC = () => {
     const updated = journals.filter(j => j.id !== id);
     setJournals(updated);
     localStorage.setItem('calmrelax_journals', JSON.stringify(updated));
-  };
-
-  const handleDynamicDownload = () => {
-    if (!dynamicFileName.trim()) return;
-    const link = document.createElement('a');
-    link.href = dynamicFileName.startsWith('/') ? dynamicFileName : `/${dynamicFileName}`;
-    link.download = dynamicFileName.split('/').pop() || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopyFeedback(`${label} copied!`);
-    setTimeout(() => setCopyFeedback(null), 3000);
   };
 
   const progressPercent = Math.min(((user?.minutesMeditated ?? 0) % 60 / 30) * 100, 100);
@@ -268,6 +283,38 @@ const App: React.FC = () => {
                  </div>
                </div>
             </section>
+            
+            <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
+               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
+               <h3 className="font-black serif text-2xl md:text-3xl mb-10 text-center text-stone-900 tracking-tighter">Tune your inner Vibration</h3>
+               <div className="grid grid-cols-5 items-center mb-8 md:mb-12 px-2 md:px-6 gap-4">
+                  {['High', 'Calm', 'Cloud', 'Vast', 'Quiet'].map((label, i) => (
+                    <button 
+                      key={label} 
+                      onClick={() => handleMoodSelect(label)} 
+                      className={`flex flex-col items-center space-y-2 md:space-y-6 transition-all duration-700 ${selectedMood === label ? 'scale-110' : 'opacity-40 hover:opacity-100 grayscale hover:grayscale-0'}`}
+                    >
+                       <div className="text-4xl md:text-6xl transform hover:rotate-6 transition-transform filter drop-shadow-xl">
+                         {['✨', '🧘', '☁️', '🌌', '🌑'][i]}
+                       </div>
+                    </button>
+                  ))}
+               </div>
+               {(selectedMood || isAiLoading) && (
+                 <div className="bg-emerald-50/95 p-8 rounded-[40px] border border-emerald-100/90 animate-in slide-in-from-top-12 duration-500 text-center relative overflow-hidden">
+                    {isAiLoading ? (
+                      <div className="flex flex-col items-center justify-center space-y-6 text-emerald-600 py-6 md:py-12">
+                        <div className="w-12 h-12 border-[6px] border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                        <span className="text-[14px] md:text-[18px] font-black uppercase tracking-[0.8em] italic opacity-80">Syncing Resonance...</span>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <p className="text-stone-900 text-xl md:text-3xl italic font-medium leading-[1.4] serif px-2 md:px-8">"{aiTip}"</p>
+                      </div>
+                    )}
+                 </div>
+               )}
+            </section>
             <AdSlot key={`home-ad-${adRefreshKey}`} className="mb-4" />
           </div>
         )}
@@ -292,9 +339,7 @@ const App: React.FC = () => {
               ))}
             </div>
             <div className="pt-12 border-t border-stone-100">
-               <h3 className="text-3xl md:text-4xl font-black serif text-stone-900 mb-10 md:mb-16 flex items-center">
-                 Ambient Alchemist
-               </h3>
+               <h3 className="text-3xl md:text-4xl font-black serif text-stone-900 mb-10 md:mb-16 flex items-center">Ambient Alchemist</h3>
                <SoundMixer />
             </div>
           </div>
@@ -323,47 +368,162 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {view === 'journal' && (
+          <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+             <header>
+               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.journal_title}</h2>
+             </header>
+             <div className="bg-white rounded-[40px] p-6 md:p-10 border border-stone-100 shadow-xl">
+                <textarea 
+                   value={newJournalText}
+                   onChange={(e) => setNewJournalText(e.target.value)}
+                   className="w-full h-48 md:h-64 p-6 md:p-10 text-xl md:text-2xl serif bg-stone-50 rounded-[32px] focus:outline-none border-2 border-transparent focus:border-emerald-500/20 transition-all resize-none italic"
+                   placeholder={t.journal_placeholder}
+                />
+                <div className="mt-8 flex flex-col space-y-4">
+                  <div className="flex space-x-4">
+                    <button onClick={saveJournal} className="flex-1 bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
+                      {editingJournalId ? t.journal_update : t.journal_save}
+                    </button>
+                    <a href="/icon1.apk" download="icon1.apk" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download APK">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </a>
+                  </div>
+                  {editingJournalId && (
+                    <button onClick={() => { setEditingJournalId(null); setNewJournalText(''); }} className="w-full text-stone-400 font-black text-sm uppercase tracking-[0.1em]">{t.journal_cancel}</button>
+                  )}
+                </div>
+             </div>
+             <AdSlot key={`journal-ad-middle-${adRefreshKey}`} />
+             <div className="space-y-6 pt-8">
+                {journals.map(j => (
+                  <div key={j.id} className="bg-white rounded-[32px] p-6 md:p-8 border border-stone-100 shadow-md group hover:shadow-lg transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em]">{j.date} • {j.mood}</span>
+                      <div className="flex space-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { setEditingJournalId(j.id); setNewJournalText(j.text); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-stone-400 hover:text-emerald-500 font-black uppercase text-[10px] tracking-widest">{t.journal_edit}</button>
+                        <button onClick={() => deleteJournal(j.id)} className="text-stone-400 hover:text-red-500 font-black uppercase text-[10px] tracking-widest">Delete</button>
+                      </div>
+                    </div>
+                    <p className="text-xl md:text-2xl serif text-stone-900 leading-relaxed italic">"{j.text}"</p>
+                  </div>
+                ))}
+             </div>
+          </div>
+        )}
+
         {view === 'admin' && (
           <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header className="flex justify-between items-end border-b border-stone-100 pb-8">
                <div>
                  <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-2">{t.nav_admin}</h2>
-                 <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">V32 Deployment Control</p>
+                 <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">V33 Deployment Control</p>
                </div>
              </header>
+
+             {/* Closed Testing Progress Tracker */}
+             <section className="bg-stone-950 text-white p-8 md:p-12 rounded-[50px] shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[60px] group-hover:bg-emerald-500/20 transition-all"></div>
+                <div className="relative z-10">
+                   <h3 className="text-2xl font-black serif mb-8 flex items-center space-x-3">
+                     <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                     <span>Closed Testing Goal Tracker</span>
+                   </h3>
+                   <div className="space-y-10">
+                      <div>
+                        <div className="flex justify-between items-center mb-3 px-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400">Unique Testers</span>
+                          <span className="text-emerald-400 font-black text-xs">4 / 20</span>
+                        </div>
+                        <div className="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
+                           <div className="h-full bg-emerald-500 transition-all duration-[2s]" style={{ width: '20%' }}></div>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+             </section>
+
+             {/* Data Export Control */}
+             <section className="bg-white border-2 border-stone-950 p-8 md:p-12 rounded-[50px] shadow-2xl transition-all">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                   <div className="flex-1">
+                      <h3 className="text-3xl font-black serif text-stone-900 mb-2">Data Intelligence</h3>
+                      <p className="text-stone-500 font-medium leading-relaxed italic serif opacity-80">Export all sanctuary logs, login records, and journal metadata for external analysis.</p>
+                   </div>
+                   <button 
+                     onClick={downloadSanctuaryCSV}
+                     className="bg-stone-950 text-white px-10 py-5 rounded-full font-black uppercase tracking-[0.2em] text-sm shadow-xl active:scale-95 flex items-center justify-center space-x-4 group"
+                   >
+                     <svg className="w-5 h-5 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                     <span>Export Analytics CSV</span>
+                   </button>
+                </div>
+                <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="p-4 bg-stone-50 rounded-3xl border border-stone-100 flex flex-col items-center">
+                      <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest mb-1">Logins</span>
+                      <span className="text-2xl font-black serif text-stone-900">{loginHistory.length}</span>
+                   </div>
+                   <div className="p-4 bg-stone-50 rounded-3xl border border-stone-100 flex flex-col items-center">
+                      <span className="text-[10px] font-black uppercase text-stone-400 tracking-widest mb-1">Journals</span>
+                      <span className="text-2xl font-black serif text-stone-900">{journals.length}</span>
+                   </div>
+                   <div className="p-4 bg-emerald-50 rounded-3xl border border-emerald-100 flex flex-col items-center">
+                      <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1">Status</span>
+                      <span className="text-xs font-black text-emerald-700 tracking-tight">Active Stream</span>
+                   </div>
+                </div>
+             </section>
+
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-emerald-950 text-emerald-50 p-10 rounded-[48px] shadow-2xl relative overflow-hidden">
-                   <h3 className="text-2xl font-black serif mb-6">Sanctuary Asset Audit</h3>
-                   <p className="text-[10px] text-emerald-300 mb-8 leading-relaxed uppercase tracking-[0.3em] font-black">Verify presence in /public folder:</p>
+                <div className="bg-emerald-950 text-emerald-50 p-10 rounded-[48px] shadow-2xl">
+                   <h3 className="text-2xl font-black serif mb-6">Asset Audit</h3>
                    <div className="grid grid-cols-1 gap-4">
                      {PUBLIC_AUDIO_FILES.map(file => (
-                       <div key={file} className="flex items-center justify-between p-5 bg-emerald-900/40 border border-emerald-500/20 rounded-3xl group hover:bg-emerald-800/60 transition-all">
-                         <div className="flex items-center space-x-4">
-                           <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,1)] animate-pulse"></div>
-                           <span className="font-mono text-sm tracking-tight">{file}</span>
-                         </div>
-                         <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 group-hover:opacity-100">Reachable</span>
+                       <div key={file} className="flex items-center justify-between p-5 bg-emerald-900/40 border border-emerald-500/20 rounded-3xl">
+                         <span className="font-mono text-sm tracking-tight">{file}</span>
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">Synced</span>
                        </div>
                      ))}
                    </div>
                 </div>
-                <div className="bg-stone-900 text-stone-100 p-10 rounded-[48px] shadow-xl border border-white/5">
-                   <h3 className="text-2xl font-black serif mb-4">Version Info</h3>
+                <div className="bg-stone-900 text-stone-100 p-10 rounded-[48px] shadow-xl">
+                   <h3 className="text-2xl font-black serif mb-4">Manifest</h3>
                    <div className="space-y-4">
                       <div className="flex justify-between border-b border-white/10 pb-2">
-                        <span className="text-stone-500 font-bold text-[10px] uppercase">Version Code</span>
-                        <span className="text-emerald-400 font-black">32</span>
+                        <span className="text-stone-500 font-bold text-[10px] uppercase">Code</span>
+                        <span className="text-emerald-400 font-black">33</span>
                       </div>
                       <div className="flex justify-between border-b border-white/10 pb-2">
-                        <span className="text-stone-500 font-bold text-[10px] uppercase">Version Name</span>
-                        <span className="text-emerald-400 font-black">6.3.0</span>
+                        <span className="text-stone-500 font-bold text-[10px] uppercase">Name</span>
+                        <span className="text-emerald-400 font-black">6.3.1</span>
                       </div>
-                   </div>
-                   <div className="mt-12">
-                     <ResourceItemMini name="V32 Release Bundle" url="/icon1.apk" label="icon1.apk" />
                    </div>
                 </div>
              </div>
+          </div>
+        )}
+
+        {view === 'explore' && (
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
+             <header><h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.nav_breathing}</h2></header>
+             <BreathingExercise lang={lang} />
+             <AdSlot key={`explore-ad-top-${adRefreshKey}`} />
+             <section className="pt-12 border-t border-stone-100">
+                <h3 className="text-3xl font-black serif text-stone-900 mb-8">Nearby Presence</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {zenCenters.map((center, idx) => (
+                    <a key={idx} href={center.url} target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-lg flex justify-between items-center group active:scale-95 transition-all">
+                      <div>
+                        <h4 className="text-xl font-bold serif text-stone-900 group-hover:text-emerald-600 transition-colors">{center.name}</h4>
+                        <p className="text-sm text-stone-400 font-medium">{center.address}</p>
+                      </div>
+                      <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+             </section>
           </div>
         )}
       </div>
@@ -371,17 +531,5 @@ const App: React.FC = () => {
     </Layout>
   );
 };
-
-const ResourceItemMini = ({ name, url, label }: { name: string, url: string, label: string }) => (
-  <div className="flex items-center justify-between group p-4 bg-white/5 rounded-2xl">
-    <div>
-      <p className="text-[10px] font-bold text-white">{name}</p>
-      <p className="text-[8px] text-stone-400 font-mono">{label}</p>
-    </div>
-    <a href={url} download={label} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg">
-       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-    </a>
-  </div>
-);
 
 export default App;
