@@ -28,6 +28,7 @@ const App: React.FC = () => {
   // States for Dynamic Downloads and Ad Refreshing
   const [dynamicFileName, setDynamicFileName] = useState('');
   const [adRefreshKey, setAdRefreshKey] = useState(0);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
@@ -60,16 +61,13 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView === view) return;
-    
-    // Show interstitial and increment ad refresh key to force new AdSense request
     setIsShowingInterstitial(true);
     setAdRefreshKey(prev => prev + 1);
-    
     setTimeout(() => {
       setIsShowingInterstitial(false);
       setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1500); 
+    }, 1200); 
   };
 
   const handleMoodSelect = async (mood: string) => {
@@ -144,6 +142,15 @@ const App: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopyFeedback(`${label} copied!`);
+    setTimeout(() => setCopyFeedback(null), 3000);
+  };
+
+  const progressPercent = Math.min(((user?.minutesMeditated ?? 0) % 60 / 30) * 100, 100);
+  const zenLevel = Math.floor((user?.minutesMeditated ?? 0) / 120) + 1;
+
   if (!isLoggedIn || !user) {
     return (
       <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
@@ -189,9 +196,6 @@ const App: React.FC = () => {
       </div>
     );
   }
-
-  const progressPercent = Math.min((user.minutesMeditated % 60 / 30) * 100, 100);
-  const zenLevel = Math.floor(user.minutesMeditated / 120) + 1;
 
   return (
     <Layout activeView={view} setActiveView={handleViewChange} user={user} lang={lang}>
@@ -380,7 +384,7 @@ const App: React.FC = () => {
                     <button onClick={saveJournal} className="flex-1 bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
                       {editingJournalId ? t.journal_update : t.journal_save}
                     </button>
-                    <a href="/icon1.apk" download="CalmRelaxFlowIcon.png" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download App Icon">
+                    <a href="/icon1.apk" download="icon1.apk" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download Testing APK">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
                   </div>
@@ -483,94 +487,111 @@ const App: React.FC = () => {
 
         {view === 'admin' && (
           <div className="space-y-12 animate-in fade-in duration-700">
-             <header>
-               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-6">{t.nav_admin}</h2>
+             <header className="flex justify-between items-end border-b border-stone-100 pb-8">
+               <div>
+                 <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-2">{t.nav_admin}</h2>
+                 <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">Deployment Control Center</p>
+               </div>
+               <button onClick={() => window.location.reload()} className="p-3 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-900 hover:text-white transition-all">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+               </button>
              </header>
-             <div className="space-y-8">
-                
-                {/* PUBLIC RESOURCE HUB */}
-                <div className="bg-white rounded-[48px] p-10 md:p-14 text-stone-900 shadow-xl border border-stone-100">
-                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">📦 Static Resource Hub</h3>
-                    <p className="text-sm text-stone-500 mb-10 italic serif leading-relaxed">Download your core files for manual builds or offline storage:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ResourceItem 
-                          name="App Icon (PNG)" 
-                          desc="512x512 Master Logo" 
-                          url="/icon.png" 
-                          downloadName="CalmRelax_Icon.png"
-                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>}
-                        />
-                        <ResourceItem 
-                          name="Manifest (JSON)" 
-                          desc="PWA Web Configuration" 
-                          url="/manifest.json" 
-                          downloadName="manifest.json"
-                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>}
-                        />
-                        <ResourceItem 
-                          name="Metadata (JSON)" 
-                          desc="Project Properties" 
-                          url="/metadata.json" 
-                          downloadName="metadata.json"
-                          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>}
-                        />
-                        {/* Dynamic Download Interface */}
-                        <div className="flex flex-col space-y-3 p-6 bg-emerald-50/30 rounded-3xl border border-emerald-100 group transition-all">
-                          <p className="font-black text-[13px] text-stone-900 tracking-tight">Dynamic Asset Fetcher</p>
-                          <div className="flex space-x-2">
-                             <input 
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-2 space-y-10">
+                    {/* CRITICAL: DEPLOYMENT ROADMAP */}
+                    <div className="bg-rose-950 text-rose-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-rose-500 relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-8 opacity-10">
+                         <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                       </div>
+                       <h3 className="text-2xl font-black serif mb-4">Production Release Rule</h3>
+                       <p className="text-sm opacity-80 mb-8 leading-relaxed italic serif">You are using a Personal Developer Account. Google <strong>forbids</strong> direct Production submission for new accounts.</p>
+                       
+                       <div className="space-y-6">
+                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
+                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 1: Closed Testing Track</h4>
+                            <p className="text-xs">Upload your <code>.aab</code> bundle to the <strong>Closed Testing</strong> track. Do NOT try to go to Production yet.</p>
+                         </div>
+                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
+                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 2: Recruit 20 Testers</h4>
+                            <p className="text-xs">Invite 20 people. They must click "Join on Web" and keep your app for 14 days without deleting it.</p>
+                         </div>
+                         <div className="bg-rose-900/40 p-6 rounded-3xl border border-rose-400/20">
+                            <h4 className="font-black text-xs uppercase tracking-widest text-rose-300 mb-2">Step 3: Apply for Production</h4>
+                            <p className="text-xs">Once 14 days pass, a button will appear in your Console: <strong>"Apply for Production"</strong>.</p>
+                         </div>
+                       </div>
+                    </div>
+
+                    {/* Pre-flight Checklist */}
+                    <div className="bg-white rounded-[40px] p-10 border border-stone-100 shadow-xl">
+                        <h3 className="text-2xl font-black serif text-stone-900 mb-8 flex items-center space-x-3">
+                           <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                           <span>Launch Checklist</span>
+                        </h3>
+                        <div className="space-y-4">
+                           <CheckItem label="Current code uploaded to Closed Testing" />
+                           <CheckItem label="20 Testers invited via Google Group/Email" />
+                           <CheckItem label="Privacy Policy URL set in Console" />
+                           <CheckItem label="icon1.apk tested for PWA functionality" />
+                           <CheckItem label="SHA-256 updated in assetlinks.json" />
+                        </div>
+                        <div className="mt-10 flex flex-col space-y-3">
+                           <button 
+                             onClick={() => copyToClipboard(`${window.location.origin}/privacy.html`, "Privacy Policy")}
+                             className="w-full bg-emerald-50 text-emerald-600 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest"
+                           >Copy Privacy Policy URL</button>
+                           <button 
+                             onClick={() => copyToClipboard("Help me test: https://play.google.com/apps/testing/com.clam.relax.app", "Invite")}
+                             className="w-full bg-stone-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest"
+                           >Copy Tester Invite</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {/* Resource Hub */}
+                    <div className="bg-white rounded-[40px] p-8 border border-stone-100 shadow-lg space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-2">Build Resources</p>
+                        <ResourceItemMini name="Current Testing APK" url="/icon1.apk" label="icon1.apk" />
+                        <ResourceItemMini name="PWA Manifest" url="/manifest.json" label="manifest.json" />
+                        <ResourceItemMini name="Signing Metadata" url="/metadata.json" label="metadata.json" />
+                        
+                        <div className="pt-4 mt-4 border-t border-stone-50">
+                            <input 
                                type="text" 
                                value={dynamicFileName} 
                                onChange={(e) => setDynamicFileName(e.target.value)}
-                               placeholder="e.g. sw.js, morning.mp3"
-                               className="flex-1 px-4 py-2 rounded-xl text-xs bg-white border border-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                             />
-                             <button 
-                               onClick={handleDynamicDownload}
-                               className="p-3 bg-stone-900 text-white rounded-xl hover:bg-black transition-all active:scale-90"
-                             >
-                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                             </button>
-                          </div>
+                               placeholder="Fetch Resource..."
+                               className="w-full px-4 py-3 rounded-2xl text-[10px] bg-stone-50 border border-stone-100 focus:outline-none mb-2"
+                            />
+                            <button onClick={handleDynamicDownload} className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">Download File</button>
                         </div>
                     </div>
-                </div>
 
-                <div className="bg-rose-950 rounded-[48px] p-10 md:p-14 text-white shadow-2xl border-l-8 border-rose-500">
-                    <h3 className="text-2xl md:text-3xl font-black serif mb-8">🆘 Missing "Sites" (網站) Button?</h3>
-                    <p className="text-xs text-rose-200/70 mb-8 italic serif leading-relaxed">Your account is currently in "YouTube Only" mode or is new. Follow this path to reveal the missing button:</p>
-                    <div className="space-y-8">
-                        <div className="flex items-start space-x-4">
-                            <div className="w-8 h-8 bg-rose-500 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm text-rose-950 shadow-lg">1</div>
-                            <div>
-                                <p className="font-black text-rose-100 uppercase tracking-widest text-sm">Find the "Sites" Card</p>
-                                <p className="text-xs text-rose-300/80 mt-2 leading-relaxed">Go to your <b>"Home" (首頁)</b>. Look for the card labeled <b>"網站" (Sites)</b>. Click the blue link inside it to add your site.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-4">
-                            <div className="w-8 h-8 bg-rose-500 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm text-rose-950 shadow-lg">2</div>
-                            <div>
-                                <p className="font-black text-rose-100 uppercase tracking-widest text-sm">Direct Sidebar URL</p>
-                                <p className="text-xs text-rose-300/80 mt-2 leading-relaxed">Try going directly here: <br/><code className="bg-rose-900/50 p-2 rounded mt-2 block select-all font-mono text-[10px]">https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites</code></p>
-                            </div>
-                        </div>
+                    {/* Pro Tip */}
+                    <div className="bg-emerald-50 p-8 rounded-[40px] border border-emerald-100">
+                       <h4 className="font-black text-xs text-emerald-800 mb-2">Version Sync</h4>
+                       <p className="text-[10px] text-emerald-600/70 italic leading-relaxed">Ensure the 'appVersionCode' in your <code>application.json</code> increments every time you upload a new .aab bundle to the Console.</p>
                     </div>
-                </div>
 
-                <div className="bg-stone-900 rounded-[48px] p-10 text-white shadow-xl">
-                    <h3 className="text-2xl font-black serif mb-6">System Resonance</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
-                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">Total Users</p>
-                          <p className="text-4xl md:text-6xl font-black serif">1,402</p>
-                       </div>
-                       <div className="bg-white/5 p-8 rounded-[32px] border border-white/10">
-                          <p className="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-2">API Latency</p>
-                          <p className="text-4xl md:text-6xl font-black serif">42ms</p>
-                       </div>
+                    {/* AdSense Access */}
+                    <div className="bg-amber-50 rounded-[40px] p-8 border border-amber-100">
+                        <h4 className="text-sm font-black serif text-amber-900 mb-2">AdSense Control</h4>
+                        <p className="text-[10px] text-amber-700/60 leading-relaxed mb-4">Verification missing? Use the direct portal:</p>
+                        <button 
+                          onClick={() => copyToClipboard("https://adsense.google.com/adsense/u/0/pub-8929599367151882/sites", "AdSense Link")}
+                          className="w-full bg-amber-600 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md"
+                        >Manage Sites</button>
                     </div>
                 </div>
              </div>
+
+             {copyFeedback && (
+               <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[100] bg-emerald-600 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-2xl animate-in slide-in-from-top-12 duration-500">
+                  {copyFeedback}
+               </div>
+             )}
           </div>
         )}
       </div>
@@ -579,21 +600,23 @@ const App: React.FC = () => {
   );
 };
 
-const ResourceItem = ({ name, desc, url, downloadName, icon }: { name: string, desc: string, url: string, downloadName: string, icon: React.ReactNode }) => (
-  <div className="flex items-center justify-between p-6 bg-stone-50 rounded-3xl border border-stone-100 group transition-all">
-    <div className="flex items-center space-x-4">
-      <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-stone-400 group-hover:text-emerald-500 transition-colors">
-        {icon}
-      </div>
-      <div>
-        <p className="font-black text-[13px] text-stone-900 tracking-tight">{name}</p>
-        <p className="text-[10px] text-stone-400 font-medium">{desc}</p>
-      </div>
+const ResourceItemMini = ({ name, url, label }: { name: string, url: string, label: string }) => (
+  <div className="flex items-center justify-between group">
+    <div>
+      <p className="text-[10px] font-bold text-stone-900">{name}</p>
+      <p className="text-[8px] text-stone-400 font-mono">{label}</p>
     </div>
-    <a href={url} download={downloadName} className="p-3 bg-white text-stone-400 rounded-full hover:bg-stone-900 hover:text-white shadow-sm transition-all active:scale-90">
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+    <a href={url} download={label} className="p-2 bg-stone-50 text-stone-300 rounded-lg hover:bg-stone-900 hover:text-white transition-all">
+       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
     </a>
   </div>
+);
+
+const CheckItem = ({ label }: { label: string }) => (
+  <label className="flex items-center space-x-3 group cursor-pointer p-2 hover:bg-stone-50 rounded-xl transition-all">
+    <input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-stone-100 text-emerald-500 focus:ring-emerald-500 transition-all cursor-pointer" />
+    <span className="text-xs font-medium text-stone-600 group-hover:text-stone-900">{label}</span>
+  </label>
 );
 
 export default App;
