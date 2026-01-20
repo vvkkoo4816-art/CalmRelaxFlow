@@ -16,7 +16,6 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
         // @ts-ignore
         const adsbygoogle = window.adsbygoogle || [];
         
-        // Manual unit push. Note: In production, 'data-ad-slot' should be a numeric ID from your dashboard.
         if (adsbygoogle.push) {
           adsbygoogle.push({});
         }
@@ -26,10 +25,9 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
       }
     };
 
-    // Give the DOM 800ms to settle before pushing to ensure container size is calculated
-    adTimeout = window.setTimeout(pushAd, 800);
+    // Reduced settle time for faster layout
+    adTimeout = window.setTimeout(pushAd, 400);
     
-    // Check if the script even loaded
     const script = document.querySelector('script[src*="adsbygoogle"]');
     if (!script) {
       setIsBlocked(true);
@@ -39,19 +37,18 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
   }, []);
 
   return (
-    <div className={`ad-container my-6 overflow-hidden min-h-[100px] flex flex-col items-center justify-center bg-stone-50/50 rounded-3xl border border-stone-100 shadow-inner group transition-all duration-700 ${className}`}>
+    <div className={`ad-container my-1 overflow-hidden min-h-[50px] flex flex-col items-center justify-center bg-stone-50/30 rounded-2xl border border-stone-100/50 shadow-sm group transition-all duration-700 ${className}`}>
       {isBlocked ? (
-        <div className="p-4 text-center animate-in fade-in duration-1000">
-           <div className="text-[8px] font-black uppercase tracking-[0.4em] text-emerald-600 mb-2">Internal Peace</div>
-           <p className="text-[10px] text-stone-400 serif italic">"Breathe deeply. The light within is the only ad you need."</p>
-           <p className="text-[8px] text-stone-300 mt-2 uppercase tracking-widest">(AdSense Syncing...)</p>
+        <div className="p-1 text-center animate-in fade-in duration-1000">
+           <div className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-0.5 opacity-60">Internal Peace</div>
+           <p className="text-[8px] text-stone-400 serif italic leading-none">"Breathe deeply."</p>
         </div>
       ) : (
         <>
-          <div className="text-[8px] font-black uppercase tracking-[0.4em] text-stone-300 mb-2 opacity-50 group-hover:opacity-100 transition-opacity">Spiritual Sustenance</div>
-          {/* CRITICAL: data-ad-slot MUST eventually be a numeric ID for manual ads to show reliably. */}
+          <div className="text-[7px] font-black uppercase tracking-[0.2em] text-stone-300 mb-1 opacity-40 group-hover:opacity-100 transition-opacity">Spiritual Sustenance</div>
+          {/* Reduced minHeight to 50px for compact mobile display */}
           <ins className="adsbygoogle"
-               style={{ display: 'block', width: '100%', minHeight: '90px', minWidth: '250px' }}
+               style={{ display: 'block', width: '100%', minHeight: '50px', minWidth: '250px' }}
                data-ad-client="ca-pub-8929599367151882"
                data-ad-slot="8929599367"
                data-ad-format="auto"

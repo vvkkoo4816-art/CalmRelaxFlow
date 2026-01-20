@@ -34,6 +34,7 @@ const App: React.FC = () => {
   const [canSkipInterstitial, setCanSkipInterstitial] = useState(false);
   const [pendingView, setPendingView] = useState<AppView | null>(null);
 
+  // t is recalculated whenever lang changes, ensuring all child components get the update
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
   useEffect(() => {
@@ -58,6 +59,8 @@ const App: React.FC = () => {
   const changeLanguage = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem('calmrelax_lang', newLang);
+    setCopyFeedback(newLang === 'en' ? "Language Synced" : "语言已同步");
+    setTimeout(() => setCopyFeedback(null), 1500);
   };
 
   const handleViewChange = (newView: AppView) => {
@@ -68,7 +71,6 @@ const App: React.FC = () => {
     setCanSkipInterstitial(false);
     setAdRefreshKey(prev => prev + 1);
 
-    // Ads need ~3 seconds to load properly. 1.2s was too short.
     setTimeout(() => {
       setCanSkipInterstitial(true);
     }, 3000);
@@ -214,7 +216,7 @@ const App: React.FC = () => {
 
   return (
     <Layout activeView={view} setActiveView={handleViewChange} user={user} lang={lang}>
-      <div className="max-w-3xl mx-auto pb-64 space-y-12 px-4">
+      <div className="max-w-3xl mx-auto pb-64 space-y-6 md:space-y-12 px-4">
         
         {isShowingInterstitial && (
           <div className="fixed inset-0 z-[1000] bg-white/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center ad-interstitial-in">
@@ -235,7 +237,7 @@ const App: React.FC = () => {
         )}
 
         {view === 'today' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
             <header className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-[40px] border border-stone-100 shadow-xl shadow-stone-200/20 gap-6">
               <div className="min-w-0 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start space-x-4 mb-2">
@@ -270,7 +272,7 @@ const App: React.FC = () => {
                </div>
             </section>
 
-            <AdSlot key={`home-ad-${adRefreshKey}`} className="mb-12" />
+            <AdSlot key={`home-ad-${adRefreshKey}`} className="mb-4" />
 
             <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
@@ -313,7 +315,7 @@ const App: React.FC = () => {
         )}
 
         {view === 'library' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header>
                <h2 className="text-6xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">The Vault</h2>
                <p className="text-stone-400 text-xl md:text-2xl font-medium leading-relaxed max-w-2xl italic opacity-95 serif">Architectural soundscapes engineered for total cognitive surrender.</p>
@@ -365,10 +367,10 @@ const App: React.FC = () => {
         )}
 
         {view === 'sleep' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header>
-               <h2 className="text-6xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">{t.sleep_title}</h2>
-               <p className="text-stone-400 text-xl md:text-2xl mt-4 font-medium leading-relaxed serif italic opacity-95">{t.sleep_subtitle}</p>
+               <h2 className="text-5xl md:text-8xl font-black serif text-stone-900 tracking-tighter leading-none mb-4">{t.sleep_title}</h2>
+               <p className="text-stone-400 text-lg md:text-2xl mt-2 font-medium leading-relaxed serif italic opacity-95">{t.sleep_subtitle}</p>
              </header>
 
              <AdSlot key={`sleep-ad-top-${adRefreshKey}`} />
@@ -391,9 +393,9 @@ const App: React.FC = () => {
         )}
 
         {view === 'journal' && (
-          <div className="space-y-10 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
              <header>
-               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-6">{t.journal_title}</h2>
+               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.journal_title}</h2>
              </header>
              <div className="bg-white rounded-[40px] p-6 md:p-10 border border-stone-100 shadow-xl">
                 <textarea 
@@ -407,7 +409,7 @@ const App: React.FC = () => {
                     <button onClick={saveJournal} className="flex-1 bg-stone-900 text-white py-5 rounded-full font-black text-base uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">
                       {editingJournalId ? t.journal_update : t.journal_save}
                     </button>
-                    <a href="/icon1.apk" download="icon1.apk" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download Testing APK">
+                    <a href="/icon1.apk" download="icon1.apk" className="w-16 h-16 bg-white border border-stone-200 text-stone-400 rounded-full flex items-center justify-center hover:text-emerald-500 hover:border-emerald-200 transition-all shadow-lg active:scale-95 group" title="Download APK">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
                   </div>
@@ -438,9 +440,9 @@ const App: React.FC = () => {
         )}
 
         {view === 'explore' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header>
-               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter leading-none mb-6">{t.nav_breathing}</h2>
+               <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter leading-none mb-4">{t.nav_breathing}</h2>
              </header>
              <BreathingExercise lang={lang} />
              
@@ -470,7 +472,7 @@ const App: React.FC = () => {
         )}
 
         {view === 'profile' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header className="flex flex-col items-center text-center space-y-8">
                <div className="relative">
                  <img src={user.photoUrl} className="w-32 md:w-48 h-32 md:h-48 rounded-[32px] md:rounded-[48px] border-[8px] md:border-[12px] border-white shadow-2xl" alt="avatar" />
@@ -509,35 +511,49 @@ const App: React.FC = () => {
         )}
 
         {view === 'admin' && (
-          <div className="space-y-12 animate-in fade-in duration-700">
+          <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header className="flex justify-between items-end border-b border-stone-100 pb-8">
                <div>
                  <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-2">{t.nav_admin}</h2>
                  <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">Deployment Control Center</p>
                </div>
                <button onClick={() => window.location.reload()} className="p-3 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-900 hover:text-white transition-all">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"/></svg>
                </button>
              </header>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-10">
-                    {/* CRITICAL: FRIEND ACCESS & TESTING DEBUGGER */}
-                    <div className="bg-emerald-950 text-emerald-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-emerald-500 relative overflow-hidden">
-                       <h3 className="text-2xl font-black serif mb-6">SOS: Link "App Not Found"?</h3>
-                       <div className="space-y-6">
-                         <div className="bg-emerald-900/40 p-6 rounded-3xl border border-emerald-400/20">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-emerald-400 mb-2 italic underline">1. Use "Internal Testing" track</h4>
-                            <p className="text-xs">If your friend can't see the app, it is because you used the <b>Closed Testing</b> track. Use the <b>Internal Testing</b> track instead—it is instant and doesn't require Google Review for every update.</p>
+                    {/* Testing Roadmap Guide */}
+                    <div className="bg-stone-950 text-stone-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-emerald-500 relative overflow-hidden">
+                       <h3 className="text-2xl font-black serif mb-8">Testing Roadmap: Where to Upload?</h3>
+                       <div className="space-y-10">
+                         <div className="relative pl-12 border-l-2 border-emerald-500/20">
+                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
+                            <h4 className="font-black text-emerald-400 uppercase tracking-widest text-xs mb-2">Phase 1: Internal Testing (Now)</h4>
+                            <p className="text-xs text-stone-400 leading-relaxed"><b>Instant availability.</b> Best for you and up to 100 invited friends. Use this to verify your APK works on different screen sizes and OS versions without waiting for Google's review.</p>
                          </div>
-                         <div className="bg-emerald-900/40 p-6 rounded-3xl border border-emerald-400/20">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-emerald-400 mb-2 italic underline">2. Must Opt-In via Browser</h4>
-                            <p className="text-xs">Your friend must click "Become a tester" on a <b>Desktop Browser</b> or mobile browser using the specific Gmail you added. They cannot just search for it in the Play Store app.</p>
+                         <div className="relative pl-12 border-l-2 border-emerald-500/20">
+                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-stone-800 rounded-full"></div>
+                            <h4 className="font-black text-stone-500 uppercase tracking-widest text-xs mb-2">Phase 2: Closed Testing (Next Week)</h4>
+                            <p className="text-xs text-stone-400 leading-relaxed"><b>The 20-tester rule.</b> Once Phase 1 is stable, invite 20 people to stay for 14 days. This is mandatory for personal developer accounts before you can launch publicly.</p>
+                         </div>
+                         <div className="relative pl-12">
+                            <div className="absolute left-[-11px] top-0 w-5 h-5 bg-stone-800 rounded-full"></div>
+                            <h4 className="font-black text-stone-500 uppercase tracking-widest text-xs mb-2">Phase 3: Production (Launch)</h4>
+                            <p className="text-xs text-stone-400 leading-relaxed"><b>Publicly visible on Play Store.</b> Only after completing Phase 2's 14-day requirement.</p>
                          </div>
                        </div>
                     </div>
 
-                    {/* Ad Health Monitor */}
+                    {/* Ad Diagnostic Tool */}
+                    <div className="bg-rose-950 text-rose-100 p-10 rounded-[48px] shadow-2xl border-l-8 border-rose-500 relative overflow-hidden">
+                       <h3 className="text-2xl font-black serif mb-6">Diagnostic: "Clicking Ads shows nothing"?</h3>
+                       <div className="space-y-4">
+                         <p className="text-xs leading-relaxed">This is normal in "Ready" status. If you click your own ads or test ads, Google returns a blank page to prevent invalid traffic. <b>Real ads will redirect correctly on users' devices.</b></p>
+                       </div>
+                    </div>
+
                     <div className="bg-white rounded-[40px] p-10 border border-stone-100 shadow-xl">
                         <h3 className="text-2xl font-black serif text-stone-900 mb-8 flex items-center space-x-3">
                            <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -546,50 +562,15 @@ const App: React.FC = () => {
                         <div className="space-y-4">
                            <CheckItem label="AdSense Script Loaded" />
                            <CheckItem label="Site status in AdSense: 'Ready'" />
-                           <CheckItem label="data-ad-slot: Real ID used (not 'auto')" />
                            <CheckItem label="Interstitial delay set to 3.5s+" />
-                        </div>
-                        <p className="mt-6 text-[10px] text-stone-400 italic">Note: Ads will never show on 'localhost'. You must test on your live Vercel/Netlify URL.</p>
-                    </div>
-
-                    {/* Pre-flight Checklist */}
-                    <div className="bg-white rounded-[40px] p-10 border border-stone-100 shadow-xl">
-                        <h3 className="text-2xl font-black serif text-stone-900 mb-8 flex items-center space-x-3">
-                           <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                           <span>Launch Checklist</span>
-                        </h3>
-                        <div className="space-y-4">
-                           <CheckItem label="AAB Uploaded & Status is 'Active'" />
-                           <CheckItem label="SHA-256 updated in assetlinks.json" />
-                        </div>
-                        <div className="mt-10 flex flex-col space-y-3">
-                           <button 
-                             onClick={() => copyToClipboard(`${window.location.origin}/privacy.html`, "Privacy Policy")}
-                             className="w-full bg-emerald-50 text-emerald-600 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest"
-                           >Copy Privacy Policy URL</button>
                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    {/* PRODUCTION PATH */}
-                    <div className="bg-stone-900 p-8 rounded-[40px] border border-stone-800 text-white shadow-xl">
-                       <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-4">Production Path</h4>
-                       <ul className="space-y-4 text-[10px] text-stone-400">
-                         <li className="flex items-start space-x-2">
-                           <span className="text-emerald-500 font-bold">●</span>
-                           <span>Pass 20/14 rule (Personal Accts).</span>
-                         </li>
-                         <li className="flex items-start space-x-2">
-                           <span className="text-emerald-500 font-bold">●</span>
-                           <span>Upload <b>this</b> code to Production.</span>
-                         </li>
-                       </ul>
-                    </div>
-
                     <div className="bg-white rounded-[40px] p-8 border border-stone-100 shadow-lg space-y-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-2">Build Resources</p>
-                        <ResourceItemMini name="Current Testing APK" url="/icon1.apk" label="icon1.apk" />
+                        <ResourceItemMini name="Current APK" url="/icon1.apk" label="icon1.apk" />
                         
                         <div className="pt-4 mt-4 border-t border-stone-50">
                             <input 
@@ -599,7 +580,7 @@ const App: React.FC = () => {
                                placeholder="Fetch Resource..."
                                className="w-full px-4 py-3 rounded-2xl text-[10px] bg-stone-50 border border-stone-100 focus:outline-none mb-2"
                             />
-                            <button onClick={handleDynamicDownload} className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">Download File</button>
+                            <button onClick={handleDynamicDownload} className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">Fetch APK</button>
                         </div>
                     </div>
                 </div>
