@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#10b981">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="mobile-web-app-capable" content="yes">
   
   <meta name="google-adsense-account" content="ca-pub-8929599367151882">
@@ -24,18 +24,12 @@
     window.process = window.process || { env: { API_KEY: '' } };
   </script>
   <style>
-    :root {
-      --safe-area-inset-top: env(safe-area-inset-top, 0px);
-      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #fdfcfb;
       margin: 0;
+      background-color: #fdfcfb;
       color: #1c1917;
       -webkit-tap-highlight-color: transparent;
-      overflow-x: hidden;
     }
     .serif { font-family: 'Fraunces', serif; }
     .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -49,8 +43,7 @@
     
     @keyframes adFadeIn { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: scale(1); } }
     .ad-interstitial-in { animation: adFadeIn 0.4s ease-out forwards; }
-    
-    /* Smooth Scroll */
+
     * { scroll-behavior: smooth; }
   </style>
 <script type="importmap">
