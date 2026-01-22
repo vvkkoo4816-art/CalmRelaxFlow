@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import SoundMixer from './components/SoundMixer';
 import BreathingExercise from './components/BreathingExercise';
 import AdSlot from './components/AdSlot';
-import { AppView, User, MeditationSession, Language, JournalEntry, ZenCenter, LoginRecord } from './types';
+import { AppView, User, MeditationSession, Language, JournalEntry, LoginRecord } from './types';
 import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES, PUBLIC_AUDIO_FILES } from './constants';
 import { translations } from './translations';
-import { getPersonalizedRecommendation, findNearbyZenCenters } from './services/geminiService';
+import { getPersonalizedRecommendation } from './services/geminiService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
@@ -24,10 +23,12 @@ const App: React.FC = () => {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [aiTip, setAiTip] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [zenCenters, setZenCenters] = useState<ZenCenter[]>([]);
+  const [luckyNumbers, setLuckyNumbers] = useState<number[]>([]);
 
   const [adRefreshKey, setAdRefreshKey] = useState(0);
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [authMethod, setAuthMethod] = useState<'Google' | 'Facebook' | null>(null);
+  const [inputEmail, setInputEmail] = useState('');
   const [isShowingInterstitial, setIsShowingInterstitial] = useState(false);
   const [canSkipInterstitial, setCanSkipInterstitial] = useState(false);
   const [pendingView, setPendingView] = useState<AppView | null>(null);
@@ -46,15 +47,24 @@ const App: React.FC = () => {
     
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      if (parsed?.isLoggedIn) {
+      if (parsed?.isLoggedIn && parsed?.email) {
         setUser(parsed);
         setIsLoggedIn(true);
         setZenQuote(STATIC_QUOTES[Math.floor(Math.random() * STATIC_QUOTES.length)]);
+        recordLogin(parsed.email, new Date().toISOString(), "Session Resumed");
       }
     }
-
-    findNearbyZenCenters(0,0).then(setZenCenters);
+    generateLuckyNumbers();
   }, []);
+
+  const generateLuckyNumbers = () => {
+    const nums: number[] = [];
+    while (nums.length < 7) {
+      const n = Math.floor(Math.random() * 49) + 1;
+      if (!nums.includes(n)) nums.push(n);
+    }
+    setLuckyNumbers(nums);
+  };
 
   const changeLanguage = (newLang: Language) => {
     setLang(newLang);
@@ -78,63 +88,56 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleMoodSelect = async (mood: string) => {
-    setSelectedMood(mood);
-    setIsAiLoading(true);
-    try {
-      const tip = await getPersonalizedRecommendation(mood, lang);
-      setAiTip(tip);
-    } catch (e) {
-      setAiTip(translations[lang]?.mood_fallback || "Breathe deeply. You are safe in this moment.");
-    } finally {
-      setIsAiLoading(false);
-    }
+  const initiateAuth = (method: 'Google' | 'Facebook') => {
+    setAuthMethod(method);
+    setIsConsentModalOpen(true);
+    setInputEmail('vvkkoo4816@gmail.com');
   };
 
   const finalizeLogin = () => {
-    const email = "vvkkoo4816@gmail.com";
+    const email = inputEmail.trim().toLowerCase() || "guest@sanctuary.com";
     const timestamp = new Date().toISOString();
-    
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const location = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-        recordLogin(email, timestamp, location);
-      },
-      () => {
-        recordLogin(email, timestamp, "Permission Denied");
-      }
-    );
+    completeAuthSequence(email, timestamp, "Web Native");
+  };
 
+  const completeAuthSequence = (email: string, timestamp: string, location: string) => {
+    recordLogin(email, timestamp, location);
+
+    const isAdmin = email === 'vvkkoo4816@gmail.com';
     const mockUser: User = {
-      id: `social-auth-${Date.now()}`,
-      name: "Zen Seeker",
+      id: `social-${Date.now()}`,
+      name: isAdmin ? "Sanctuary Admin" : email.split('@')[0],
       email: email,
-      photoUrl: `https://ui-avatars.com/api/?name=Zen+Seeker&background=10b981&color=fff`,
+      photoUrl: `https://ui-avatars.com/api/?name=${email}&background=${isAdmin ? '10b981' : '3b82f6'}&color=fff`,
       isLoggedIn: true,
-      streak: 35,
-      minutesMeditated: 5820,
-      role: 'admin',
+      streak: 1,
+      minutesMeditated: 0,
+      role: isAdmin ? 'admin' : 'user',
       isPremium: true
     };
+
     setUser(mockUser);
     setIsLoggedIn(true);
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
     setZenQuote(STATIC_QUOTES[Math.floor(Math.random() * STATIC_QUOTES.length)]);
     setIsConsentModalOpen(false);
+    setAuthMethod(null);
   };
 
   const recordLogin = (email: string, timestamp: string, location: string) => {
     const newRecord: LoginRecord = { email, timestamp, location };
-    const updatedHistory = [newRecord, ...loginHistory];
+    const savedLogins = localStorage.getItem('calmrelax_login_history');
+    const history = savedLogins ? JSON.parse(savedLogins) : [];
+    const updatedHistory = [newRecord, ...history].slice(0, 1000);
     setLoginHistory(updatedHistory);
     localStorage.setItem('calmrelax_login_history', JSON.stringify(updatedHistory));
   };
 
   const downloadSanctuaryCSV = () => {
-    const headers = ["Type", "Email/User", "Timestamp/Date", "Location/Mood", "Content"];
+    const headers = ["Category", "User Email", "Event Timestamp", "Metadata (Loc/Mood)", "Description/Content"];
     const rows = [
-      ...loginHistory.map(l => ["LOGIN", l.email, l.timestamp, l.location, "Session Started"]),
-      ...journals.map(j => ["JOURNAL", user?.email || "Unknown", j.date, j.mood, `"${j.text.replace(/"/g, '""')}"`])
+      ...loginHistory.map(l => ["AUTHENTICATION", l.email, l.timestamp, l.location, "User Session Started"]),
+      ...journals.map(j => ["JOURNAL_ENTRY", user?.email || "Unknown", j.date, j.mood, `"${j.text.replace(/"/g, '""')}"`])
     ];
 
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -143,10 +146,31 @@ const App: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Sanctuary_Analytics_${new Date().toLocaleDateString()}.csv`);
+    link.setAttribute("download", `Sanctuary_Analytics_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('calmrelax_active_user');
+    setIsLoggedIn(false);
+    setUser(null);
+    setView('today');
+  };
+
+  const handleMoodSelect = async (mood: string) => {
+    setSelectedMood(mood);
+    setIsAiLoading(true);
+    try {
+      const recommendation = await getPersonalizedRecommendation(mood, lang);
+      setAiTip(recommendation);
+    } catch (error) {
+      console.error("AI resonance error:", error);
+      setAiTip(t.mood_fallback || "Take a deep breath. You are safe.");
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const saveJournal = () => {
@@ -182,6 +206,21 @@ const App: React.FC = () => {
   const progressPercent = Math.min(((user?.minutesMeditated ?? 0) % 60 / 30) * 100, 100);
   const zenLevel = Math.floor((user?.minutesMeditated ?? 0) / 120) + 1;
 
+  const LuckyBall = ({ num, color }: { num: number, color: 'red' | 'blue' | 'green' }) => {
+    const colorClasses = {
+      red: 'from-red-500 to-red-700 shadow-red-200 border-red-400',
+      blue: 'from-blue-500 to-blue-700 shadow-blue-200 border-blue-400',
+      green: 'from-green-500 to-green-700 shadow-green-200 border-green-400'
+    };
+    return (
+      <div className={`w-9 h-9 md:w-12 md:h-12 rounded-full bg-gradient-to-br ${colorClasses[color]} border-2 shadow-lg flex items-center justify-center relative transform hover:scale-110 transition-transform active:scale-95 group`}>
+        <div className="w-6 h-6 md:w-8 md:h-8 bg-white rounded-full flex items-center justify-center shadow-inner">
+          <span className="text-stone-900 font-black text-xs md:text-sm">{num}</span>
+        </div>
+      </div>
+    );
+  };
+
   if (!isLoggedIn || !user) {
     return (
       <div className="h-screen bg-[#fdfcfb] flex flex-col items-center justify-center p-10 text-center relative overflow-hidden">
@@ -201,11 +240,11 @@ const App: React.FC = () => {
           <p className="text-stone-400 font-medium mb-24 max-w-sm leading-relaxed mx-auto text-xl italic serif opacity-80">{t.app_slogan}</p>
           
           <div className="w-full max-w-xs flex flex-col space-y-4">
-            <button onClick={() => setIsConsentModalOpen(true)} className="w-full bg-white border border-stone-200 text-stone-800 px-8 py-5 rounded-full font-black shadow-xl hover:shadow-2xl transition-all flex items-center justify-center space-x-4 active:scale-95 group">
+            <button onClick={() => initiateAuth('Google')} className="w-full bg-white border border-stone-200 text-stone-800 px-8 py-5 rounded-full font-black shadow-xl hover:shadow-2xl transition-all flex items-center justify-center space-x-4 active:scale-95 group">
                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-6 h-6 group-hover:scale-110 transition-transform" alt="google" />
                <span className="text-base tracking-tight uppercase">{t.sign_in_google}</span>
             </button>
-            <button onClick={() => setIsConsentModalOpen(true)} className="w-full bg-[#1877F2] text-white px-8 py-5 rounded-full font-black shadow-xl hover:shadow-2xl transition-all flex items-center justify-center space-x-4 active:scale-95 group border-b-4 border-blue-900">
+            <button onClick={() => initiateAuth('Facebook')} className="w-full bg-[#1877F2] text-white px-8 py-5 rounded-full font-black shadow-xl hover:shadow-2xl transition-all flex items-center justify-center space-x-4 active:scale-95 group border-b-4 border-blue-900">
                <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                <span className="text-base tracking-tight uppercase">{t.sign_in_facebook}</span>
             </button>
@@ -214,12 +253,24 @@ const App: React.FC = () => {
 
         {isConsentModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-stone-950/95 backdrop-blur-3xl">
-            <div className="bg-white w-full max-w-sm rounded-[50px] p-12 shadow-2xl animate-in zoom-in duration-500">
-               <h3 className="text-3xl font-black serif text-stone-900 mb-4">{t.auth_permission_title}</h3>
-               <p className="text-stone-500 text-lg mb-10 leading-relaxed serif italic">{t.auth_permission_desc}</p>
-               <div className="flex flex-col space-y-4">
-                 <button onClick={finalizeLogin} className="w-full bg-emerald-600 text-white py-5 rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-700 transition-all">{t.auth_allow}</button>
-                 <button onClick={() => setIsConsentModalOpen(false)} className="w-full text-stone-400 py-3 rounded-full font-black text-sm uppercase tracking-[0.2em]">{t.auth_deny}</button>
+            <div className="bg-white w-full max-w-sm rounded-[50px] p-10 shadow-2xl animate-in zoom-in duration-500">
+               <h3 className="text-2xl font-black serif text-stone-900 mb-2">{t.auth_permission_title}</h3>
+               <p className="text-stone-500 text-sm mb-6 leading-relaxed serif italic">{t.auth_permission_desc}</p>
+               
+               <div className="mb-8 space-y-4">
+                 <label className="block text-[10px] font-black uppercase text-stone-400 tracking-widest text-left ml-2">Identify via {authMethod}</label>
+                 <input 
+                   type="email" 
+                   value={inputEmail}
+                   onChange={(e) => setInputEmail(e.target.value)}
+                   className="w-full bg-stone-50 border-2 border-stone-100 rounded-2xl px-5 py-4 font-bold text-stone-800 focus:outline-none focus:border-emerald-500/30 transition-all"
+                   placeholder="Enter sanctuary email"
+                 />
+               </div>
+
+               <div className="flex flex-col space-y-3">
+                 <button onClick={finalizeLogin} className="w-full bg-emerald-600 text-white py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-700 transition-all">{t.auth_allow}</button>
+                 <button onClick={() => { setIsConsentModalOpen(false); setAuthMethod(null); }} className="w-full text-stone-400 py-3 rounded-full font-black text-xs uppercase tracking-[0.2em]">{t.auth_deny}</button>
                </div>
             </div>
           </div>
@@ -283,7 +334,6 @@ const App: React.FC = () => {
                  </div>
                </div>
             </section>
-            
             <section className="bg-white rounded-[60px] p-10 md:p-14 border border-stone-100 shadow-xl shadow-stone-200/40 relative overflow-hidden group">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-50 via-emerald-500 to-emerald-50 opacity-90"></div>
                <h3 className="font-black serif text-2xl md:text-3xl mb-10 text-center text-stone-900 tracking-tighter">Tune your inner Vibration</h3>
@@ -373,6 +423,38 @@ const App: React.FC = () => {
              <header>
                <h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.journal_title}</h2>
              </header>
+
+             {/* Lucky Numbers Section */}
+             <section className="bg-white rounded-[40px] p-8 md:p-10 border border-stone-100 shadow-xl overflow-hidden relative group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                   <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+                </div>
+                <div className="relative z-10 text-center md:text-left">
+                   <div className="flex justify-between items-center mb-8">
+                      <h3 className="text-2xl md:text-3xl font-black serif text-stone-900 tracking-tighter">Lucky Number Today</h3>
+                      <button 
+                        onClick={generateLuckyNumbers}
+                        className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em] border border-emerald-100 px-4 py-2 rounded-full hover:bg-emerald-50 transition-all flex items-center space-x-2"
+                      >
+                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                         <span>Refresh</span>
+                      </button>
+                   </div>
+                   
+                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-5 mb-2">
+                      <LuckyBall num={luckyNumbers[0]} color="red" />
+                      <LuckyBall num={luckyNumbers[1]} color="blue" />
+                      <LuckyBall num={luckyNumbers[2]} color="green" />
+                      <LuckyBall num={luckyNumbers[3]} color="blue" />
+                      <LuckyBall num={luckyNumbers[4]} color="green" />
+                      <LuckyBall num={luckyNumbers[5]} color="red" />
+                      <div className="text-2xl font-bold text-stone-300 mx-1">+</div>
+                      <LuckyBall num={luckyNumbers[6]} color="green" />
+                   </div>
+                   <p className="text-stone-400 text-[10px] font-black uppercase tracking-[0.4em] mt-6 opacity-60">Synchronicity in every sequence</p>
+                </div>
+             </section>
+
              <div className="bg-white rounded-[40px] p-6 md:p-10 border border-stone-100 shadow-xl">
                 <textarea 
                    value={newJournalText}
@@ -412,7 +494,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {view === 'admin' && (
+        {view === 'admin' && user.role === 'admin' && (
           <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header className="flex justify-between items-end border-b border-stone-100 pb-8">
                <div>
@@ -421,7 +503,6 @@ const App: React.FC = () => {
                </div>
              </header>
 
-             {/* Closed Testing Progress Tracker */}
              <section className="bg-stone-950 text-white p-8 md:p-12 rounded-[50px] shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[60px] group-hover:bg-emerald-500/20 transition-all"></div>
                 <div className="relative z-10">
@@ -443,7 +524,6 @@ const App: React.FC = () => {
                 </div>
              </section>
 
-             {/* Data Export Control */}
              <section className="bg-white border-2 border-stone-950 p-8 md:p-12 rounded-[50px] shadow-2xl transition-all">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                    <div className="flex-1">
@@ -503,27 +583,86 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {view === 'profile' && (
+          <div className="space-y-12 animate-in fade-in duration-700">
+             <header className="text-center">
+               <div className="relative inline-block mb-6">
+                 <img src={user.photoUrl} className="w-32 h-32 rounded-[40px] border-4 border-white shadow-2xl" alt="avatar" />
+                 <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-2 rounded-2xl shadow-lg">
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                 </div>
+               </div>
+               <h2 className="text-4xl font-black serif text-stone-900 tracking-tighter">{user.name}</h2>
+               <p className="text-stone-400 font-medium serif italic mt-1">{user.email}</p>
+             </header>
+
+             <div className="grid grid-cols-2 gap-4">
+               <div className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-lg text-center">
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 block mb-2">Current Streak</span>
+                 <span className="text-3xl font-black serif text-stone-900">{user.streak} Days</span>
+               </div>
+               <div className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-lg text-center">
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-2">Total Minutes</span>
+                 <span className="text-3xl font-black serif text-stone-900">{user.minutesMeditated}</span>
+               </div>
+             </div>
+
+             <div className="bg-white rounded-[40px] p-6 border border-stone-100 shadow-xl space-y-2">
+               <button onClick={handleLogout} className="w-full text-red-500 font-black uppercase tracking-[0.2em] py-5 rounded-[24px] hover:bg-red-50 transition-all border border-transparent hover:border-red-100">Sign Out Sanctuary</button>
+             </div>
+          </div>
+        )}
+
         {view === 'explore' && (
           <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700">
              <header><h2 className="text-4xl md:text-6xl font-black serif text-stone-900 tracking-tighter mb-4">{t.nav_breathing}</h2></header>
              <BreathingExercise lang={lang} />
-             <AdSlot key={`explore-ad-top-${adRefreshKey}`} />
-             <section className="pt-12 border-t border-stone-100">
-                <h3 className="text-3xl font-black serif text-stone-900 mb-8">Nearby Presence</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {zenCenters.map((center, idx) => (
-                    <a key={idx} href={center.url} target="_blank" rel="noopener noreferrer" className="bg-white p-6 rounded-[32px] border border-stone-100 shadow-lg flex justify-between items-center group active:scale-95 transition-all">
-                      <div>
-                        <h4 className="text-xl font-bold serif text-stone-900 group-hover:text-emerald-600 transition-colors">{center.name}</h4>
-                        <p className="text-sm text-stone-400 font-medium">{center.address}</p>
+             
+             <section className="pt-12 border-t border-stone-100 space-y-12">
+                <header>
+                  <h3 className="text-3xl md:text-5xl font-black serif text-stone-900 tracking-tight">The Meditation Guide</h3>
+                  <p className="text-stone-400 font-medium serif italic text-lg md:text-xl">Illustrations and guidance for your architectural mindfulness practice.</p>
+                </header>
+
+                <div className="grid grid-cols-1 gap-12">
+                   <div className="bg-white rounded-[50px] border border-stone-100 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=1200" className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Posture Guide" />
+                      <div className="p-8 md:p-12">
+                         <h4 className="text-3xl font-black serif text-stone-900 mb-4">Stage I: Divine Alignment</h4>
+                         <p className="text-stone-500 text-lg serif italic leading-relaxed mb-8">Establish a firm foundation. Sit tall, let your shoulders drop, and find the center of your gravity.</p>
+                         <a href="https://www.youtube.com/watch?v=ssss7V1_eyA" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-3 bg-stone-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                            <span>Watch Posture Guide</span>
+                         </a>
                       </div>
-                      <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                   </div>
+
+                   <div className="bg-white rounded-[50px] border border-stone-100 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=1200" className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Breath Guide" />
+                      <div className="p-8 md:p-12">
+                         <h4 className="text-3xl font-black serif text-stone-900 mb-4">Stage II: The Etheric Bridge</h4>
+                         <p className="text-stone-500 text-lg serif italic leading-relaxed mb-8">Connect your physical body with your spirit through rhythmic, conscious breathing.</p>
+                         <a href="https://www.youtube.com/watch?v=ZToicYcHIOU" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-3 bg-stone-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                            <span>Watch Breath Guide</span>
+                         </a>
                       </div>
-                    </a>
-                  ))}
+                   </div>
+
+                   <div className="bg-white rounded-[50px] border border-stone-100 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-700">
+                      <img src="https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&q=80&w=1200" className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-[10s]" alt="Silence Guide" />
+                      <div className="p-8 md:p-12">
+                         <h4 className="text-3xl font-black serif text-stone-900 mb-4">Stage III: The Sound of Silence</h4>
+                         <p className="text-stone-500 text-lg serif italic leading-relaxed mb-8">Vanish into the absolute presence of the now. Where thought ends, clarity begins.</p>
+                         <a href="https://www.youtube.com/watch?v=inpok4MKVLM" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-3 bg-stone-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                            <span>Watch Session Guide</span>
+                         </a>
+                      </div>
+                   </div>
                 </div>
              </section>
+             <AdSlot key={`explore-ad-bottom-${adRefreshKey}`} />
           </div>
         )}
       </div>

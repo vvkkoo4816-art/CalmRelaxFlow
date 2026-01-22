@@ -38,13 +38,6 @@ export interface JournalEntry {
   mood: string;
 }
 
-export interface ZenCenter {
-  name: string;
-  address: string;
-  rating: number;
-  url: string;
-}
-
 export interface Course {
   id: string;
   title: string;
