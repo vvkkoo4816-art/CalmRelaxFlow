@@ -35,6 +35,11 @@ const App: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<'Google' | 'Facebook' | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [showSocialMock, setShowSocialMock] = useState(false);
+
+  // Social Identity Mock Inputs
+  const [socialEmail, setSocialEmail] = useState('');
+  const [socialName, setSocialName] = useState('');
 
   // Interstitial Ad States
   const [isShowingAd, setIsShowingAd] = useState(false);
@@ -54,20 +59,20 @@ const App: React.FC = () => {
     const savedJournals = localStorage.getItem('calmrelax_journals');
     const savedLoginsStr = localStorage.getItem('calmrelax_login_db');
     
-    // 2. Cleanup Logic: Remove specific user cache if requested
-    const targetEmailToRemove = 'vvkkoo481@gmaill.com';
+    // 2. CRITICAL CACHE PURGE: Remove legacy "user_123" and typos
+    const patternsToRemove = ['user_', 'vvkkoo481@gmaill.com'];
     
     let activeUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-    if (activeUser?.email?.toLowerCase() === targetEmailToRemove) {
+    if (activeUser && patternsToRemove.some(p => activeUser.email?.toLowerCase().includes(p))) {
       localStorage.removeItem('calmrelax_active_user');
       activeUser = null;
     }
 
     let logins: LoginRecord[] = savedLoginsStr ? JSON.parse(savedLoginsStr) : [];
-    const originalLoginsCount = logins.length;
-    logins = logins.filter(log => log.email?.toLowerCase() !== targetEmailToRemove);
+    const originalCount = logins.length;
+    logins = logins.filter(log => !patternsToRemove.some(p => log.email?.toLowerCase().includes(p)));
     
-    if (logins.length !== originalLoginsCount) {
+    if (logins.length !== originalCount) {
       localStorage.setItem('calmrelax_login_db', JSON.stringify(logins));
     }
 
@@ -103,7 +108,6 @@ const App: React.FC = () => {
       const nextCount = viewChangeCount + 1;
       setViewChangeCount(nextCount);
       
-      // Optimized frequency: Show ad every 4 transitions for smoother UX
       if (nextCount % 4 === 0 || newView === 'library' || newView === 'sleep') {
         setPendingView(newView);
         setIsShowingAd(true);
@@ -125,6 +129,12 @@ const App: React.FC = () => {
 
   const initiateSocialLogin = (provider: 'Google' | 'Facebook') => {
     setPendingProvider(provider);
+    setShowSocialMock(true); // Open account selection mock instead of hardcoding
+  };
+
+  const handleSocialMockSubmit = () => {
+    if (!socialEmail.trim()) return;
+    setShowSocialMock(false);
     setShowPermissionDialog(true);
   };
 
@@ -172,35 +182,40 @@ const App: React.FC = () => {
 
   const finalizeLogin = async (provider: 'Email' | 'Google' | 'Facebook' = 'Email') => {
     if (provider === 'Email' && !inputEmail.trim()) {
-      setAuthError("Username or Email is required.");
+      setAuthError("Email is required.");
       return;
     }
 
     setIsAuthenticating(true);
     setAuthError(null);
     
-    const email = inputEmail.trim().toLowerCase() || `user_${Math.floor(Math.random()*1000)}@${provider.toLowerCase()}.com`;
-    const isAdmin = email === 'vvkkoo4816@gmail.com';
+    // Determine which credentials to use
+    const finalEmail = provider === 'Email' ? inputEmail.trim().toLowerCase() : socialEmail.trim().toLowerCase();
+    const finalName = provider === 'Email' ? (inputName || finalEmail.split('@')[0]) : (socialName || finalEmail.split('@')[0]);
+    const isAdmin = finalEmail === 'vvkkoo4816@gmail.com';
 
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
+    // RECORD LOGIN ROBUSTLY
     const recordLogin = (loc: string) => {
-      const newRecord: LoginRecord = {
-        email,
-        timestamp: new Date().toLocaleString(),
-        location: loc,
-        device: getDeviceInfo()
-      };
-      const updatedLogins = [newRecord, ...loginHistory].slice(0, 100);
-      setLoginHistory(updatedLogins);
-      localStorage.setItem('calmrelax_login_db', JSON.stringify(updatedLogins));
+      setLoginHistory(prev => {
+        const newRecord: LoginRecord = {
+          email: finalEmail,
+          timestamp: new Date().toLocaleString(),
+          location: loc,
+          device: getDeviceInfo()
+        };
+        const updated = [newRecord, ...prev].slice(0, 100);
+        localStorage.setItem('calmrelax_login_db', JSON.stringify(updated));
+        return updated;
+      });
     };
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => recordLogin(`${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`),
         () => recordLogin("Unknown Location"),
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
     } else {
       recordLogin("Unknown Location");
@@ -208,11 +223,11 @@ const App: React.FC = () => {
     
     const mockUser: User = {
       id: `${provider.toLowerCase()}-${Date.now()}`,
-      name: isAdmin ? "Zen Master" : (inputName || email.split('@')[0] || "Zen Seeker"),
-      email: email,
+      name: isAdmin ? "Zen Master" : finalName,
+      email: finalEmail,
       photoUrl: provider === 'Google' 
         ? 'https://lh3.googleusercontent.com/a/default-user=s120-c' 
-        : `https://ui-avatars.com/api/?name=${email}&background=10b981&color=fff`,
+        : `https://ui-avatars.com/api/?name=${finalEmail}&background=10b981&color=fff`,
       isLoggedIn: true,
       streak: 1,
       minutesMeditated: 0,
@@ -224,6 +239,8 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     setIsAuthenticating(false);
     setPendingProvider(null);
+    setSocialEmail('');
+    setSocialName('');
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
   };
 
@@ -291,6 +308,63 @@ const App: React.FC = () => {
   if (!isLoggedIn || !user) {
     return (
       <div className="min-h-screen bg-[#fdfcfb] flex flex-col items-center pt-12 px-6 relative overflow-x-hidden">
+        {/* Account Selection Mock Overlay */}
+        {showSocialMock && (
+          <div className="fixed inset-0 z-[110] bg-stone-900/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-white rounded-[40px] p-8 shadow-2xl animate-in zoom-in-95 duration-500">
+              <div className="flex justify-center mb-6">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl ${pendingProvider === 'Google' ? 'bg-white border-2 border-stone-50' : 'bg-[#1877F2]'}`}>
+                  {pendingProvider === 'Google' ? (
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-10 h-10" alt="google" />
+                  ) : (
+                    <svg className="w-10 h-10 fill-white" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  )}
+                </div>
+              </div>
+              <h3 className="text-xl font-black serif text-stone-900 text-center mb-2">Continue with {pendingProvider}</h3>
+              <p className="text-stone-400 text-[10px] text-center uppercase tracking-widest mb-6">Verify your identity to enter the sanctuary</p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-500 ml-1">Account Email</label>
+                  <input 
+                    type="email" 
+                    value={socialEmail}
+                    onChange={(e) => setSocialEmail(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
+                    placeholder="Enter your Gmail/Social email"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-500 ml-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={socialName}
+                    onChange={(e) => setSocialName(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
+                    placeholder="Zen Soul"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col space-y-3">
+                <button 
+                  onClick={handleSocialMockSubmit}
+                  className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all"
+                >
+                  Confirm Account
+                </button>
+                <button 
+                  onClick={() => setShowSocialMock(false)}
+                  className="w-full py-2 text-stone-300 font-bold text-[10px] uppercase tracking-widest hover:text-stone-900 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <PermissionDialog 
           isOpen={showPermissionDialog} 
           provider={pendingProvider || 'Google'} 
@@ -460,7 +534,7 @@ const App: React.FC = () => {
                    "{zenQuote}"
                  </p>
                </div>
-               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+               <div className="flex flex-col sm:row space-y-3 sm:space-y-0 sm:space-x-4">
                  <button 
                   onClick={() => setActiveSession(DAILY_MEDITATION)}
                   className="bg-white text-stone-900 px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
@@ -634,9 +708,9 @@ const App: React.FC = () => {
         {(view === 'admin' || view === 'profile') && (
           <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
              <div className="bg-white rounded-[32px] sm:rounded-[40px] p-8 sm:p-10 border border-stone-50 shadow-sm text-center">
-                <h2 className="text-3xl sm:text-4xl font-black serif text-stone-900 mb-8 sm:mb-12">{t.db_status}</h2>
+                <h2 className="text-3xl sm:text-4xl font-black serif text-stone-900 mb-8 sm:mb-12">{view === 'admin' ? t.db_status : 'Profile Sanctuary'}</h2>
                 
-                {isAdminUser(user) && (
+                {isAdminUser(user) && view === 'admin' ? (
                   <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-stone-50 rounded-[24px] sm:rounded-[32px] border border-stone-100">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">{t.login_history}</h4>
@@ -646,7 +720,11 @@ const App: React.FC = () => {
                       {loginHistory.map((log, idx) => (
                         <div key={idx} className="bg-white p-4 rounded-2xl text-left border border-stone-100 shadow-sm flex justify-between items-center group transition-all hover:border-emerald-200">
                            <div className="min-w-0 pr-2">
-                              <p className="text-[10px] font-black text-stone-900 truncate">{log.email}</p>
+                              <p className="text-[10px] font-black text-stone-900 truncate">
+                                {log.email.includes('@gmail.com') && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>}
+                                {log.email.includes('@facebook.com') && <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>}
+                                {log.email}
+                              </p>
                               <div className="flex space-x-2 items-center">
                                 <p className="text-[8px] text-stone-400 uppercase tracking-widest">{log.timestamp}</p>
                                 <span className="text-[8px] font-bold text-stone-300 italic">via {log.device}</span>
@@ -658,6 +736,24 @@ const App: React.FC = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                ) : (
+                  <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-emerald-50/50 rounded-[24px] sm:rounded-[32px] border border-emerald-100 text-left">
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-4">Current Session Active</h4>
+                     <div className="space-y-2">
+                        <div className="flex justify-between">
+                           <span className="text-[10px] text-stone-400 font-bold uppercase">Name</span>
+                           <span className="text-[10px] text-stone-800 font-black">{user.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                           <span className="text-[10px] text-stone-400 font-bold uppercase">Identity</span>
+                           <span className="text-[10px] text-stone-800 font-black">{user.email}</span>
+                        </div>
+                        <div className="flex justify-between">
+                           <span className="text-[10px] text-stone-400 font-bold uppercase">Device</span>
+                           <span className="text-[10px] text-stone-800 font-black">{getDeviceInfo()}</span>
+                        </div>
+                     </div>
                   </div>
                 )}
 
