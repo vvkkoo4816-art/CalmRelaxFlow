@@ -5,9 +5,10 @@ interface AudioPlayerProps {
   url: string;
   title: string;
   onClose: () => void;
+  onSessionComplete?: () => void;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose, onSessionComplete }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -18,15 +19,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Define paths relative to the environment
   const getPossiblePaths = (baseUrl: string) => {
     if (baseUrl.startsWith('http')) return [baseUrl];
     const fileName = baseUrl.split('/').pop() || baseUrl;
     return [
-      fileName,                // Path 1: Relative (Best for TWAs/Vite)
-      `/${fileName}`,          // Path 2: Root Absolute
-      `./${fileName}`,         // Path 3: Explicit Relative
-      `${window.location.origin}/${fileName}` // Path 4: Full Origin Absolute
+      fileName,
+      `/${fileName}`,
+      `./${fileName}`,
+      `${window.location.origin}/${fileName}`
     ].filter((v, i, a) => a.indexOf(v) === i);
   };
 
@@ -41,7 +41,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     
     if (audioRef.current) {
       audioRef.current.pause();
-      // Reset source to the most likely candidate
       audioRef.current.src = possiblePaths[0];
       audioRef.current.load();
     }
@@ -55,6 +54,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
           audioRef.current.pause();
           setIsPlaying(false);
           setSleepTimer(null);
+          if (onSessionComplete) onSessionComplete();
         }
       }, sleepTimer * 60 * 1000);
     }
@@ -64,20 +64,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const handleAudioError = () => {
     const nextIndex = attemptIndex + 1;
     if (nextIndex < possiblePaths.length) {
-      console.warn(`Path ${attemptIndex} failed, attempting alternate resonance: ${possiblePaths[nextIndex]}`);
       setAttemptIndex(nextIndex);
       if (audioRef.current) {
         audioRef.current.src = possiblePaths[nextIndex];
         audioRef.current.load();
-        // We only attempt to auto-play if the user previously initiated it
-        if (isPlaying) {
-          audioRef.current.play().catch(() => {
-            // Silence silent-play prevention errors
-          });
-        }
+        if (isPlaying) audioRef.current.play().catch(() => {});
       }
     } else {
-      console.error(`All resonance paths failed for: ${url}`);
       setError("RESONANCE BLOCKED");
       setIsBuffering(false);
       setIsPlaying(false);
@@ -86,22 +79,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
 
   const togglePlay = () => {
     if (!audioRef.current || error) return;
-
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
       setIsBuffering(true);
       setError(null);
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-          setIsBuffering(false);
-        })
-        .catch((e) => {
-          console.error("Playback interrupted:", e);
-          handleAudioError();
-        });
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+        setIsBuffering(false);
+      }).catch(handleAudioError);
     }
   };
 
@@ -113,7 +100,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
            <button onClick={() => setIsImmersive(false)} className="absolute top-10 right-10 text-white/40 hover:text-white transition-colors">
              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
            </button>
-           
            <div className="relative flex flex-col items-center text-center space-y-10 w-full max-w-lg">
               <div className="w-56 h-56 md:w-72 md:h-72 rounded-[60px] bg-emerald-500 shadow-2xl flex items-center justify-center overflow-hidden">
                  <div className={`w-full h-full bg-white/10 ${isPlaying ? 'animate-[pulse_4s_infinite]' : ''}`}></div>
@@ -122,7 +108,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                 <h3 className="text-3xl md:text-4xl font-black serif text-white mb-2 leading-tight">{title}</h3>
                 <p className="text-emerald-400 font-black text-[11px] uppercase tracking-[0.4em]">Inhale . Exhale . Drift</p>
               </div>
-              
               <div className="flex space-x-3">
                  {[15, 30, 60].map(mins => (
                    <button 
@@ -134,7 +119,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                    </button>
                  ))}
               </div>
-
               <div className="w-full space-y-6">
                 <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden relative">
                    <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
@@ -163,18 +147,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
                 setProgress(p || 0);
               }
             }}
-            onEnded={() => !isLooping && setIsPlaying(false)}
+            onEnded={() => {
+              if (!isLooping) {
+                setIsPlaying(false);
+                if (onSessionComplete) onSessionComplete();
+              }
+            }}
             onError={handleAudioError}
             onCanPlay={() => { setIsBuffering(false); setError(null); }}
             onWaiting={() => setIsBuffering(true)}
             preload="auto"
             crossOrigin="anonymous"
           />
-          
           <button onClick={() => setIsImmersive(true)} className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 relative group">
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            </div>
             {isBuffering && !error && (
               <div className="absolute inset-0 border-3 border-white/20 border-t-white rounded-2xl animate-spin"></div>
             )}
@@ -182,7 +167,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
           </button>
-
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-center mb-1.5 px-1">
                <h4 className="text-white font-black text-[13px] md:text-[15px] truncate serif tracking-tight">
@@ -194,7 +178,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
               <div className={`h-full transition-all duration-300 ${error ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
             </div>
           </div>
-
           <div className="flex items-center space-x-2">
             <button onClick={togglePlay} className="w-10 h-10 bg-white text-stone-900 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform">
               {isPlaying ? (

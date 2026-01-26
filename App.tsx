@@ -12,6 +12,8 @@ import { AppView, User, MeditationSession, Language, JournalEntry, LoginRecord }
 import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES } from './constants';
 import { translations } from './translations';
 
+const DAILY_GOAL_MINS = 20;
+
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,6 +39,7 @@ const App: React.FC = () => {
   // Interstitial Ad States
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [pendingView, setPendingView] = useState<AppView | null>(null);
+  const [viewChangeCount, setViewChangeCount] = useState(0);
 
   // Journal UI States
   const [isSavingJournal, setIsSavingJournal] = useState(false);
@@ -97,8 +100,17 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView !== view) {
-      setPendingView(newView);
-      setIsShowingAd(true);
+      const nextCount = viewChangeCount + 1;
+      setViewChangeCount(nextCount);
+      
+      // Optimized frequency: Show ad every 4 transitions for smoother UX
+      if (nextCount % 4 === 0 || newView === 'library' || newView === 'sleep') {
+        setPendingView(newView);
+        setIsShowingAd(true);
+      } else {
+        setView(newView);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -138,7 +150,7 @@ const App: React.FC = () => {
     const headers = ["Email", "Timestamp", "Location", "Device"];
     const rows = loginHistory.map(log => [
       log.email,
-      log.timestamp.replace(/,/g, ''), // remove commas from dates
+      log.timestamp.replace(/,/g, ''),
       log.location.replace(/,/g, ' '),
       log.device
     ]);
@@ -167,33 +179,32 @@ const App: React.FC = () => {
     setIsAuthenticating(true);
     setAuthError(null);
     
-    await new Promise(resolve => setTimeout(resolve, 2200));
-
     const email = inputEmail.trim().toLowerCase() || `user_${Math.floor(Math.random()*1000)}@${provider.toLowerCase()}.com`;
     const isAdmin = email === 'vvkkoo4816@gmail.com';
 
-    let locationStr = "Unknown Location";
-    try {
-      if (navigator.geolocation) {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
-        });
-        locationStr = `${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`;
-      }
-    } catch (e) {
-      console.warn("Location tracking refused or unavailable.");
-    }
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
-    const newRecord: LoginRecord = {
-      email,
-      timestamp: new Date().toLocaleString(),
-      location: locationStr,
-      device: getDeviceInfo()
+    const recordLogin = (loc: string) => {
+      const newRecord: LoginRecord = {
+        email,
+        timestamp: new Date().toLocaleString(),
+        location: loc,
+        device: getDeviceInfo()
+      };
+      const updatedLogins = [newRecord, ...loginHistory].slice(0, 100);
+      setLoginHistory(updatedLogins);
+      localStorage.setItem('calmrelax_login_db', JSON.stringify(updatedLogins));
     };
 
-    const updatedLogins = [newRecord, ...loginHistory].slice(0, 100);
-    setLoginHistory(updatedLogins);
-    localStorage.setItem('calmrelax_login_db', JSON.stringify(updatedLogins));
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => recordLogin(`${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`),
+        () => recordLogin("Unknown Location"),
+        { timeout: 3000 }
+      );
+    } else {
+      recordLogin("Unknown Location");
+    }
     
     const mockUser: User = {
       id: `${provider.toLowerCase()}-${Date.now()}`,
@@ -222,6 +233,13 @@ const App: React.FC = () => {
     setIsRegistering(false);
     localStorage.removeItem('calmrelax_active_user');
     setView('today');
+  };
+
+  const addMeditationMinutes = (mins: number) => {
+    if (!user) return;
+    const updatedUser = { ...user, minutesMeditated: user.minutesMeditated + mins };
+    setUser(updatedUser);
+    localStorage.setItem('calmrelax_active_user', JSON.stringify(updatedUser));
   };
 
   const saveJournal = async () => {
@@ -264,6 +282,11 @@ const App: React.FC = () => {
     if (index % 3 === 1) return 'bg-[#2563eb] shadow-[#2563eb]/50';
     return 'bg-[#10b981] shadow-[#10b981]/50';
   };
+
+  const progressPercent = useMemo(() => {
+    if (!user) return 0;
+    return Math.min(Math.round((user.minutesMeditated / DAILY_GOAL_MINS) * 100), 100);
+  }, [user]);
 
   if (!isLoggedIn || !user) {
     return (
@@ -332,18 +355,12 @@ const App: React.FC = () => {
               </div>
               
               {authError && <p className="text-[10px] text-rose-500 font-bold ml-1">{authError}</p>}
-
-              {!isRegistering && (
-                <div className="flex justify-end">
-                  <button className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-stone-800 transition-colors">Forgot Access?</button>
-                </div>
-              )}
            </div>
 
            <button 
              onClick={() => finalizeLogin('Email')}
              disabled={isAuthenticating}
-             className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all mb-4 flex items-center justify-center"
+             className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all mb-4 mt-4 flex items-center justify-center"
            >
              {isAuthenticating ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -397,7 +414,6 @@ const App: React.FC = () => {
       <div className="max-w-3xl mx-auto pb-48 sm:pb-64 space-y-8 sm:space-y-12">
         {view === 'today' && (
           <div className="space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            {/* Prominent App Branding */}
             <div className="relative text-center py-4 sm:py-6">
               <div className="absolute inset-0 bg-emerald-500/5 blur-[80px] rounded-full"></div>
               <h1 className="text-4xl sm:text-6xl font-black serif text-stone-900 tracking-tighter mb-2 relative">CalmRelaxFlow</h1>
@@ -412,13 +428,25 @@ const App: React.FC = () => {
                <div className="min-w-0 pr-4">
                   <div className="flex items-center space-x-2 mb-1 flex-wrap">
                      <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-emerald-200">MASTER • LV 49</span>
-                     <span className="text-stone-300 text-[9px] font-black uppercase">{t.welcome_back}</span>
+                     <span className="text-stone-300 text-[9px] font-black uppercase tracking-widest">{t.welcome_back}</span>
                   </div>
                   <h2 className="text-2xl sm:text-4xl font-black serif text-stone-900 truncate">{user.name}</h2>
                </div>
-               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-emerald-50 flex items-center justify-center relative shrink-0">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin duration-[4s]"></div>
-                  <span className="text-[12px] sm:text-sm font-black text-stone-800">0%</span>
+               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center relative shrink-0">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90">
+                    <circle cx="50%" cy="50%" r="45%" fill="none" stroke="#f1f5f9" strokeWidth="6" />
+                    <circle 
+                      cx="50%" cy="50%" r="45%" 
+                      fill="none" 
+                      stroke="#10b981" 
+                      strokeWidth="6" 
+                      strokeDasharray="283" 
+                      strokeDashoffset={283 - (283 * progressPercent) / 100}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                  <span className="text-[12px] sm:text-base font-black text-stone-800 z-10">{progressPercent}%</span>
                </div>
             </div>
 
@@ -473,7 +501,6 @@ const App: React.FC = () => {
               <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900 mb-2">{t.header_vault}</h2>
               <p className="text-stone-400 text-sm sm:text-base serif italic">{t.vault_subtitle}</p>
             </div>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {MEDITATION_SESSIONS.map(session => (
                 <button key={session.id} onClick={() => setActiveSession(session)} className="group relative aspect-video sm:aspect-[4/3] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-xl text-left active:scale-95 transition-all">
@@ -489,14 +516,10 @@ const App: React.FC = () => {
                 </button>
               ))}
             </div>
-
             <section className="pt-8 sm:pt-10 space-y-6 sm:space-y-8 border-t border-stone-100">
-               <div>
-                 <h3 className="text-2xl sm:text-3xl font-black serif text-stone-900">{t.mixer_title}</h3>
-               </div>
+               <h3 className="text-2xl sm:text-3xl font-black serif text-stone-900">{t.mixer_title}</h3>
                <SoundMixer />
             </section>
-            
             <AdSlot />
           </div>
         )}
@@ -529,9 +552,7 @@ const App: React.FC = () => {
         {view === 'journal' && (
           <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
              <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900">{t.header_journal}</h2>
-
              <AIChatbox lang={lang} />
-
              <div className="bg-white rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-stone-50 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden group">
                <div className="flex justify-between items-center mb-6 sm:mb-8">
                  <h3 className="text-2xl sm:text-3xl font-black serif text-stone-800 leading-none">{t.lucky_title}</h3>
@@ -540,7 +561,6 @@ const App: React.FC = () => {
                    <span className="text-[9px] font-black uppercase tracking-widest">{t.lucky_refresh}</span>
                  </button>
                </div>
-               
                <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8 overflow-x-auto pb-2 scrollbar-hide">
                   {luckyNumbers.slice(0, 6).map((n, i) => (
                     <div key={i} className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-black text-sm sm:text-base shadow-xl transform transition-all duration-300 hover:scale-110 shrink-0 ${getBallColor(i)}`}>
@@ -562,7 +582,6 @@ const App: React.FC = () => {
                   className="w-full bg-stone-50/50 border-none rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 text-stone-800 font-medium placeholder:italic placeholder:text-stone-300 focus:ring-0 min-h-[250px] sm:min-h-[350px] resize-none text-xl sm:text-2xl leading-relaxed serif"
                   placeholder={t.journal_placeholder}
                 />
-                
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   <button 
                     onClick={saveJournal} 
@@ -595,35 +614,15 @@ const App: React.FC = () => {
 
         {view === 'explore' && (
           <div className="space-y-10 sm:space-y-12 animate-in fade-in duration-500">
-             <div className="space-y-4 sm:space-y-6">
-                <h2 className="text-5xl sm:text-7xl font-black text-stone-900 uppercase tracking-tighter leading-none">{t.header_breath}</h2>
-             </div>
-
+             <h2 className="text-5xl sm:text-7xl font-black text-stone-900 uppercase tracking-tighter leading-none">{t.header_breath}</h2>
              <BreathingExercise lang={lang} />
-             
              <div className="space-y-8 sm:space-y-10 pt-6 sm:pt-10">
-                <div>
-                   <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900 mb-2">{t.header_guide}</h2>
-                   <p className="text-stone-400 text-sm sm:text-base serif italic">{t.breath_subtitle}</p>
-                </div>
-
+                <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900 mb-2">{t.header_guide}</h2>
                 <div className="space-y-8 sm:space-y-12">
                    <GuideCard 
                       title={t.guide_s1_title} 
                       desc={t.guide_s1_desc} 
                       img="https://images.unsplash.com/photo-1514371879740-2e7d2068f502?auto=format&fit=crop&q=80&w=800"
-                      label={t.watch_guide}
-                   />
-                   <GuideCard 
-                      title={t.guide_s2_title} 
-                      desc={t.guide_s2_desc} 
-                      img="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800"
-                      label={t.watch_guide}
-                   />
-                   <GuideCard 
-                      title={t.guide_s3_title} 
-                      desc={t.guide_s3_desc} 
-                      img="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800"
                       label={t.watch_guide}
                    />
                 </div>
@@ -641,15 +640,10 @@ const App: React.FC = () => {
                   <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-stone-50 rounded-[24px] sm:rounded-[32px] border border-stone-100">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">{t.login_history}</h4>
-                      <button 
-                        onClick={downloadLoginHistoryCsv}
-                        className="bg-stone-900 text-white px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors shadow-lg"
-                      >
-                        Export CSV
-                      </button>
+                      <button onClick={downloadLoginHistoryCsv} className="bg-stone-900 text-white px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors shadow-lg">Export CSV</button>
                     </div>
                     <div className="max-h-60 overflow-y-auto space-y-3 px-1 sm:px-2">
-                      {loginHistory.length > 0 ? loginHistory.map((log, idx) => (
+                      {loginHistory.map((log, idx) => (
                         <div key={idx} className="bg-white p-4 rounded-2xl text-left border border-stone-100 shadow-sm flex justify-between items-center group transition-all hover:border-emerald-200">
                            <div className="min-w-0 pr-2">
                               <p className="text-[10px] font-black text-stone-900 truncate">{log.email}</p>
@@ -662,31 +656,27 @@ const App: React.FC = () => {
                               <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">{log.location}</span>
                            </div>
                         </div>
-                      )) : (
-                        <p className="text-stone-300 text-[10px] font-black uppercase italic py-10">{t.no_records}</p>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
 
                 <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-stone-50 rounded-[24px] sm:rounded-[32px] border border-stone-100">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">Language / 語言 / 语言</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button onClick={() => changeLanguage('en')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'en' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_en}</button>
-                    <button onClick={() => changeLanguage('zh-Hans')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hans' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hans}</button>
-                    <button onClick={() => changeLanguage('zh-Hant')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hant' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hant}</button>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">Account Settings</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button onClick={() => addMeditationMinutes(5)} className="w-full py-4 bg-white border border-stone-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-emerald-600 shadow-sm active:scale-95 transition-all">Test: Add 5m Meditation</button>
+                    <div className="h-px bg-stone-200 my-2"></div>
+                    <a href="/privacy.html" target="_blank" className="w-full py-4 bg-white border border-stone-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-stone-600 shadow-sm active:scale-95 transition-all flex items-center justify-center space-x-2">
+                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A3.333 3.333 0 0121 12c0 2.21-.895 4.21-2.382 5.618a3.333 3.333 0 01-4.016 4.382A3.333 3.333 0 0112 21c-2.21 0-4.21-.895-5.618-2.382a3.333 3.333 0 01-4.382-4.016A3.333 3.333 0 013 12c0-2.21.895-4.21 2.382-5.618a3.333 3.333 0 014.016-4.382A3.333 3.333 0 0112 3c2.21 0 4.21.895 5.618 2.382a3.333 3.333 0 014.016 4.382z"/></svg>
+                       <span>Privacy Policy (Google Play Req)</span>
+                    </a>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-8 sm:mb-12">
-                   <div className="bg-stone-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-center">
-                      <span className="block text-[8px] sm:text-[10px] font-black uppercase text-stone-400 mb-1 sm:mb-2">Release</span>
-                      <span className="text-lg sm:text-2xl font-black serif">v1.0.0</span>
-                   </div>
-                   <div className="bg-emerald-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-center">
-                      <span className="block text-[8px] sm:text-[10px] font-black uppercase text-emerald-400 mb-1 sm:mb-2">Status</span>
-                      <span className="text-lg sm:text-2xl font-black serif text-emerald-600">Stable</span>
-                   </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 sm:mb-12">
+                   <button onClick={() => changeLanguage('en')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'en' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_en}</button>
+                   <button onClick={() => changeLanguage('zh-Hans')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hans' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hans}</button>
+                   <button onClick={() => changeLanguage('zh-Hant')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hant' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hant}</button>
                 </div>
                 
                 <button onClick={handleLogout} className="w-full py-4 sm:py-5 rounded-2xl sm:rounded-3xl border border-stone-200 text-stone-400 font-black uppercase text-[9px] sm:text-[10px] tracking-[0.4em] hover:bg-stone-50 transition-colors">Terminate Session</button>
@@ -699,7 +689,11 @@ const App: React.FC = () => {
         <AudioPlayer 
           url={activeSession.audioUrl} 
           title={activeSession.title} 
-          onClose={() => setActiveSession(null)} 
+          onClose={() => setActiveSession(null)}
+          onSessionComplete={() => {
+            const durationNum = parseInt(activeSession.duration) || 5;
+            addMeditationMinutes(durationNum);
+          }}
         />
       )}
     </Layout>

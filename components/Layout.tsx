@@ -43,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
           <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
           <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
           <MobileNavItem active={activeView === 'journal'} onClick={() => setActiveView('journal')} icon={<JournalIcon active={activeView === 'journal'} />} label={t.nav_journal} />
-          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore'} icon={<CourseIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
+          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<CourseIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
           {isAdmin && (
             <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
           )}
