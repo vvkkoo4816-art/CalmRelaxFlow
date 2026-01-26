@@ -6,6 +6,7 @@ export interface LoginRecord {
   email: string;
   timestamp: string;
   location: string;
+  device: string; // New field for mobile detection
 }
 
 export interface User {

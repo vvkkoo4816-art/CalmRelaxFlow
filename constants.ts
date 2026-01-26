@@ -28,10 +28,9 @@ const IMG_FOREST = 'https://images.unsplash.com/photo-1448375240586-882707db888b
 const IMG_OCEAN = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800';
 const IMG_CLOUDS = 'https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&q=80&w=800';
 const IMG_MOUNTAIN = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800';
-const IMG_CRYSTAL = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800';
-const IMG_AURA = 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=800';
 const IMG_STARS = 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=800';
 const IMG_KYOTO = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800';
+const IMG_RESONANCE = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',
@@ -84,6 +83,14 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     category: 'Gratitude',
     imageUrl: IMG_OCEAN,
     audioUrl: 'water.mp3',
+  },
+  {
+    id: 's6',
+    title: 'Pure Resonance',
+    duration: '11 min',
+    category: 'Focus',
+    imageUrl: IMG_RESONANCE,
+    audioUrl: 'cmusic.mp3',
   }
 ];
 
@@ -143,7 +150,8 @@ export const AMBIENT_SOUNDS = [
   { id: 'wind', name: 'Hilltop', icon: '🏔️', url: 'hill.mp3' },
   { id: 'ethereal', name: 'Glow', icon: '✨', url: 'light.mp3' },
   { id: 'waves', name: 'Water', icon: '🌊', url: 'water.mp3' },
-  { id: 'clouds', name: 'Drift', icon: '☁️', url: 'cloud2.mp3' }
+  { id: 'clouds', name: 'Drift', icon: '☁️', url: 'cloud2.mp3' },
+  { id: 'cosmos', name: 'Deep Space', icon: '🌌', url: 'cloud3.mp3' }
 ];
 
 export const COURSES: Course[] = [

@@ -45,22 +45,39 @@ const App: React.FC = () => {
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('calmrelax_active_user');
+    // 1. Initial Data Fetching
+    const savedUserStr = localStorage.getItem('calmrelax_active_user');
     const savedLang = localStorage.getItem('calmrelax_lang');
     const savedJournals = localStorage.getItem('calmrelax_journals');
-    const savedLogins = localStorage.getItem('calmrelax_login_db');
+    const savedLoginsStr = localStorage.getItem('calmrelax_login_db');
     
+    // 2. Cleanup Logic: Remove specific user cache if requested
+    const targetEmailToRemove = 'vvkkoo481@gmaill.com';
+    
+    let activeUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+    if (activeUser?.email?.toLowerCase() === targetEmailToRemove) {
+      localStorage.removeItem('calmrelax_active_user');
+      activeUser = null;
+    }
+
+    let logins: LoginRecord[] = savedLoginsStr ? JSON.parse(savedLoginsStr) : [];
+    const originalLoginsCount = logins.length;
+    logins = logins.filter(log => log.email?.toLowerCase() !== targetEmailToRemove);
+    
+    if (logins.length !== originalLoginsCount) {
+      localStorage.setItem('calmrelax_login_db', JSON.stringify(logins));
+    }
+
+    // 3. State Hydration
     if (savedLang) setLang(savedLang as Language);
     if (savedJournals) setJournals(JSON.parse(savedJournals));
-    if (savedLogins) setLoginHistory(JSON.parse(savedLogins));
+    setLoginHistory(logins);
     
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      if (parsed?.isLoggedIn) {
-        setUser(parsed);
-        setIsLoggedIn(true);
-      }
+    if (activeUser?.isLoggedIn) {
+      setUser(activeUser);
+      setIsLoggedIn(true);
     }
+
     generateLuckyNumbers();
   }, []);
 
@@ -106,6 +123,41 @@ const App: React.FC = () => {
     }
   };
 
+  const getDeviceInfo = () => {
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) return "Android Device";
+    if (/iPhone|iPad|iPod/i.test(ua)) return "iOS Device";
+    if (/Windows/i.test(ua)) return "Windows PC";
+    if (/Mac/i.test(ua)) return "Macintosh";
+    return "Unknown Device";
+  };
+
+  const downloadLoginHistoryCsv = () => {
+    if (loginHistory.length === 0) return;
+    
+    const headers = ["Email", "Timestamp", "Location", "Device"];
+    const rows = loginHistory.map(log => [
+      log.email,
+      log.timestamp.replace(/,/g, ''), // remove commas from dates
+      log.location.replace(/,/g, ' '),
+      log.device
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `calmrelax_logins_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const finalizeLogin = async (provider: 'Email' | 'Google' | 'Facebook' = 'Email') => {
     if (provider === 'Email' && !inputEmail.trim()) {
       setAuthError("Username or Email is required.");
@@ -135,10 +187,11 @@ const App: React.FC = () => {
     const newRecord: LoginRecord = {
       email,
       timestamp: new Date().toLocaleString(),
-      location: locationStr
+      location: locationStr,
+      device: getDeviceInfo()
     };
 
-    const updatedLogins = [newRecord, ...loginHistory].slice(0, 50);
+    const updatedLogins = [newRecord, ...loginHistory].slice(0, 100);
     setLoginHistory(updatedLogins);
     localStorage.setItem('calmrelax_login_db', JSON.stringify(updatedLogins));
     
@@ -233,16 +286,17 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-4 mt-12 animate-in zoom-in duration-700">
-          <div className="w-20 h-20 bg-emerald-500 rounded-[32px] flex items-center justify-center text-white shadow-2xl zen-card-glow">
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <div className="mb-4 mt-12 animate-in zoom-in duration-700 flex flex-col items-center">
+          <h1 className="text-2xl sm:text-3xl font-black serif text-stone-900 mb-6 tracking-tight">CalmRelaxFlow</h1>
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-500 rounded-[24px] sm:rounded-[32px] flex items-center justify-center text-white shadow-2xl zen-card-glow">
+            <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
         </div>
 
-        <h1 className="text-4xl font-black text-stone-900 mb-2 serif">{isRegistering ? 'Create Account' : 'Sign in'}</h1>
+        <h2 className="text-3xl sm:text-4xl font-black text-stone-900 mb-2 serif">{isRegistering ? 'Create Account' : 'Sign in'}</h2>
         <p className="text-stone-400 text-sm mb-10 serif italic">Return to your inner sanctuary.</p>
 
-        <div className="w-full max-w-sm bg-stone-200/50 rounded-[40px] p-8 flex flex-col items-center shadow-inner border border-stone-300/30">
+        <div className="w-full max-w-sm bg-stone-200/50 rounded-[32px] sm:rounded-[40px] p-6 sm:p-8 flex flex-col items-center shadow-inner border border-stone-300/30">
            <div className="w-full space-y-4 mb-6">
               {isRegistering && (
                 <div className="space-y-1 animate-in slide-in-from-top-2 duration-300">
@@ -251,7 +305,7 @@ const App: React.FC = () => {
                     type="text" 
                     value={inputName}
                     onChange={(e) => setInputName(e.target.value)}
-                    className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3.5 text-stone-800 font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                    className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3 text-stone-800 font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                     placeholder="Zen Soul"
                   />
                 </div>
@@ -262,7 +316,7 @@ const App: React.FC = () => {
                    type="text" 
                    value={inputEmail}
                    onChange={(e) => setInputEmail(e.target.value)}
-                   className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3.5 text-stone-800 font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                   className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3 text-stone-800 font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                    placeholder="Enter username"
                  />
               </div>
@@ -272,7 +326,7 @@ const App: React.FC = () => {
                    type="password" 
                    value={inputPassword}
                    onChange={(e) => setInputPassword(e.target.value)}
-                   className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3.5 text-stone-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                   className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3 text-stone-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
                    placeholder="••••••••"
                  />
               </div>
@@ -289,7 +343,7 @@ const App: React.FC = () => {
            <button 
              onClick={() => finalizeLogin('Email')}
              disabled={isAuthenticating}
-             className="w-full bg-stone-900 text-white py-5 rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all mb-4 flex items-center justify-center"
+             className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all mb-4 flex items-center justify-center"
            >
              {isAuthenticating ? (
                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -307,7 +361,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="mt-auto mb-10 w-full max-w-sm px-4">
-          <div className="bg-white rounded-[40px] shadow-2xl border border-stone-100 p-8 flex flex-col space-y-4 animate-in slide-in-from-bottom-10 duration-1000">
+          <div className="bg-white rounded-[32px] sm:rounded-[40px] shadow-2xl border border-stone-100 p-6 sm:p-8 flex flex-col space-y-4 animate-in slide-in-from-bottom-10 duration-1000">
              <div className="text-center mb-2">
                <p className="text-[10px] font-black text-stone-300 uppercase tracking-[0.4em]">One-Tap Entrance</p>
              </div>
@@ -316,18 +370,18 @@ const App: React.FC = () => {
                 <button 
                   onClick={() => initiateSocialLogin('Google')} 
                   disabled={isAuthenticating}
-                  className="w-full py-4 bg-white border-2 border-stone-50 rounded-2xl flex items-center justify-center space-x-3 hover:bg-stone-50 transition-all shadow-sm active:scale-98"
+                  className="w-full py-3.5 bg-white border-2 border-stone-50 rounded-2xl flex items-center justify-center space-x-3 hover:bg-stone-50 transition-all shadow-sm active:scale-98"
                 >
                   <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-5 h-5" alt="google" />
-                  <span className="text-[13px] font-black text-stone-700 uppercase tracking-widest">{t.sign_in_google}</span>
+                  <span className="text-[12px] font-black text-stone-700 uppercase tracking-widest">{t.sign_in_google}</span>
                 </button>
                 <button 
                   onClick={() => initiateSocialLogin('Facebook')} 
                   disabled={isAuthenticating}
-                  className="w-full bg-[#1877F2] py-4 rounded-2xl flex items-center justify-center space-x-3 hover:bg-[#166fe5] transition-all shadow-lg active:scale-98"
+                  className="w-full bg-[#1877F2] py-3.5 rounded-2xl flex items-center justify-center space-x-3 hover:bg-[#166fe5] transition-all shadow-lg active:scale-98"
                 >
                   <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                  <span className="text-[13px] font-black text-white uppercase tracking-widest">{t.sign_in_facebook}</span>
+                  <span className="text-[12px] font-black text-white uppercase tracking-widest">{t.sign_in_facebook}</span>
                 </button>
              </div>
           </div>
@@ -340,45 +394,45 @@ const App: React.FC = () => {
     <Layout activeView={view} setActiveView={handleViewChange} user={user} lang={lang}>
       <ZenAdInterstitial isVisible={isShowingAd} onComplete={finalizeViewChange} lang={lang} pendingView={pendingView} />
       
-      <div className="max-w-3xl mx-auto pb-64 space-y-12">
+      <div className="max-w-3xl mx-auto pb-48 sm:pb-64 space-y-8 sm:space-y-12">
         {view === 'today' && (
-          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <div className="space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
             {/* Prominent App Branding */}
-            <div className="relative text-center py-6">
+            <div className="relative text-center py-4 sm:py-6">
               <div className="absolute inset-0 bg-emerald-500/5 blur-[80px] rounded-full"></div>
-              <h1 className="text-6xl font-black serif text-stone-900 tracking-tighter mb-2 relative">CalmRelaxFlow</h1>
+              <h1 className="text-4xl sm:text-6xl font-black serif text-stone-900 tracking-tighter mb-2 relative">CalmRelaxFlow</h1>
               <div className="flex items-center justify-center space-x-3 opacity-60">
-                 <div className="h-[1px] w-8 bg-stone-300"></div>
-                 <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">Your Inner Sanctuary</p>
-                 <div className="h-[1px] w-8 bg-stone-300"></div>
+                 <div className="h-[1px] w-6 sm:w-8 bg-stone-300"></div>
+                 <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">Your Inner Sanctuary</p>
+                 <div className="h-[1px] w-6 sm:w-8 bg-stone-300"></div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center bg-white p-8 rounded-[40px] shadow-sm border border-stone-50">
-               <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                     <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-emerald-200">{t.status_zen_master} • LV 49</span>
-                     <span className="text-stone-300 text-[10px] font-black uppercase">{t.welcome_back}</span>
+            <div className="flex justify-between items-center bg-white p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-sm border border-stone-50">
+               <div className="min-w-0 pr-4">
+                  <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                     <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-emerald-200">MASTER • LV 49</span>
+                     <span className="text-stone-300 text-[9px] font-black uppercase">{t.welcome_back}</span>
                   </div>
-                  <h2 className="text-4xl font-black serif text-stone-900">{user.name}</h2>
+                  <h2 className="text-2xl sm:text-4xl font-black serif text-stone-900 truncate">{user.name}</h2>
                </div>
-               <div className="w-16 h-16 rounded-full border-4 border-emerald-50 flex items-center justify-center relative">
+               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-emerald-50 flex items-center justify-center relative shrink-0">
                   <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin duration-[4s]"></div>
-                  <span className="text-sm font-black text-stone-800">0%</span>
+                  <span className="text-[12px] sm:text-sm font-black text-stone-800">0%</span>
                </div>
             </div>
 
-            <div className="bg-stone-950 rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-8 left-8 flex space-x-2">
-                 <div className="w-6 h-6 bg-emerald-500 rounded-full opacity-50 blur-sm"></div>
-                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">{t.traditional_wisdom}</span>
+            <div className="bg-stone-950 rounded-[32px] sm:rounded-[40px] p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden group">
+               <div className="absolute top-6 sm:top-8 left-6 sm:left-8 flex space-x-2">
+                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 rounded-full opacity-50 blur-sm"></div>
+                 <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">{t.traditional_wisdom}</span>
                </div>
-               <div className="mt-8 mb-12">
-                 <p className="text-3xl md:text-4xl serif italic leading-tight text-white/95">
+               <div className="mt-6 sm:mt-8 mb-8 sm:mb-12">
+                 <p className="text-2xl sm:text-4xl serif italic leading-tight text-white/95">
                    "{zenQuote}"
                  </p>
                </div>
-               <div className="flex space-x-4">
+               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                  <button 
                   onClick={() => setActiveSession(DAILY_MEDITATION)}
                   className="bg-white text-stone-900 px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
@@ -394,14 +448,14 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            <div className="bg-white rounded-[40px] p-10 border border-stone-50 shadow-sm text-center space-y-8">
-               <h3 className="text-2xl font-black serif text-stone-900">{t.tune_vibration}</h3>
-               <div className="flex justify-around items-center">
+            <div className="bg-white rounded-[32px] sm:rounded-[40px] p-8 sm:p-10 border border-stone-50 shadow-sm text-center space-y-6 sm:space-y-8">
+               <h3 className="text-xl sm:text-2xl font-black serif text-stone-900">{t.tune_vibration}</h3>
+               <div className="flex justify-around items-center max-w-sm mx-auto">
                   {['✨', '🧘', '☁️', '🌠', '🌑'].map((emoji, i) => (
                     <button 
                       key={i} 
                       onClick={() => setMoodFromEmoji(emoji)}
-                      className="w-14 h-14 bg-stone-50 rounded-2xl flex items-center justify-center text-2xl grayscale hover:grayscale-0 hover:bg-emerald-50 cursor-pointer transition-all border border-stone-100/50 hover:scale-110 active:scale-90 shadow-sm"
+                      className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl grayscale hover:grayscale-0 hover:bg-emerald-50 cursor-pointer transition-all border border-stone-100/50 hover:scale-110 active:scale-90 shadow-sm"
                     >
                       {emoji}
                     </button>
@@ -414,31 +468,31 @@ const App: React.FC = () => {
         )}
 
         {view === 'library' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
+          <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
             <div>
-              <h2 className="text-5xl font-black serif text-stone-900 mb-2">{t.header_vault}</h2>
-              <p className="text-stone-400 serif italic">{t.vault_subtitle}</p>
+              <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900 mb-2">{t.header_vault}</h2>
+              <p className="text-stone-400 text-sm sm:text-base serif italic">{t.vault_subtitle}</p>
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {MEDITATION_SESSIONS.map(session => (
-                <button key={session.id} onClick={() => setActiveSession(session)} className="group relative aspect-[4/3] rounded-[32px] overflow-hidden shadow-xl text-left active:scale-95 transition-all">
+                <button key={session.id} onClick={() => setActiveSession(session)} className="group relative aspect-video sm:aspect-[4/3] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-xl text-left active:scale-95 transition-all">
                    <img src={session.imageUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={session.title} />
                    <div className="absolute inset-0 bg-stone-950/40 group-hover:bg-stone-950/20 transition-all"></div>
-                   <div className="absolute top-4 left-4">
-                     <span className="bg-white/20 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border border-white/10">{session.category}</span>
+                   <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
+                     <span className="bg-white/20 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-white/10">{session.category}</span>
                    </div>
-                   <div className="absolute bottom-6 left-6 right-6">
-                     <h4 className="text-xl font-black serif text-white leading-tight mb-1">{session.title}</h4>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-white/70">{session.duration}</p>
+                   <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6">
+                     <h4 className="text-lg sm:text-xl font-black serif text-white leading-tight mb-1">{session.title}</h4>
+                     <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-white/70">{session.duration}</p>
                    </div>
                 </button>
               ))}
             </div>
 
-            <section className="pt-10 space-y-8 border-t border-stone-100">
+            <section className="pt-8 sm:pt-10 space-y-6 sm:space-y-8 border-t border-stone-100">
                <div>
-                 <h3 className="text-3xl font-black serif text-stone-900">{t.mixer_title}</h3>
+                 <h3 className="text-2xl sm:text-3xl font-black serif text-stone-900">{t.mixer_title}</h3>
                </div>
                <SoundMixer />
             </section>
@@ -448,22 +502,22 @@ const App: React.FC = () => {
         )}
 
         {view === 'sleep' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h2 className="text-5xl font-black serif text-stone-900">{t.header_sleep}</h2>
-             <p className="text-stone-400 serif italic -mt-6 mb-4">{t.vault_subtitle_sleep || "Drift into stillness with soothing narratives."}</p>
-             <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
+             <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900">{t.header_sleep}</h2>
+             <p className="text-stone-400 text-sm sm:text-base serif italic -mt-6 mb-4">{t.vault_subtitle_sleep || "Drift into stillness with soothing narratives."}</p>
+             <div className="grid grid-cols-1 gap-4 sm:gap-6">
                {SLEEP_STORIES.map(story => (
-                 <button key={story.id} onClick={() => setActiveSession(story)} className="w-full bg-white p-6 rounded-[40px] border border-stone-50 shadow-sm hover:shadow-xl transition-all flex items-center space-x-8 group active:scale-98">
-                    <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-lg shrink-0">
+                 <button key={story.id} onClick={() => setActiveSession(story)} className="w-full bg-white p-4 sm:p-6 rounded-[32px] sm:rounded-[40px] border border-stone-50 shadow-sm hover:shadow-xl transition-all flex items-center space-x-4 sm:space-x-8 group active:scale-98">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shrink-0">
                        <img src={story.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={story.title} />
                     </div>
-                    <div className="text-left flex-1">
-                       <h4 className="text-2xl font-black serif text-stone-900 mb-1">{story.title}</h4>
-                       <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-1">{story.duration}</p>
-                       {story.description && <p className="text-[11px] text-stone-400 serif italic leading-tight">{story.description}</p>}
+                    <div className="text-left flex-1 min-w-0">
+                       <h4 className="text-xl sm:text-2xl font-black serif text-stone-900 mb-0.5 truncate">{story.title}</h4>
+                       <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-1">{story.duration}</p>
+                       {story.description && <p className="text-[10px] sm:text-[11px] text-stone-400 serif italic leading-tight truncate sm:whitespace-normal">{story.description}</p>}
                     </div>
-                    <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
-                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm shrink-0">
+                       <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     </div>
                  </button>
                ))}
@@ -473,51 +527,51 @@ const App: React.FC = () => {
         )}
 
         {view === 'journal' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <h2 className="text-5xl font-black serif text-stone-900">{t.header_journal}</h2>
+          <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
+             <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900">{t.header_journal}</h2>
 
              <AIChatbox lang={lang} />
 
-             <div className="bg-white rounded-[40px] p-10 border border-stone-50 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden group">
-               <div className="flex justify-between items-center mb-8">
-                 <h3 className="text-3xl font-black serif text-stone-800 leading-none">{t.lucky_title}</h3>
-                 <button onClick={generateLuckyNumbers} className="flex items-center space-x-2 bg-white border border-stone-100 text-emerald-500 hover:text-emerald-600 px-4 py-2 rounded-full transition-all active:scale-95 shadow-sm">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                   <span className="text-[10px] font-black uppercase tracking-widest">{t.lucky_refresh}</span>
+             <div className="bg-white rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-stone-50 shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+               <div className="flex justify-between items-center mb-6 sm:mb-8">
+                 <h3 className="text-2xl sm:text-3xl font-black serif text-stone-800 leading-none">{t.lucky_title}</h3>
+                 <button onClick={generateLuckyNumbers} className="flex items-center space-x-2 bg-white border border-stone-100 text-emerald-500 hover:text-emerald-600 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-sm">
+                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                   <span className="text-[9px] font-black uppercase tracking-widest">{t.lucky_refresh}</span>
                  </button>
                </div>
                
-               <div className="flex items-center space-x-4 mb-8">
+               <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8 overflow-x-auto pb-2 scrollbar-hide">
                   {luckyNumbers.slice(0, 6).map((n, i) => (
-                    <div key={i} className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-base shadow-xl transform transition-all duration-300 hover:scale-110 ${getBallColor(i)}`}>
+                    <div key={i} className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-black text-sm sm:text-base shadow-xl transform transition-all duration-300 hover:scale-110 shrink-0 ${getBallColor(i)}`}>
                        {n}
                     </div>
                   ))}
-                  <span className="text-stone-200 font-light text-3xl mx-1">+</span>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-base shadow-xl transform transition-all duration-300 hover:scale-110 ${getBallColor(6)}`}>
+                  <span className="text-stone-200 font-light text-2xl mx-0.5">+</span>
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-black text-sm sm:text-base shadow-xl transform transition-all duration-300 hover:scale-110 shrink-0 ${getBallColor(6)}`}>
                      {luckyNumbers[6]}
                   </div>
                </div>
-               <p className="text-stone-300 text-[10px] font-black uppercase tracking-[0.4em]">{t.lucky_sync}</p>
+               <p className="text-stone-300 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em]">{t.lucky_sync}</p>
              </div>
 
-             <div className="bg-white rounded-[40px] p-10 border border-stone-50 shadow-sm space-y-8">
+             <div className="bg-white rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-stone-50 shadow-sm space-y-6 sm:space-y-8">
                 <textarea 
                   value={newJournalText}
                   onChange={(e) => setNewJournalText(e.target.value)}
-                  className="w-full bg-stone-50/50 border-none rounded-[32px] p-8 text-stone-800 font-medium placeholder:italic placeholder:text-stone-300 focus:ring-0 min-h-[350px] resize-none text-2xl leading-relaxed serif"
+                  className="w-full bg-stone-50/50 border-none rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 text-stone-800 font-medium placeholder:italic placeholder:text-stone-300 focus:ring-0 min-h-[250px] sm:min-h-[350px] resize-none text-xl sm:text-2xl leading-relaxed serif"
                   placeholder={t.journal_placeholder}
                 />
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
                   <button 
                     onClick={saveJournal} 
                     disabled={isSavingJournal || saveStatus === 'success'}
-                    className={`flex-1 flex items-center justify-center space-x-3 py-6 rounded-[28px] font-black text-base shadow-2xl active:scale-95 transition-all ${saveStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-stone-950 text-white'}`}
+                    className={`flex-1 flex items-center justify-center space-x-3 py-5 sm:py-6 rounded-[24px] sm:rounded-[28px] font-black text-sm sm:text-base shadow-2xl active:scale-95 transition-all ${saveStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-stone-950 text-white'}`}
                   >
                     {isSavingJournal ? (
                        <>
-                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                          <span>Reflecting...</span>
                        </>
                     ) : saveStatus === 'success' ? (
@@ -528,10 +582,10 @@ const App: React.FC = () => {
                   </button>
                   <button 
                     onClick={handleDownloadApk}
-                    className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-stone-400 border border-stone-100 shadow-lg active:scale-90 transition-transform hover:text-emerald-500"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center text-stone-400 border border-stone-100 shadow-lg active:scale-90 transition-transform hover:text-emerald-500 shrink-0"
                     title="Download icon1.apk"
                   >
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   </button>
                 </div>
              </div>
@@ -540,20 +594,20 @@ const App: React.FC = () => {
         )}
 
         {view === 'explore' && (
-          <div className="space-y-12 animate-in fade-in duration-500">
-             <div className="space-y-6">
-                <h2 className="text-7xl font-black text-stone-900 uppercase tracking-tighter leading-none">{t.header_breath}</h2>
+          <div className="space-y-10 sm:space-y-12 animate-in fade-in duration-500">
+             <div className="space-y-4 sm:space-y-6">
+                <h2 className="text-5xl sm:text-7xl font-black text-stone-900 uppercase tracking-tighter leading-none">{t.header_breath}</h2>
              </div>
 
              <BreathingExercise lang={lang} />
              
-             <div className="space-y-10 pt-10">
+             <div className="space-y-8 sm:space-y-10 pt-6 sm:pt-10">
                 <div>
-                   <h2 className="text-5xl font-black serif text-stone-900 mb-2">{t.header_guide}</h2>
-                   <p className="text-stone-400 serif italic">{t.breath_subtitle}</p>
+                   <h2 className="text-4xl sm:text-5xl font-black serif text-stone-900 mb-2">{t.header_guide}</h2>
+                   <p className="text-stone-400 text-sm sm:text-base serif italic">{t.breath_subtitle}</p>
                 </div>
 
-                <div className="space-y-12">
+                <div className="space-y-8 sm:space-y-12">
                    <GuideCard 
                       title={t.guide_s1_title} 
                       desc={t.guide_s1_desc} 
@@ -579,21 +633,32 @@ const App: React.FC = () => {
         )}
 
         {(view === 'admin' || view === 'profile') && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-             <div className="bg-white rounded-[40px] p-10 border border-stone-50 shadow-sm text-center">
-                <h2 className="text-4xl font-black serif text-stone-900 mb-12">{t.db_status}</h2>
+          <div className="space-y-8 sm:space-y-10 animate-in fade-in duration-500">
+             <div className="bg-white rounded-[32px] sm:rounded-[40px] p-8 sm:p-10 border border-stone-50 shadow-sm text-center">
+                <h2 className="text-3xl sm:text-4xl font-black serif text-stone-900 mb-8 sm:mb-12">{t.db_status}</h2>
                 
-                {user.email === 'vvkkoo4816@gmail.com' && (
-                  <div className="mb-12 p-6 bg-stone-50 rounded-[32px] border border-stone-100">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">{t.login_history}</h4>
-                    <div className="max-h-60 overflow-y-auto space-y-3 px-2">
+                {isAdminUser(user) && (
+                  <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-stone-50 rounded-[24px] sm:rounded-[32px] border border-stone-100">
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400">{t.login_history}</h4>
+                      <button 
+                        onClick={downloadLoginHistoryCsv}
+                        className="bg-stone-900 text-white px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors shadow-lg"
+                      >
+                        Export CSV
+                      </button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-3 px-1 sm:px-2">
                       {loginHistory.length > 0 ? loginHistory.map((log, idx) => (
                         <div key={idx} className="bg-white p-4 rounded-2xl text-left border border-stone-100 shadow-sm flex justify-between items-center group transition-all hover:border-emerald-200">
-                           <div>
-                              <p className="text-[10px] font-black text-stone-900">{log.email}</p>
-                              <p className="text-[8px] text-stone-400 uppercase tracking-widest">{log.timestamp}</p>
+                           <div className="min-w-0 pr-2">
+                              <p className="text-[10px] font-black text-stone-900 truncate">{log.email}</p>
+                              <div className="flex space-x-2 items-center">
+                                <p className="text-[8px] text-stone-400 uppercase tracking-widest">{log.timestamp}</p>
+                                <span className="text-[8px] font-bold text-stone-300 italic">via {log.device}</span>
+                              </div>
                            </div>
-                           <div className="text-right">
+                           <div className="text-right shrink-0">
                               <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">{log.location}</span>
                            </div>
                         </div>
@@ -604,27 +669,27 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mb-12 p-6 bg-stone-50 rounded-[32px] border border-stone-100">
+                <div className="mb-8 sm:mb-12 p-4 sm:p-6 bg-stone-50 rounded-[24px] sm:rounded-[32px] border border-stone-100">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-6">Language / 語言 / 语言</h4>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button onClick={() => changeLanguage('en')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'en' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_en}</button>
                     <button onClick={() => changeLanguage('zh-Hans')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hans' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hans}</button>
                     <button onClick={() => changeLanguage('zh-Hant')} className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${lang === 'zh-Hant' ? 'bg-stone-900 text-white border-stone-900 shadow-lg' : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'}`}>{t.lang_hant}</button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-12">
-                   <div className="bg-stone-50 p-6 rounded-3xl text-center">
-                      <span className="block text-[10px] font-black uppercase text-stone-400 mb-2">Release Candidate</span>
-                      <span className="text-2xl font-black serif">v1.0.0</span>
+                <div className="grid grid-cols-2 gap-4 mb-8 sm:mb-12">
+                   <div className="bg-stone-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-center">
+                      <span className="block text-[8px] sm:text-[10px] font-black uppercase text-stone-400 mb-1 sm:mb-2">Release</span>
+                      <span className="text-lg sm:text-2xl font-black serif">v1.0.0</span>
                    </div>
-                   <div className="bg-emerald-50 p-6 rounded-3xl text-center">
-                      <span className="block text-[10px] font-black uppercase text-emerald-400 mb-2">Build Status</span>
-                      <span className="text-2xl font-black serif text-emerald-600">Stable</span>
+                   <div className="bg-emerald-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-center">
+                      <span className="block text-[8px] sm:text-[10px] font-black uppercase text-emerald-400 mb-1 sm:mb-2">Status</span>
+                      <span className="text-lg sm:text-2xl font-black serif text-emerald-600">Stable</span>
                    </div>
                 </div>
                 
-                <button onClick={handleLogout} className="w-full py-5 rounded-3xl border border-stone-200 text-stone-400 font-black uppercase text-[10px] tracking-[0.4em] hover:bg-stone-50 transition-colors">Terminate Session</button>
+                <button onClick={handleLogout} className="w-full py-4 sm:py-5 rounded-2xl sm:rounded-3xl border border-stone-200 text-stone-400 font-black uppercase text-[9px] sm:text-[10px] tracking-[0.4em] hover:bg-stone-50 transition-colors">Terminate Session</button>
              </div>
           </div>
         )}
@@ -641,14 +706,16 @@ const App: React.FC = () => {
   );
 };
 
+const isAdminUser = (user: User | null) => user?.email?.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
+
 const GuideCard = ({ title, desc, img, label }: { title: string, desc: string, img: string, label: string }) => (
-  <div className="bg-white rounded-[40px] overflow-hidden shadow-xl border border-stone-50 group transition-all duration-700 hover:shadow-2xl">
-    <div className="h-[400px] overflow-hidden">
+  <div className="bg-white rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-xl border border-stone-50 group transition-all duration-700 hover:shadow-2xl">
+    <div className="h-[300px] sm:h-[400px] overflow-hidden">
       <img src={img} className="w-full h-full object-cover transition-transform duration-[10s] group-hover:scale-110" alt={title} />
     </div>
-    <div className="p-10 space-y-4">
-       <h3 className="text-3xl font-black serif text-stone-900 leading-tight">{title}</h3>
-       <p className="text-stone-500 serif leading-relaxed italic opacity-80">{desc}</p>
+    <div className="p-8 sm:p-10 space-y-4">
+       <h3 className="text-2xl sm:text-3xl font-black serif text-stone-900 leading-tight">{title}</h3>
+       <p className="text-sm sm:text-base text-stone-500 serif leading-relaxed italic opacity-80">{desc}</p>
        <button className="bg-stone-950 text-white px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center space-x-3 active:scale-95 transition-all">
          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
          <span>{label}</span>

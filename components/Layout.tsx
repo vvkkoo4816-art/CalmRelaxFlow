@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppView, User, Language } from '../types';
 import { translations } from '../translations';
@@ -18,31 +19,31 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 
   return (
     <div className="flex flex-col flex-1 min-h-screen relative pb-32 max-w-full overflow-x-hidden">
-      <header className="px-6 pt-12 pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-50">
-        <div className="flex items-center space-x-3">
-           <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
-             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      <header className="px-4 sm:px-6 pt-8 sm:pt-12 pb-4 sm:pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-50">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0">
+             <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
            </div>
-           <div>
-             <span className="text-3xl font-black tracking-tighter serif text-stone-900 block leading-tight">CalmRelaxFlow</span>
+           <div className="min-w-0">
+             <span className="text-xl sm:text-3xl font-black tracking-tighter serif text-stone-900 block leading-tight truncate">CalmRelaxFlow</span>
            </div>
         </div>
-        <button onClick={() => setActiveView(isAdmin ? 'admin' : 'profile')} className="ml-4 shrink-0">
-          <img src={user.photoUrl} className="w-12 h-12 rounded-2xl border-2 border-white shadow-lg" alt="profile" />
+        <button onClick={() => setActiveView(isAdmin ? 'admin' : 'profile')} className="ml-2 sm:ml-4 shrink-0">
+          <img src={user.photoUrl} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2 border-white shadow-lg" alt="profile" />
         </button>
       </header>
 
-      <main className="flex-1 px-6 py-6 w-full">
+      <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 w-full">
         {children}
       </main>
 
       <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
-        <nav className="flex justify-between items-center px-2 py-2 bg-stone-900/95 backdrop-blur-3xl rounded-[28px] border border-white/5 shadow-2xl w-full max-w-xl">
+        <nav className="flex justify-between items-center px-1.5 py-1.5 bg-stone-900/95 backdrop-blur-3xl rounded-[24px] sm:rounded-[28px] border border-white/5 shadow-2xl w-full max-w-xl">
           <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
           <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
           <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
           <MobileNavItem active={activeView === 'journal'} onClick={() => setActiveView('journal')} icon={<JournalIcon active={activeView === 'journal'} />} label={t.nav_journal} />
-          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore')} icon={<CourseIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
+          <MobileNavItem active={activeView === 'explore'} onClick={() => setActiveView('explore'} icon={<CourseIcon active={activeView === 'explore'} />} label={t.nav_breathing} />
           {isAdmin && (
             <MobileNavItem active={activeView === 'admin'} onClick={() => setActiveView('admin')} icon={<AdminIcon active={activeView === 'admin'} />} label={t.nav_admin} />
           )}
@@ -54,10 +55,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 
 const MobileNavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
   <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 py-1">
-    <div className={`p-2 rounded-xl mb-1 transition-all ${active ? 'bg-emerald-500 text-white shadow-lg' : 'text-stone-500'}`}>
-      {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-6 h-6' })}
+    <div className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl mb-1 transition-all ${active ? 'bg-emerald-500 text-white shadow-lg' : 'text-stone-500'}`}>
+      {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5 sm:w-6 sm:h-6' })}
     </div>
-    <span className={`text-[9px] font-black uppercase tracking-tight ${active ? 'text-white' : 'text-stone-500'}`}>
+    <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-tight ${active ? 'text-white' : 'text-stone-500'}`}>
       {label}
     </span>
   </button>
