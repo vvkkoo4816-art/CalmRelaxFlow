@@ -263,15 +263,17 @@ const App: React.FC = () => {
                    value={inputEmail}
                    onChange={(e) => setInputEmail(e.target.value)}
                    className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3.5 text-stone-800 font-medium focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                   placeholder="Enter username"
                  />
               </div>
               <div className="space-y-1">
-                 <label className="text-[11px] font-bold text-stone-600 ml-1">Security Key</label>
+                 <label className="text-[11px] font-bold text-stone-600 ml-1">Password</label>
                  <input 
                    type="password" 
                    value={inputPassword}
                    onChange={(e) => setInputPassword(e.target.value)}
                    className="w-full bg-stone-100/30 border border-stone-400/50 rounded-xl px-4 py-3.5 text-stone-800 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                   placeholder="••••••••"
                  />
               </div>
               
@@ -341,6 +343,17 @@ const App: React.FC = () => {
       <div className="max-w-3xl mx-auto pb-64 space-y-12">
         {view === 'today' && (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+            {/* Prominent App Branding */}
+            <div className="relative text-center py-6">
+              <div className="absolute inset-0 bg-emerald-500/5 blur-[80px] rounded-full"></div>
+              <h1 className="text-6xl font-black serif text-stone-900 tracking-tighter mb-2 relative">CalmRelaxFlow</h1>
+              <div className="flex items-center justify-center space-x-3 opacity-60">
+                 <div className="h-[1px] w-8 bg-stone-300"></div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">Your Inner Sanctuary</p>
+                 <div className="h-[1px] w-8 bg-stone-300"></div>
+              </div>
+            </div>
+
             <div className="flex justify-between items-center bg-white p-8 rounded-[40px] shadow-sm border border-stone-50">
                <div>
                   <div className="flex items-center space-x-2 mb-1">
@@ -602,12 +615,12 @@ const App: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4 mb-12">
                    <div className="bg-stone-50 p-6 rounded-3xl text-center">
-                      <span className="block text-[10px] font-black uppercase text-stone-400 mb-2">Build</span>
-                      <span className="text-2xl font-black serif">v36.0</span>
+                      <span className="block text-[10px] font-black uppercase text-stone-400 mb-2">Release Candidate</span>
+                      <span className="text-2xl font-black serif">v1.0.0</span>
                    </div>
                    <div className="bg-emerald-50 p-6 rounded-3xl text-center">
-                      <span className="block text-[10px] font-black uppercase text-emerald-400 mb-2">Status</span>
-                      <span className="text-2xl font-black serif text-emerald-600">Premium</span>
+                      <span className="block text-[10px] font-black uppercase text-emerald-400 mb-2">Build Status</span>
+                      <span className="text-2xl font-black serif text-emerald-600">Stable</span>
                    </div>
                 </div>
                 
