@@ -18,16 +18,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Define paths relative to the environment
   const getPossiblePaths = (baseUrl: string) => {
     if (baseUrl.startsWith('http')) return [baseUrl];
-    // Strip any existing leading slashes to normalize
     const fileName = baseUrl.split('/').pop() || baseUrl;
-    // We prioritize the root absolute path (/) as the most standard for PWA/TWA public assets
     return [
-      `/${fileName}`,       // Path 1: Root absolute (Highest reliability)
-      fileName,             // Path 2: Relative
-      `./${fileName}`,      // Path 3: Explicit local relative
-      window.location.origin + '/' + fileName // Path 4: Absolute origin
+      fileName,                // Path 1: Relative (Best for TWAs/Vite)
+      `/${fileName}`,          // Path 2: Root Absolute
+      `./${fileName}`,         // Path 3: Explicit Relative
+      `${window.location.origin}/${fileName}` // Path 4: Full Origin Absolute
     ].filter((v, i, a) => a.indexOf(v) === i);
   };
 
@@ -42,7 +41,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     
     if (audioRef.current) {
       audioRef.current.pause();
-      // Start with the most reliable path
+      // Reset source to the most likely candidate
       audioRef.current.src = possiblePaths[0];
       audioRef.current.load();
     }
@@ -65,17 +64,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
   const handleAudioError = () => {
     const nextIndex = attemptIndex + 1;
     if (nextIndex < possiblePaths.length) {
-      console.warn(`Audio attempt ${attemptIndex} failed for ${possiblePaths[attemptIndex]}, trying path ${nextIndex}`);
+      console.warn(`Path ${attemptIndex} failed, attempting alternate resonance: ${possiblePaths[nextIndex]}`);
       setAttemptIndex(nextIndex);
       if (audioRef.current) {
         audioRef.current.src = possiblePaths[nextIndex];
         audioRef.current.load();
+        // We only attempt to auto-play if the user previously initiated it
         if (isPlaying) {
-          audioRef.current.play().catch(() => {});
+          audioRef.current.play().catch(() => {
+            // Silence silent-play prevention errors
+          });
         }
       }
     } else {
-      console.error(`All audio paths failed for: ${url}`);
+      console.error(`All resonance paths failed for: ${url}`);
       setError("RESONANCE BLOCKED");
       setIsBuffering(false);
       setIsPlaying(false);
@@ -91,15 +93,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
     } else {
       setIsBuffering(true);
       setError(null);
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
+      audioRef.current.play()
+        .then(() => {
           setIsPlaying(true);
           setIsBuffering(false);
-        }).catch(() => {
+        })
+        .catch((e) => {
+          console.error("Playback interrupted:", e);
           handleAudioError();
         });
-      }
     }
   };
 
@@ -166,6 +168,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose }) => {
             onCanPlay={() => { setIsBuffering(false); setError(null); }}
             onWaiting={() => setIsBuffering(true)}
             preload="auto"
+            crossOrigin="anonymous"
           />
           
           <button onClick={() => setIsImmersive(true)} className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 relative group">

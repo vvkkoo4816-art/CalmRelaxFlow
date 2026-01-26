@@ -79,9 +79,9 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
   const getOrbScale = () => {
     if (!isActive) return 'scale(1)';
     if (phase === 'inhale') return 'scale(1.8)';
-    if (phase === 'exhale') return 'scale(0.7)';
+    if (phase === 'exhale') return 'scale(0.8)';
     if (phase === 'hold1') return 'scale(1.8)';
-    return 'scale(0.7)';
+    return 'scale(0.8)';
   };
 
   const getOrbColor = () => {
@@ -91,8 +91,8 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-12 py-10 animate-in fade-in zoom-in duration-700">
-      <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+    <div className="flex flex-col items-center justify-center space-y-16 py-10">
+      <div className="grid grid-cols-3 gap-3 w-full max-w-md bg-stone-50 p-2 rounded-[32px] border border-stone-100">
         {TECHNIQUES.map((tech) => (
           <button
             key={tech.id}
@@ -100,10 +100,10 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
               setActiveTechnique(tech);
               setIsActive(false);
             }}
-            className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-4 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all ${
               activeTechnique.id === tech.id
                 ? 'bg-stone-900 text-white shadow-xl'
-                : 'bg-stone-100 text-stone-400 hover:bg-stone-200'
+                : 'bg-transparent text-stone-400 hover:text-stone-600'
             }`}
           >
             {t[tech.name]}
@@ -112,31 +112,33 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
       </div>
 
       <div className="relative flex items-center justify-center w-80 h-80">
+        {/* Breathing Rings */}
+        <div className="absolute inset-0 rounded-full border border-stone-100 scale-150 opacity-10"></div>
         <div className="absolute inset-0 rounded-full border border-stone-100 scale-125 opacity-20 animate-pulse"></div>
+        <div className="absolute inset-0 rounded-full border border-stone-200 scale-100 opacity-30"></div>
         
+        {/* The Orb */}
         <div 
-          className={`w-40 h-40 rounded-full transition-all duration-[4000ms] cubic-bezier(0.4, 0, 0.2, 1) shadow-2xl ${getOrbColor()} ${isActive ? 'opacity-70' : 'opacity-10'}`}
+          className={`w-40 h-40 rounded-full transition-all duration-[4000ms] cubic-bezier(0.4, 0, 0.2, 1) shadow-[0_0_60px_rgba(16,185,129,0.3)] ${getOrbColor()} ${isActive ? 'opacity-80' : 'opacity-10'}`}
           style={{ transform: getOrbScale() }}
         >
-          <div className="absolute inset-0 bg-white/30 rounded-full blur-2xl"></div>
+          <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl"></div>
         </div>
 
         <div className="absolute flex flex-col items-center text-center">
-          <span className="text-4xl font-black serif text-stone-900 mb-2">{isActive ? timeLeft : ''}</span>
-          <span className={`text-[12px] font-black uppercase tracking-[0.3em] transition-all duration-700 ${isActive ? 'text-stone-600 opacity-100' : 'text-stone-300 opacity-0'}`}>
+          <span className="text-5xl font-black serif text-stone-900 mb-2">{isActive ? timeLeft : ''}</span>
+          <span className={`text-[12px] font-black uppercase tracking-[0.4em] transition-all duration-700 ${isActive ? 'text-stone-600 opacity-100' : 'text-stone-300 opacity-0'}`}>
             {getPhaseText()}
           </span>
         </div>
       </div>
 
-      <div className="flex flex-col items-center space-y-6">
+      <div className="flex flex-col items-center">
         <button
           onClick={() => setIsActive(!isActive)}
-          className={`px-16 py-6 rounded-full font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-2xl ${
-            isActive ? 'bg-stone-100 text-stone-500' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200'
-          }`}
+          className="bg-emerald-500 text-white px-20 py-6 rounded-[28px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-emerald-200 active:scale-95 transition-all"
         >
-          {isActive ? 'Pause' : 'Start Journey'}
+          {isActive ? 'Pause' : t.start_journey}
         </button>
       </div>
     </div>

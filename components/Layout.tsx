@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { AppView, User, Language } from '../types';
 import { translations } from '../translations';
@@ -12,34 +11,33 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, user, lang }) => {
-  const t = translations[lang] || translations['en'];
+  const t = translations[lang] || translations['zh-Hant'];
   
   if (!user) return null;
   const isAdmin = user.email && user.email.toLowerCase().trim() === 'vvkkoo4816@gmail.com';
 
   return (
     <div className="flex flex-col flex-1 min-h-screen relative pb-32 max-w-full overflow-x-hidden">
-      <header className="px-6 pt-12 pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-100/50">
-        <div className="flex items-center space-x-3 min-w-0 flex-1">
-           <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex-shrink-0 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+      <header className="px-6 pt-12 pb-6 flex justify-between items-center bg-[#fdfcfb]/80 backdrop-blur-xl sticky top-0 z-40 border-b border-stone-50">
+        <div className="flex items-center space-x-3">
+           <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
            </div>
-           <div className="min-w-0 flex-1">
-             <span className="text-2xl md:text-3xl font-black tracking-tighter serif text-stone-900 block leading-tight truncate">CalmRelaxFlow</span>
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 block mt-0.5 truncate">Pure Sanctuary</span>
+           <div>
+             <span className="text-3xl font-black tracking-tighter serif text-stone-900 block leading-tight">CalmRelaxFlow</span>
            </div>
         </div>
-        <button onClick={() => setActiveView('profile')} className="ml-4 shrink-0">
-          <img src={user.photoUrl} className="w-12 h-12 rounded-2xl border-2 border-white shadow-lg active:scale-90 transition-transform" alt="profile" />
+        <button onClick={() => setActiveView(isAdmin ? 'admin' : 'profile')} className="ml-4 shrink-0">
+          <img src={user.photoUrl} className="w-12 h-12 rounded-2xl border-2 border-white shadow-lg" alt="profile" />
         </button>
       </header>
 
-      <main className="flex-1 px-6 py-6 w-full max-w-full">
+      <main className="flex-1 px-6 py-6 w-full">
         {children}
       </main>
 
-      <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center pointer-events-none">
-        <nav className="flex justify-between items-center px-2 py-2 bg-stone-900/95 backdrop-blur-2xl rounded-[28px] border border-white/10 shadow-2xl w-full max-w-xl pointer-events-auto">
+      <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
+        <nav className="flex justify-between items-center px-2 py-2 bg-stone-900/95 backdrop-blur-3xl rounded-[28px] border border-white/5 shadow-2xl w-full max-w-xl">
           <MobileNavItem active={activeView === 'today'} onClick={() => setActiveView('today')} icon={<TodayIcon active={activeView === 'today'} />} label={t.nav_today} />
           <MobileNavItem active={activeView === 'library'} onClick={() => setActiveView('library')} icon={<LibraryIcon active={activeView === 'library'} />} label={t.nav_library} />
           <MobileNavItem active={activeView === 'sleep'} onClick={() => setActiveView('sleep')} icon={<SleepIcon active={activeView === 'sleep'} />} label={t.nav_sleep} />
@@ -55,11 +53,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 };
 
 const MobileNavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
-  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 min-w-0 py-1">
-    <div className={`p-2.5 rounded-xl mb-1 transition-all duration-300 ${active ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'text-stone-500 hover:text-stone-300'}`}>
-      {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-5 h-5 md:w-6 md:h-6' })}
+  <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 py-1">
+    <div className={`p-2 rounded-xl mb-1 transition-all ${active ? 'bg-emerald-500 text-white shadow-lg' : 'text-stone-500'}`}>
+      {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-6 h-6' })}
     </div>
-    <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] truncate w-full text-center ${active ? 'text-white' : 'text-stone-500'}`}>
+    <span className={`text-[9px] font-black uppercase tracking-tight ${active ? 'text-white' : 'text-stone-500'}`}>
       {label}
     </span>
   </button>
@@ -69,7 +67,7 @@ const TodayIcon = ({ active, className }: { active?: boolean, className?: string
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
 );
 const LibraryIcon = ({ active, className }: { active?: boolean, className?: string }) => (
-  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z"/></svg>
+  <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-3.976-2.888a1 1 0 00-1.175 0l-3.976 2.888c-.784.57-1.838-.197-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
 );
 const SleepIcon = ({ active, className }: { active?: boolean, className?: string }) => (
   <svg className={className} fill={active ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>

@@ -25,20 +25,20 @@ const SoundMixer: React.FC = () => {
       if (!audioRefs.current[id]) {
         audioRefs.current[id] = new Audio();
         audioRefs.current[id].loop = true;
+        audioRefs.current[id].crossOrigin = "anonymous";
       }
       
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
       const fileName = url.split('/').pop() || url;
-      // Use absolute path as the primary standard
-      const fullPath = `/${fileName}`;
       
-      audioRefs.current[id].src = fullPath;
+      // Try relative path first as it is most resilient in PWAs
+      audioRefs.current[id].src = fileName;
       
       audioRefs.current[id].play().catch(() => {
-        // Fallback for non-standard local environments
-        audioRefs.current[id].src = `./${fileName}`;
+        // Fallback to root absolute
+        audioRefs.current[id].src = `/${fileName}`;
         audioRefs.current[id].play().catch(e => {
           console.error(`Ambient sound resonance failure for ${id}:`, e);
           setActiveSounds(prev => ({

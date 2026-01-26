@@ -22,7 +22,9 @@
       "purpose": "maskable"
     }
   ],
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "geolocation"
+  ],
   "shortcuts": [
     {
       "name": "Daily Zen",
