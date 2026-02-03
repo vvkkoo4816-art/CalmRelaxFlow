@@ -1,4 +1,7 @@
 {
   "name": "CalmRelaxFlow",
-  "description": "Professional mindfulness companion with guided meditations, sleep stories, and zen music."
+  "description": "Professional mindfulness companion with guided meditations, sleep stories, and zen music.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }
