@@ -537,7 +537,7 @@ const App: React.FC = () => {
                       {user.name[0]}
                    </div>
                    <div className="text-center sm:text-left w-full overflow-hidden">
-                      <h3 className="text-3xl sm:text-4xl font-black serif text-stone-900 break-words">{user.name}</h3>
+                      <h3 className="text-3xl sm:text-4xl font-black serif text-stone-900 break-words leading-tight">{user.name}</h3>
                       <p className="text-[11px] sm:text-[12px] font-black uppercase tracking-[0.4em] text-stone-300 mt-1 truncate">{user.email}</p>
                       {user.email === ADMIN_EMAIL && (
                         <div className="mt-4 sm:mt-2 inline-block px-4 py-1.5 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full">Sanctuary Administrator</div>

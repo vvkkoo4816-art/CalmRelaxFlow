@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Language } from '../types';
 import { translations } from '../translations';
 
@@ -19,6 +20,7 @@ const AIChatbox: React.FC<AIChatboxProps> = ({ lang }) => {
     setResponse(null);
 
     try {
+      // Accessing the API key as defined in vite.config.ts
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const langMap: Record<Language, string> = {
@@ -27,22 +29,22 @@ const AIChatbox: React.FC<AIChatboxProps> = ({ lang }) => {
         'zh-Hant': 'Traditional Chinese'
       };
 
-      const result: GenerateContentResponse = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `The user says: "${input}". 
-        Role: Empathetic Mindfulness Coach. 
-        Instruction: Briefly acknowledge their feeling and suggest 3 concrete steps to relax right now. 
-        Language: Respond in ${langMap[lang]}. 
-        Format: Markdown (bullet points).`,
+        contents: input,
         config: {
-          systemInstruction: "You are an empathetic, calm mindfulness guide. Help users feel understood and provide actionable relaxation advice based on their mood."
+          systemInstruction: `You are an empathetic, calm mindfulness guide. 
+          Help users feel understood and provide 3 concrete steps to relax right now. 
+          Respond in ${langMap[lang]}. Format with Markdown bullet points.`,
+          temperature: 0.7,
         }
       });
       
-      setResponse(result.text || "Breathe deeply. This moment is yours.");
+      const generatedText = result.text;
+      setResponse(generatedText || "Breathe deeply. This moment is yours.");
     } catch (error) {
-      console.error("AI Error:", error);
-      setResponse("The clouds will clear. Please try again in a moment. (The sanctuary AI is currently experiencing high tranquility and cannot respond).");
+      console.error("AI Sanctuary Error:", error);
+      setResponse("The clouds are passing. Please try again in a moment. (The AI sanctuary is currently resting).");
     } finally {
       setIsLoading(false);
       setInput('');

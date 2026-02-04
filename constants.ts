@@ -1,4 +1,3 @@
-
 import { MeditationSession, Course } from './types';
 
 export const STATIC_QUOTES = [
@@ -31,6 +30,7 @@ const IMG_MOUNTAIN = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c
 const IMG_STARS = 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=800';
 const IMG_KYOTO = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800';
 const IMG_RESONANCE = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800';
+const IMG_HEALING = 'https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&q=80&w=800';
 
 export const DAILY_MEDITATION: MeditationSession = {
   id: 'daily-1',
@@ -38,7 +38,7 @@ export const DAILY_MEDITATION: MeditationSession = {
   duration: '10 min',
   category: 'Daily',
   imageUrl: IMG_NATURE, 
-  audioUrl: 'morning.mp3',
+  audioUrl: 'morning.mp3', // 1/14
   description: 'Wake your soul with the resonance of nature\'s first breath.'
 };
 
@@ -49,7 +49,7 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '15 min',
     category: 'Anxiety',
     imageUrl: IMG_PIANO,
-    audioUrl: 'healing.mp3',
+    audioUrl: 'healing.mp3', // 2/14
     description: 'Surrender to the soft, rhythmic waves of healing frequencies.'
   },
   {
@@ -58,7 +58,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '20 min',
     category: 'Sleep',
     imageUrl: IMG_SLEEP,
-    audioUrl: 'sleep.mp3',
+    audioUrl: 'sleep.mp3', // 3/14
+    description: 'Enter the dreamstate with profound neurological grounding.'
   },
   {
     id: 's3',
@@ -66,7 +67,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '12 min',
     category: 'Focus',
     imageUrl: IMG_ZEN,
-    audioUrl: 'zen.mp3',
+    audioUrl: 'zen.mp3', // 4/14
+    description: 'Traditional woodwind echoes for meditative precision.'
   },
   {
     id: 's4',
@@ -74,7 +76,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '18 min',
     category: 'Quick Relief',
     imageUrl: IMG_FOREST,
-    audioUrl: 'forest2.mp3',
+    audioUrl: 'forest2.mp3', // 5/14
+    description: 'The amber glow of twilight within the ancient pines.'
   },
   {
     id: 's5',
@@ -82,7 +85,8 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '15 min',
     category: 'Gratitude',
     imageUrl: IMG_OCEAN,
-    audioUrl: 'water.mp3',
+    audioUrl: 'water.mp3', // 6/14
+    description: 'Rhythmic tides to wash away cognitive dissonance.'
   },
   {
     id: 's6',
@@ -90,7 +94,26 @@ export const MEDITATION_SESSIONS: MeditationSession[] = [
     duration: '11 min',
     category: 'Focus',
     imageUrl: IMG_RESONANCE,
-    audioUrl: 'cmusic.mp3',
+    audioUrl: 'cmusic.mp3', // 7/14
+    description: 'Acoustic clarity for deep work and architectural thought.'
+  },
+  {
+    id: 's7',
+    title: 'Mountain Resilience',
+    duration: '14 min',
+    category: 'Focus',
+    imageUrl: IMG_MOUNTAIN,
+    audioUrl: 'hill.mp3', // 8/14
+    description: 'Steady winds and high-altitude frequencies for mental strength.'
+  },
+  {
+    id: 's8',
+    title: 'Ethereal Glow',
+    duration: '13 min',
+    category: 'Gratitude',
+    imageUrl: IMG_HEALING,
+    audioUrl: 'light.mp3', // 9/14
+    description: 'Soft luminous textures to brighten the inner landscape.'
   }
 ];
 
@@ -101,7 +124,7 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '25 min',
     category: 'Sleep',
     imageUrl: IMG_STARS,
-    audioUrl: 'cmusic2.mp3',
+    audioUrl: 'cmusic2.mp3', // 10/14
     description: 'A journey through the celestial void.'
   },
   {
@@ -110,8 +133,8 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '30 min',
     category: 'Sleep',
     imageUrl: IMG_KYOTO,
-    audioUrl: 'morning.mp3',
-    description: 'Whispers from the ancient temples.'
+    audioUrl: 'cloud.mp3', // 11/14
+    description: 'Whispers from the ancient temples drifting through clouds.'
   },
   {
     id: 'st3',
@@ -119,8 +142,8 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '45 min',
     category: 'Sleep',
     imageUrl: IMG_FOREST,
-    audioUrl: 'rain.mp3',
-    description: 'The breathing of the deep woods.'
+    audioUrl: 'rain.mp3', // 12/14
+    description: 'The breathing of the deep woods under soft rainfall.'
   },
   {
     id: 'st4',
@@ -128,17 +151,17 @@ export const SLEEP_STORIES: MeditationSession[] = [
     duration: '40 min',
     category: 'Sleep',
     imageUrl: IMG_CLOUDS,
-    audioUrl: 'cloud.mp3',
-    description: 'Orchestrated peace from above.'
+    audioUrl: 'cloud2.mp3', // 13/14
+    description: 'Orchestrated peace from the second layer of the stratosphere.'
   },
   {
     id: 'st5',
     title: 'Lunar Melodies',
     duration: '35 min',
     category: 'Sleep',
-    imageUrl: IMG_MOUNTAIN,
-    audioUrl: 'sleep.mp3',
-    description: 'Soft rhythms under the moonlight.'
+    imageUrl: IMG_RESONANCE,
+    audioUrl: 'cloud3.mp3', // 14/14
+    description: 'Soft rhythms under the moonlight and interstellar drift.'
   }
 ];
 
