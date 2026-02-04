@@ -18,7 +18,10 @@ export const ADMIN_EMAIL = 'vvkkoo4816@gmail.com';
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('today');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [lang, setLang] = useState<Language>('en'); 
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = localStorage.getItem('calmrelax_lang');
+    return (saved as Language) || 'en';
+  }); 
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [zenQuote, setZenQuote] = useState<string>(STATIC_QUOTES[2]);
@@ -34,6 +37,7 @@ const App: React.FC = () => {
   const [inputName, setInputName] = useState('');
   const [inputPassword, setInputPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<'Google' | 'Facebook' | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const [showSocialMock, setShowSocialMock] = useState(false);
@@ -55,12 +59,14 @@ const App: React.FC = () => {
   }, [user?.minutesMeditated]);
 
   useEffect(() => {
+    localStorage.setItem('calmrelax_lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
     const savedUserStr = localStorage.getItem('calmrelax_active_user');
-    const savedLang = localStorage.getItem('calmrelax_lang');
     const savedJournals = localStorage.getItem('calmrelax_journals');
     const savedLoginsStr = localStorage.getItem('calmrelax_login_db');
     
-    if (savedLang) setLang(savedLang as Language);
     if (savedJournals) setJournals(JSON.parse(savedJournals));
     if (savedLoginsStr) setLoginHistory(JSON.parse(savedLoginsStr));
     
@@ -72,7 +78,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleViewChange = (newView: AppView) => {
-    // Restricted View Check
     if (newView === 'admin' && user?.email !== ADMIN_EMAIL) {
       setView('profile');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -82,7 +87,6 @@ const App: React.FC = () => {
     if (newView !== view) {
       const nextCount = viewChangeCount + 1;
       setViewChangeCount(nextCount);
-      // Show an ad interstitial every 6 tab changes
       if (nextCount % 6 === 0) {
         setPendingView(newView);
         setIsShowingAd(true);
@@ -102,15 +106,45 @@ const App: React.FC = () => {
   const initiateSocialLogin = (provider: 'Google' | 'Facebook') => {
     setPendingProvider(provider);
     setShowSocialMock(true);
+    setAuthError(null);
+  };
+
+  const validateEmail = (email: string) => {
+    return String(email)
+      .toLowerCase()
+      .match(
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+      );
   };
 
   const handleSocialMockSubmit = () => {
-    if (!socialEmail.trim()) return;
+    if (!socialEmail.trim()) {
+      setAuthError(t.error_empty);
+      return;
+    }
+    if (!validateEmail(socialEmail)) {
+      setAuthError(t.error_email);
+      return;
+    }
+    setAuthError(null);
     setShowSocialMock(false);
     setShowPermissionDialog(true);
   };
 
   const finalizeLogin = async (provider: 'Email' | 'Google' | 'Facebook' = 'Email') => {
+    setAuthError(null);
+
+    if (provider === 'Email') {
+      if (!inputEmail.trim() || !inputPassword.trim() || (isRegistering && !inputName.trim())) {
+        setAuthError(t.error_empty);
+        return;
+      }
+      if (!validateEmail(inputEmail)) {
+        setAuthError(t.error_email);
+        return;
+      }
+    }
+
     setIsAuthenticating(true);
     const finalEmail = provider === 'Email' ? inputEmail.trim().toLowerCase() : socialEmail.trim().toLowerCase();
     const finalName = provider === 'Email' ? (inputName || finalEmail.split('@')[0]) : (socialName || finalEmail.split('@')[0]);
@@ -168,21 +202,22 @@ const App: React.FC = () => {
                 )}
               </div>
               <div className="mt-12 text-center space-y-2 mb-8">
-                <h3 className="text-3xl font-black serif text-stone-900">Sign in with {pendingProvider}</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Join the architectural sanctuary</p>
+                <h3 className="text-3xl font-black serif text-stone-900">{t.login_title} with {pendingProvider}</h3>
+                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{t.sanctuary_join}</p>
               </div>
               <div className="space-y-4 mb-10">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Account Email</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">{t.email_label}</label>
                   <input type="email" value={socialEmail} onChange={(e) => setSocialEmail(e.target.value)} className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" placeholder="example@gmail.com" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Full Name</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">{t.name_label}</label>
                   <input type="text" value={socialName} onChange={(e) => setSocialName(e.target.value)} className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" placeholder="Your Name" />
                 </div>
+                {authError && <p className="text-rose-500 text-[10px] font-bold text-center">{authError}</p>}
               </div>
-              <button onClick={handleSocialMockSubmit} className="w-full bg-stone-900 text-white py-4.5 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Confirm</button>
-              <button onClick={() => setShowSocialMock(false)} className="w-full text-center mt-6 text-[10px] font-black text-stone-300 uppercase tracking-widest hover:text-stone-500 transition-all">Cancel</button>
+              <button onClick={handleSocialMockSubmit} className="w-full bg-stone-900 text-white py-4.5 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">{t.confirm}</button>
+              <button onClick={() => setShowSocialMock(false)} className="w-full text-center mt-6 text-[10px] font-black text-stone-300 uppercase tracking-widest hover:text-stone-500 transition-all">{t.cancel}</button>
             </div>
           </div>
         )}
@@ -202,42 +237,43 @@ const App: React.FC = () => {
           <div className="w-24 h-24 bg-emerald-500 rounded-[36px] flex items-center justify-center text-white shadow-2xl zen-card-glow mb-10">
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
-          <h2 className="text-5xl font-black text-stone-900 mb-2 serif">{isRegistering ? 'Create Profile' : 'Sign in'}</h2>
-          <p className="text-stone-400 serif italic text-base">{isRegistering ? 'Join our architectural mindfulness sanctuary.' : 'Return to your inner sanctuary.'}</p>
+          <h2 className="text-5xl font-black text-stone-900 mb-2 serif">{isRegistering ? t.register_title : t.login_title}</h2>
+          <p className="text-stone-400 serif italic text-base">{isRegistering ? t.sanctuary_join : t.sanctuary_return}</p>
         </div>
 
         <div className="w-full max-w-sm bg-stone-100/50 rounded-[48px] p-10 border border-stone-200/40 shadow-inner space-y-7 mb-10">
           {isRegistering && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">Full Name</label>
+              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">{t.name_label}</label>
               <input type="text" value={inputName} onChange={(e) => setInputName(e.target.value)} className="w-full bg-white/80 border border-stone-200 rounded-2xl px-5 py-4 text-stone-800 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="Enter your name" />
             </div>
           )}
           <div className="space-y-2">
-            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">Username / Email</label>
+            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">{t.email_label}</label>
             <input type="text" value={inputEmail} onChange={(e) => setInputEmail(e.target.value)} className="w-full bg-white/80 border border-stone-200 rounded-2xl px-5 py-4 text-stone-800 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="Enter username" />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">Password</label>
+            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-500 ml-1">{t.password_label}</label>
             <input type="password" value={inputPassword} onChange={(e) => setInputPassword(e.target.value)} className="w-full bg-white/80 border border-stone-200 rounded-2xl px-5 py-4 text-stone-800 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="••••••••" />
           </div>
+          {authError && <p className="text-rose-500 text-[11px] font-bold text-center mb-2">{authError}</p>}
           <button onClick={() => finalizeLogin('Email')} className="w-full bg-stone-900 text-white py-5 rounded-full font-black text-[13px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all mt-6">
-            {isAuthenticating ? 'ENTERING...' : isRegistering ? 'CREATE NOW' : 'ENTER NOW'}
+            {isAuthenticating ? t.authenticating : isRegistering ? t.register_btn : t.login_btn}
           </button>
-          <button onClick={() => setIsRegistering(!isRegistering)} className="w-full text-center text-[10px] font-black text-stone-400 uppercase tracking-widest pt-2 hover:text-stone-900 transition-colors">
-            {isRegistering ? 'ALREADY A SEEKER? SIGN IN' : 'NEW SEEKER? CREATE PROFILE'}
+          <button onClick={() => { setIsRegistering(!isRegistering); setAuthError(null); }} className="w-full text-center text-[10px] font-black text-stone-400 uppercase tracking-widest pt-2 hover:text-stone-900 transition-colors">
+            {isRegistering ? t.switch_to_login : t.switch_to_register}
           </button>
         </div>
 
         <div className="w-full max-w-sm bg-white rounded-[48px] p-10 shadow-2xl border border-stone-50 space-y-5">
-          <p className="text-center text-[10px] font-black text-stone-300 uppercase tracking-[0.4em] mb-4">One-Tap Entrance</p>
+          <p className="text-center text-[10px] font-black text-stone-300 uppercase tracking-[0.4em] mb-4">{t.one_tap}</p>
           <button onClick={() => initiateSocialLogin('Google')} className="w-full py-4.5 bg-white border border-stone-100 rounded-2xl flex items-center justify-center space-x-4 shadow-sm hover:bg-stone-50 active:scale-98 transition-all">
             <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="w-6 h-6" alt="google" />
-            <span className="text-xs font-black text-stone-700 uppercase tracking-widest">Initiate with Google</span>
+            <span className="text-xs font-black text-stone-700 uppercase tracking-widest">{t.social_google}</span>
           </button>
           <button onClick={() => initiateSocialLogin('Facebook')} className="w-full bg-[#1877F2] py-4.5 rounded-2xl flex items-center justify-center space-x-4 shadow-lg hover:bg-[#166fe5] active:scale-98 transition-all">
             <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            <span className="text-xs font-black text-white uppercase tracking-widest">Initiate with Facebook</span>
+            <span className="text-xs font-black text-white uppercase tracking-widest">{t.social_facebook}</span>
           </button>
         </div>
       </div>
@@ -264,8 +300,8 @@ const App: React.FC = () => {
         {view === 'today' && (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
             <div className="text-center py-6 sm:py-10">
-              <h1 className="text-2xl sm:text-5xl font-black serif text-stone-900 tracking-tighter mb-2">CalmRelaxFlow</h1>
-              <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">High-Fidelity Sanctuary</p>
+              <h1 className="text-6xl sm:text-7xl font-black serif text-stone-900 tracking-tighter mb-3 leading-none">CalmRelaxFlow</h1>
+              <p className="text-[11px] sm:text-sm font-black uppercase tracking-[0.6em] text-stone-400">High-Fidelity Sanctuary</p>
             </div>
             
             <div className="flex justify-between items-center bg-white p-10 rounded-[48px] shadow-sm border border-stone-50">
@@ -417,7 +453,7 @@ const App: React.FC = () => {
                 <h2 className="text-6xl font-black text-stone-900 uppercase tracking-tighter leading-none">{t.header_guide}</h2>
                 <div className="space-y-12">
                    {[1, 2, 3].map(i => {
-                     const videoIds = ['inpok4MKVLM', '2m9-Q7x1fHk', 'JEoxUG898qY'];
+                     const videoIds = ['inpok4MKVLM', 'vS5tV4-3q5M', 't0fcl_Yt7XQ'];
                      return (
                        <div key={i} className="bg-white rounded-[48px] overflow-hidden shadow-2xl border border-stone-50 group transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0,0,0,0.06)]">
                           <div className="h-[320px] overflow-hidden">
