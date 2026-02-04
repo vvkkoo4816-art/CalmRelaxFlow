@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Language } from '../types';
 import { translations } from '../translations';
 
@@ -19,22 +19,17 @@ const AIChatbox: React.FC<AIChatboxProps> = ({ lang }) => {
     setIsLoading(true);
     setResponse(null);
 
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      setResponse("Peace is within, but your AI connection is not configured yet. (Please set up your Gemini API Key in the environment settings to enable the Mood Companion).");
-      setIsLoading(false);
-      return;
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    const langMap: Record<Language, string> = {
-      'en': 'English',
-      'zh-Hans': 'Simplified Chinese',
-      'zh-Hant': 'Traditional Chinese'
-    };
-
     try {
-      const result = await ai.models.generateContent({
+      // Ensure we use the environment variable directly as per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      const langMap: Record<Language, string> = {
+        'en': 'English',
+        'zh-Hans': 'Simplified Chinese',
+        'zh-Hant': 'Traditional Chinese'
+      };
+
+      const result: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `The user says: "${input}". 
         Role: Empathetic Mindfulness Coach. 
@@ -49,7 +44,7 @@ const AIChatbox: React.FC<AIChatboxProps> = ({ lang }) => {
       setResponse(result.text || "Breathe deeply. This moment is yours.");
     } catch (error) {
       console.error("AI Error:", error);
-      setResponse("The clouds will clear. Please try again in a moment. (Connection to the sanctuary AI failed).");
+      setResponse("The clouds will clear. Please try again in a moment. (The sanctuary AI is currently experiencing high tranquility and cannot respond).");
     } finally {
       setIsLoading(false);
       setInput('');

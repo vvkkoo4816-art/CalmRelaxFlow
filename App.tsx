@@ -263,9 +263,9 @@ const App: React.FC = () => {
       <div className="max-w-3xl mx-auto pb-48 space-y-12 px-4">
         {view === 'today' && (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="text-center py-10">
-              <h1 className="text-6xl sm:text-8xl font-black serif text-stone-900 tracking-tighter mb-3">CalmRelaxFlow</h1>
-              <p className="text-[11px] font-black uppercase tracking-[0.6em] text-stone-400">High-Fidelity Sanctuary</p>
+            <div className="text-center py-6 sm:py-10">
+              <h1 className="text-2xl sm:text-5xl font-black serif text-stone-900 tracking-tighter mb-2">CalmRelaxFlow</h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">High-Fidelity Sanctuary</p>
             </div>
             
             <div className="flex justify-between items-center bg-white p-10 rounded-[48px] shadow-sm border border-stone-50">
