@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 interface AdSlotProps {
@@ -9,8 +8,6 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
   const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
-    let adTimeout: number;
-
     const pushAd = () => {
       try {
         // @ts-ignore
@@ -24,8 +21,10 @@ const AdSlot: React.FC<AdSlotProps> = ({ className = "" }) => {
       }
     };
 
-    adTimeout = window.setTimeout(pushAd, 500);
+    // Check if script exists and push with a small delay for DOM readiness
+    const adTimeout = window.setTimeout(pushAd, 1000);
     
+    // Check if the adsbygoogle script is blocked by the browser
     const script = document.querySelector('script[src*="adsbygoogle"]');
     if (!script) {
       setIsBlocked(true);
