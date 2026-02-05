@@ -1,8 +1,7 @@
-
 {
   "name": "CalmRelaxFlow",
   "short_name": "CalmRelaxFlow",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "id": "com.clam.relax.app",
   "start_url": "/",
   "description": "Professional mindfulness companion with guided meditations and zen music.",
