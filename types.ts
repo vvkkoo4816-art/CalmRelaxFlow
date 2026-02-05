@@ -2,11 +2,13 @@
 export type Language = 'en' | 'zh-Hans' | 'zh-Hant';
 export type UserRole = 'admin' | 'user';
 
-export interface LoginRecord {
+export interface ActivityRecord {
   email: string;
   timestamp: string;
   location: string;
-  device: string; // New field for mobile detection
+  device: string;
+  type: 'Entrance' | 'Reflection';
+  content?: string;
 }
 
 export interface User {

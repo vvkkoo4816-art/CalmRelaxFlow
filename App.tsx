@@ -7,8 +7,8 @@ import AdSlot from './components/AdSlot';
 import AIChatbox from './components/AIChatbox';
 import PermissionDialog from './components/PermissionDialog';
 import ZenAdInterstitial from './components/ZenAdInterstitial';
-import { AppView, User, MeditationSession, Language, JournalEntry, LoginRecord } from './types';
-import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES, COURSES } from './constants';
+import { AppView, User, MeditationSession, Language, ActivityRecord } from './types';
+import { DAILY_MEDITATION, MEDITATION_SESSIONS, STATIC_QUOTES, SLEEP_STORIES } from './constants';
 import { translations } from './translations';
 
 const DAILY_GOAL_MINS = 20;
@@ -23,9 +23,8 @@ const App: React.FC = () => {
   }); 
   const [user, setUser] = useState<User | null>(null);
   const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
-  const [zenQuote, setZenQuote] = useState<string>(STATIC_QUOTES[2]);
-  const [journals, setJournals] = useState<JournalEntry[]>([]);
-  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
+  const [zenQuote] = useState<string>(STATIC_QUOTES[2]);
+  const [activityHistory, setActivityHistory] = useState<ActivityRecord[]>([]);
   const [newJournalText, setNewJournalText] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [luckyNumbers, setLuckyNumbers] = useState<number[]>([38, 47, 6, 32, 21, 14, 46]);
@@ -62,11 +61,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUserStr = localStorage.getItem('calmrelax_active_user');
-    const savedJournals = localStorage.getItem('calmrelax_journals');
-    const savedLoginsStr = localStorage.getItem('calmrelax_login_db');
+    const savedLogsStr = localStorage.getItem('calmrelax_activity_db');
     
-    if (savedJournals) setJournals(JSON.parse(savedJournals));
-    if (savedLoginsStr) setLoginHistory(JSON.parse(savedLoginsStr));
+    if (savedLogsStr) setActivityHistory(JSON.parse(savedLogsStr));
     
     const activeUser = savedUserStr ? JSON.parse(savedUserStr) : null;
     if (activeUser?.isLoggedIn) {
@@ -75,15 +72,28 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const getGeoLocation = (): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve("GPS Blocked");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`),
+        () => resolve("Node Unknown"),
+        { timeout: 5000 }
+      );
+    });
+  };
+
   const handleViewChange = (newView: AppView) => {
-    if (newView === 'admin' && user?.email !== ADMIN_EMAIL) {
+    if (newView === 'admin' && user?.email.toLowerCase().trim() !== ADMIN_EMAIL) {
       setView('profile');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     if (newView !== view) {
-      // Trigger Advertisement on EVERY tab change as requested
       setPendingView(newView);
       setIsShowingAd(true);
     }
@@ -115,7 +125,6 @@ const App: React.FC = () => {
     const finalEmail = provider === 'Email' ? inputEmail.trim().toLowerCase() : socialEmail.trim().toLowerCase();
     const finalName = provider === 'Email' ? (inputName || finalEmail.split('@')[0]) : (socialName || finalEmail.split('@')[0]);
 
-    // Mandatory Security Protocol: No blank or invalid emails
     if (!finalEmail) {
       setAuthError(t.error_empty);
       setIsAuthenticating(false);
@@ -128,18 +137,22 @@ const App: React.FC = () => {
       return;
     }
 
+    const loc = await getGeoLocation();
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const newRecord: LoginRecord = {
+    const newRecord: ActivityRecord = {
       email: finalEmail,
       timestamp: new Date().toLocaleString(),
-      location: "Sanctuary Access",
-      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node"
+      location: loc,
+      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node",
+      type: 'Entrance'
     };
     
-    const updatedHistory = [newRecord, ...loginHistory].slice(0, 100);
-    setLoginHistory(updatedHistory);
-    localStorage.setItem('calmrelax_login_db', JSON.stringify(updatedHistory));
+    setActivityHistory(prev => {
+      const updated = [newRecord, ...prev].slice(0, 200);
+      localStorage.setItem('calmrelax_activity_db', JSON.stringify(updated));
+      return updated;
+    });
     
     const mockUser: User = {
       id: `${provider.toLowerCase()}-${Date.now()}`,
@@ -157,6 +170,36 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     setIsAuthenticating(false);
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
+  };
+
+  const handleSaveReflection = async () => {
+    if (!newJournalText.trim() || !user) return;
+    setIsSavingJournal(true);
+    
+    const loc = await getGeoLocation();
+    const textSnapshot = newJournalText;
+
+    await new Promise(r => setTimeout(r, 1200));
+
+    const newActivity: ActivityRecord = {
+      email: user.email,
+      timestamp: new Date().toLocaleString(),
+      location: loc,
+      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node",
+      type: 'Reflection',
+      content: textSnapshot.length > 50 ? textSnapshot.substring(0, 47) + "..." : textSnapshot
+    };
+
+    setActivityHistory(prev => {
+      const updated = [newActivity, ...prev].slice(0, 200);
+      localStorage.setItem('calmrelax_activity_db', JSON.stringify(updated));
+      return updated;
+    });
+
+    setNewJournalText('');
+    setIsSavingJournal(false);
+    setSaveStatus('success');
+    setTimeout(() => setSaveStatus('idle'), 2500);
   };
 
   const refreshLuckyNumbers = () => {
@@ -183,25 +226,13 @@ const App: React.FC = () => {
               </div>
               <div className="mt-12 text-center space-y-2 mb-8">
                 <h3 className="text-3xl font-black serif text-stone-900">{t.login_title} with {pendingProvider}</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Secure Protocol Requested</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Identity Verification Gateway</p>
               </div>
               <div className="space-y-4 mb-10">
                 <input type="email" value={socialEmail} onChange={(e) => setSocialEmail(e.target.value)} className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-3.5 text-sm outline-none transition-all focus:border-emerald-200" placeholder="Verify Email Address" />
-                <input type="text" value={socialName} onChange={(e) => setSocialName(e.target.value)} className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-3.5 text-sm outline-none transition-all focus:border-emerald-200" placeholder="Verify Display Name" />
+                <input type="text" value={socialName} onChange={(e) => setSocialName(e.target.value)} className="w-full bg-stone-50 border border-stone-100 rounded-xl px-4 py-3.5 text-sm outline-none transition-all focus:border-emerald-200" placeholder="Verify Full Name" />
               </div>
-              <button 
-                onClick={() => {
-                  if (!isValidEmail(socialEmail)) {
-                    alert(t.error_email);
-                    return;
-                  }
-                  setShowSocialMock(false); 
-                  setShowPermissionDialog(true); 
-                }} 
-                className="w-full bg-stone-900 text-white py-4.5 rounded-full font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
-              >
-                Continue Verification
-              </button>
+              <button onClick={() => { if (!isValidEmail(socialEmail)) { alert(t.error_email); return; } setShowSocialMock(false); setShowPermissionDialog(true); }} className="w-full bg-stone-900 text-white py-4.5 rounded-full font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Verify and Enter</button>
             </div>
           </div>
         )}
@@ -363,8 +394,6 @@ const App: React.FC = () => {
         {view === 'explore' && (
           <div className="space-y-14 animate-in fade-in duration-500">
              <BreathingExercise lang={lang} />
-             
-             {/* Restored 3 Stages of Breath Guides */}
              <div className="space-y-10 pt-10 border-t border-stone-100">
                 <h2 className="text-4xl font-black text-stone-900 uppercase tracking-tighter text-center">{t.header_guide}</h2>
                 <div className="space-y-12">
@@ -414,26 +443,16 @@ const App: React.FC = () => {
              </div>
              <div className="bg-white rounded-[48px] p-8 border border-stone-50 shadow-sm space-y-8">
                 <textarea value={newJournalText} onChange={(e) => setNewJournalText(e.target.value)} className="w-full bg-stone-50/50 border-none rounded-[32px] p-10 text-stone-800 outline-none min-h-[300px] text-lg serif leading-relaxed" placeholder={t.journal_placeholder} />
-                <button onClick={async () => {
-                  if (!newJournalText.trim()) return;
-                  setIsSavingJournal(true);
-                  await new Promise(r => setTimeout(r, 1200));
-                  setNewJournalText('');
-                  setIsSavingJournal(false);
-                  setSaveStatus('success');
-                  setTimeout(() => setSaveStatus('idle'), 2500);
-                }} className="w-full py-6 bg-stone-900 text-white rounded-[32px] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+                <button onClick={handleSaveReflection} className="w-full py-6 bg-stone-900 text-white rounded-[32px] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
                   {isSavingJournal ? 'Capturing...' : saveStatus === 'success' ? 'Reflection Captured' : t.journal_save}
                 </button>
              </div>
-             
-             {/* APK Download Button anchored at bottom of Journal tab */}
              <div className="pt-6">
                <a href="/icon1.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                  <span>{t.apk_download}</span>
                </a>
-               <p className="text-center mt-4 text-[9px] font-black text-stone-300 uppercase tracking-widest">Architectural Package Node V1.3.0</p>
+               <p className="text-center mt-4 text-[9px] font-black text-stone-300 uppercase tracking-widest">Architectural Package Node V1.3.2</p>
              </div>
           </div>
         )}
@@ -443,33 +462,45 @@ const App: React.FC = () => {
              <div className="bg-white rounded-[48px] p-10 shadow-xl border border-stone-50">
                <div className="flex justify-between items-center mb-10">
                  <h2 className="text-3xl font-black serif text-stone-900">{t.db_status}</h2>
-                 <div className="flex space-x-4">
-                    <button onClick={() => { localStorage.removeItem('calmrelax_login_db'); setLoginHistory([]); }} className="text-[10px] font-black text-rose-400 uppercase tracking-widest hover:text-rose-600 transition-colors">Clear Data</button>
-                 </div>
+                 <button onClick={() => { localStorage.removeItem('calmrelax_activity_db'); setActivityHistory([]); }} className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Wipe Data</button>
                </div>
-
                <div className="overflow-x-auto">
                  <table className="w-full text-left">
                    <thead>
                      <tr className="border-b border-stone-100">
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">{t.email_label}</th>
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">{t.timestamp}</th>
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Node</th>
+                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Seeker</th>
+                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Activity</th>
+                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Time / Location</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-stone-50">
-                     {loginHistory.map((record, i) => (
+                     {activityHistory.map((record, i) => (
                        <tr key={i} className="group hover:bg-stone-50 transition-colors">
-                         <td className="py-5 text-sm font-bold text-stone-800">{record.email}</td>
-                         <td className="py-5 text-[11px] font-medium text-stone-400">{record.timestamp}</td>
-                         <td className="py-5">
-                           <span className="text-[9px] font-black uppercase px-2 py-1 bg-stone-100 rounded-md text-stone-500">{record.device}</span>
+                         <td className="py-6">
+                           <div className="text-sm font-bold text-stone-800">{record.email}</div>
+                           <div className="text-[9px] text-stone-400 font-black uppercase tracking-widest mt-1">{record.device}</div>
+                         </td>
+                         <td className="py-6">
+                           <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md tracking-widest ${record.type === 'Entrance' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                             {record.type}
+                           </span>
+                           {record.content && (
+                             <div className="text-[11px] text-stone-500 italic serif mt-2 leading-tight max-w-xs break-words">
+                               "{record.content}"
+                             </div>
+                           )}
+                         </td>
+                         <td className="py-6">
+                           <div className="text-[11px] font-medium text-stone-500">{record.timestamp}</div>
+                           <div className="text-[9px] font-black text-emerald-500 mt-1 uppercase tracking-tighter">
+                             Node: {record.location}
+                           </div>
                          </td>
                        </tr>
                      ))}
                    </tbody>
                  </table>
-                 {loginHistory.length === 0 && <p className="text-center py-20 text-stone-300 serif italic">{t.no_records}</p>}
+                 {activityHistory.length === 0 && <p className="text-center py-24 text-stone-300 serif italic">{t.no_records}</p>}
                </div>
              </div>
           </div>
