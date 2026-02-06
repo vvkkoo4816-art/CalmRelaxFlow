@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 
 interface AudioPlayerProps {
@@ -15,29 +14,53 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose, onSessio
   const [error, setError] = useState<string | null>(null);
   const [isBuffering, setIsBuffering] = useState(true);
   const [isImmersive, setIsImmersive] = useState(false);
-  const [attemptIndex, setAttemptIndex] = useState(0);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const attemptRef = useRef(0);
 
   const getPossiblePaths = (baseUrl: string) => {
     if (baseUrl.startsWith('http')) return [baseUrl];
     const fileName = baseUrl.split('/').pop() || baseUrl;
+    // PWA standard: Root, Relative, and Current directory trials
     return [
-      fileName,
       `/${fileName}`,
-      `./${fileName}`,
-      `${window.location.origin}/${fileName}`
+      fileName,
+      `./${fileName}`
     ].filter((v, i, a) => a.indexOf(v) === i);
   };
 
   const possiblePaths = getPossiblePaths(url);
+
+  const tryNextPath = () => {
+    const nextIndex = attemptRef.current + 1;
+    if (nextIndex < possiblePaths.length) {
+      attemptRef.current = nextIndex;
+      if (audioRef.current) {
+        console.log(`Retrying audio with path: ${possiblePaths[nextIndex]}`);
+        audioRef.current.src = possiblePaths[nextIndex];
+        audioRef.current.load();
+        if (isPlaying) {
+          audioRef.current.play().catch(() => {
+            console.warn(`Retry failed for: ${possiblePaths[nextIndex]}`);
+            // The onerror handler will trigger the next retry
+          });
+        }
+      }
+    } else {
+      setError("RESONANCE BLOCKED");
+      setIsBuffering(false);
+      setIsPlaying(false);
+      console.error("All audio paths exhausted. Please verify that .mp3 files exist in the public root folder.");
+    }
+  };
 
   useEffect(() => {
     setError(null);
     setIsBuffering(true);
     setIsPlaying(false);
     setProgress(0);
-    setAttemptIndex(0);
+    attemptRef.current = 0;
     
     if (audioRef.current) {
       audioRef.current.pause();
@@ -61,22 +84,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose, onSessio
     return () => clearTimeout(timer);
   }, [sleepTimer, isPlaying]);
 
-  const handleAudioError = () => {
-    const nextIndex = attemptIndex + 1;
-    if (nextIndex < possiblePaths.length) {
-      setAttemptIndex(nextIndex);
-      if (audioRef.current) {
-        audioRef.current.src = possiblePaths[nextIndex];
-        audioRef.current.load();
-        if (isPlaying) audioRef.current.play().catch(() => {});
-      }
-    } else {
-      setError("RESONANCE BLOCKED");
-      setIsBuffering(false);
-      setIsPlaying(false);
-    }
-  };
-
   const togglePlay = () => {
     if (!audioRef.current || error) return;
     if (isPlaying) {
@@ -85,10 +92,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose, onSessio
     } else {
       setIsBuffering(true);
       setError(null);
+      // Ensure the source is set if it was lost
+      if (!audioRef.current.src || audioRef.current.src.includes('undefined')) {
+         audioRef.current.src = possiblePaths[attemptRef.current];
+      }
+      
       audioRef.current.play().then(() => {
         setIsPlaying(true);
         setIsBuffering(false);
-      }).catch(handleAudioError);
+      }).catch((e) => {
+        console.warn("Initial playback failed, attempting next path...", e);
+        tryNextPath();
+      });
     }
   };
 
@@ -153,11 +168,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url, title, onClose, onSessio
                 if (onSessionComplete) onSessionComplete();
               }
             }}
-            onError={handleAudioError}
+            onError={() => {
+              // Only retry if it was playing or attempting to play
+              if (attemptRef.current < possiblePaths.length - 1) {
+                tryNextPath();
+              } else {
+                setError("RESONANCE BLOCKED");
+                setIsBuffering(false);
+                setIsPlaying(false);
+              }
+            }}
             onCanPlay={() => { setIsBuffering(false); setError(null); }}
             onWaiting={() => setIsBuffering(true)}
             preload="auto"
-            crossOrigin="anonymous"
           />
           <button onClick={() => setIsImmersive(true)} className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 relative group">
             {isBuffering && !error && (

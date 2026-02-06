@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AMBIENT_SOUNDS } from '../constants';
 
@@ -11,6 +10,37 @@ interface SoundState {
 const SoundMixer: React.FC = () => {
   const [activeSounds, setActiveSounds] = useState<Record<string, SoundState>>({});
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+
+  const getPossiblePaths = (baseUrl: string) => {
+    if (baseUrl.startsWith('http')) return [baseUrl];
+    const fileName = baseUrl.split('/').pop() || baseUrl;
+    return [
+      `/${fileName}`,
+      fileName,
+      `./${fileName}`
+    ].filter((v, i, a) => a.indexOf(v) === i);
+  };
+
+  const tryPlaySound = (id: string, paths: string[], pathIndex: number) => {
+    if (pathIndex >= paths.length) {
+      console.error(`Ambient sound ${id} failed all paths.`);
+      setActiveSounds(prev => ({
+        ...prev,
+        [id]: { ...prev[id], isPlaying: false }
+      }));
+      return;
+    }
+
+    const audio = audioRefs.current[id];
+    if (!audio) return;
+
+    audio.src = paths[pathIndex];
+    audio.load();
+    audio.play().catch(e => {
+      console.warn(`Ambient path fail: ${paths[pathIndex]}, trying next...`, e);
+      tryPlaySound(id, paths, pathIndex + 1);
+    });
+  };
 
   const toggleSound = (id: string, url: string) => {
     const isCurrentlyPlaying = activeSounds[id]?.isPlaying;
@@ -25,28 +55,14 @@ const SoundMixer: React.FC = () => {
       if (!audioRefs.current[id]) {
         audioRefs.current[id] = new Audio();
         audioRefs.current[id].loop = true;
-        audioRefs.current[id].crossOrigin = "anonymous";
+        // Removing crossOrigin as it often causes issues with local PWA assets
       }
       
       const currentVolume = activeSounds[id]?.volume ?? 0.5;
       audioRefs.current[id].volume = currentVolume;
       
-      const fileName = url.split('/').pop() || url;
-      
-      // Try relative path first as it is most resilient in PWAs
-      audioRefs.current[id].src = fileName;
-      
-      audioRefs.current[id].play().catch(() => {
-        // Fallback to root absolute
-        audioRefs.current[id].src = `/${fileName}`;
-        audioRefs.current[id].play().catch(e => {
-          console.error(`Ambient sound resonance failure for ${id}:`, e);
-          setActiveSounds(prev => ({
-            ...prev,
-            [id]: { ...prev[id], isPlaying: false }
-          }));
-        });
-      });
+      const paths = getPossiblePaths(url);
+      tryPlaySound(id, paths, 0);
       
       setActiveSounds(prev => ({
         ...prev,
