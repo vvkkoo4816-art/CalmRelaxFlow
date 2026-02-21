@@ -27,6 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
            </div>
            <div className="min-w-0">
              <span className="text-xl sm:text-3xl font-black tracking-tighter serif text-stone-900 block leading-tight truncate">CalmRelaxFlow</span>
+             <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest block">v2.0.1 - Updated</span>
            </div>
         </div>
         <button onClick={() => setActiveView('profile')} className="ml-2 sm:ml-4 shrink-0 hover:scale-105 transition-transform active:scale-95">

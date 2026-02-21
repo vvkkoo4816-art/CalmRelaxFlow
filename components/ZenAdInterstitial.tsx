@@ -66,6 +66,10 @@ const ZenAdInterstitial: React.FC<ZenAdInterstitialProps> = ({ isVisible, onComp
                "{quote}"
             </p>
             
+            <div className="w-full max-w-sm mt-4">
+              <AdSlot className="min-h-[100px]" />
+            </div>
+
             <div className="absolute top-4 right-8 text-[8px] font-black text-stone-200 uppercase tracking-widest">Architectural Pause</div>
         </div>
 

@@ -56,6 +56,19 @@ const App: React.FC = () => {
   const [isSavingJournal, setIsSavingJournal] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
+  // Tab Switch Ad Trigger
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isLoggedIn) {
+        // Trigger ad when user returns to tab, but only if logged in
+        setIsShowingAd(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isLoggedIn]);
+
   const t = useMemo(() => translations[lang] || translations['en'], [lang]);
 
   const progressPercent = useMemo(() => {
@@ -653,7 +666,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {luckyNumbers.map((n, idx) => (
-                    <div key={idx} className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xs bg-emerald-500 shadow-md">
+                    <div key={idx} className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xs bg-emerald-500 shadow-md border-2 border-white/20">
                       {n}
                     </div>
                   ))}
@@ -786,7 +799,10 @@ const App: React.FC = () => {
                       <p className="text-[12px] font-black uppercase tracking-widest text-stone-300 mt-1">{user.email}</p>
                    </div>
                 </div>
-                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-rose-100 text-rose-500 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm">Terminate Session</button>
+                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-rose-100 text-rose-500 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm flex items-center justify-center space-x-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                  <span>Terminate Session</span>
+                </button>
              </div>
           </div>
         )}
