@@ -295,6 +295,26 @@ const App: React.FC = () => {
             <span className="text-[11px] font-black text-white uppercase tracking-widest">{t.social_facebook}</span>
           </button>
         </div>
+
+        <div className="w-full max-w-sm mt-12 space-y-6 text-center px-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+           <h3 className="text-xl font-black serif text-stone-800">{t.about_title}</h3>
+           <p className="text-sm text-stone-500 serif italic leading-relaxed">
+             {t.about_text}
+           </p>
+           <div className="pt-4 flex justify-center space-x-4">
+              <div className="w-1 h-1 bg-stone-200 rounded-full"></div>
+              <div className="w-1 h-1 bg-stone-200 rounded-full"></div>
+              <div className="w-1 h-1 bg-stone-200 rounded-full"></div>
+           </div>
+        </div>
+
+        <footer className="w-full max-w-sm mt-20 pt-10 border-t border-stone-100 flex flex-col items-center space-y-4">
+           <div className="flex space-x-8">
+              <a href="/privacy.html" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Privacy</a>
+              <a href="/terms.html" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Terms</a>
+           </div>
+           <p className="text-[9px] font-black uppercase tracking-[0.4em] text-stone-200">© 2024 CalmRelaxFlow</p>
+        </footer>
       </div>
     );
   }

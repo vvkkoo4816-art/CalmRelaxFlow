@@ -66,11 +66,6 @@ const ZenAdInterstitial: React.FC<ZenAdInterstitialProps> = ({ isVisible, onComp
                "{quote}"
             </p>
             
-            {/* Inline advertisement display during transition */}
-            <div className="w-full max-w-xs scale-110">
-               <AdSlot className="w-full" />
-            </div>
-            
             <div className="absolute top-4 right-8 text-[8px] font-black text-stone-200 uppercase tracking-widest">Architectural Pause</div>
         </div>
 
