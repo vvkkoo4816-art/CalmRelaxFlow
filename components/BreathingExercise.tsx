@@ -17,18 +17,20 @@ const TECHNIQUES: Technique[] = [
   { id: 'focus', name: 'breathe_focus', inhale: 4, hold1: 0, exhale: 6, hold2: 0 },
 ];
 
-const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
+const BreathingExercise: React.FC<{ lang: Language, onComplete?: (seconds: number) => void }> = ({ lang, onComplete }) => {
   const t = translations[lang] || translations['en'];
   const [activeTechnique, setActiveTechnique] = useState<Technique>(TECHNIQUES[0]);
   const [isActive, setIsActive] = useState(false);
   const [phase, setPhase] = useState<'inhale' | 'hold1' | 'exhale' | 'hold2'>('inhale');
   const [timeLeft, setTimeLeft] = useState(activeTechnique.inhale);
+  const [totalSeconds, setTotalSeconds] = useState(0);
   
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isActive) {
       timerRef.current = window.setInterval(() => {
+        setTotalSeconds(prev => prev + 1);
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setPhase((currentPhase) => {
@@ -61,6 +63,10 @@ const BreathingExercise: React.FC<{ lang: Language }> = ({ lang }) => {
       }, 1000);
     } else {
       if (timerRef.current) window.clearInterval(timerRef.current);
+      if (totalSeconds > 0 && onComplete) {
+        onComplete(totalSeconds);
+        setTotalSeconds(0);
+      }
       setPhase('inhale');
       setTimeLeft(activeTechnique.inhale);
     }

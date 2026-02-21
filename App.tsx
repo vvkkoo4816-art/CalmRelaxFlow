@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Layout from './components/Layout';
 import AudioPlayer from './components/AudioPlayer';
 import BreathingExercise from './components/BreathingExercise';
@@ -27,7 +27,15 @@ const App: React.FC = () => {
   const [activityHistory, setActivityHistory] = useState<ActivityRecord[]>([]);
   const [newJournalText, setNewJournalText] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [luckyNumbers, setLuckyNumbers] = useState<number[]>([38, 47, 6, 32, 21, 14, 46]);
+  const [luckyNumbers, setLuckyNumbers] = useState<number[]>([38, 47, 6, 32, 21, 14]);
+  const [adminTab, setAdminTab] = useState<'logs' | 'progress'>('logs');
+  const [meditationSchedules, setMeditationSchedules] = useState<{time: string, type: string}[]>(() => {
+    const saved = localStorage.getItem('calmrelax_schedules');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [isMeditating, setIsMeditating] = useState(false);
+  const [meditationTime, setMeditationTime] = useState(0);
+  const medTimerRef = useRef<number | null>(null);
 
   // Auth States
   const [isRegistering, setIsRegistering] = useState(false);
@@ -61,9 +69,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUserStr = localStorage.getItem('calmrelax_active_user');
-    const savedLogsStr = localStorage.getItem('calmrelax_activity_db');
     
-    if (savedLogsStr) setActivityHistory(JSON.parse(savedLogsStr));
+    // Fetch from backend
+    fetch('/api/records')
+      .then(res => res.json())
+      .then(data => setActivityHistory(data))
+      .catch(err => console.error("Failed to fetch records:", err));
     
     const activeUser = savedUserStr ? JSON.parse(savedUserStr) : null;
     if (activeUser?.isLoggedIn) {
@@ -89,6 +100,13 @@ const App: React.FC = () => {
   const handleViewChange = (newView: AppView) => {
     if (newView === 'admin' && user?.email.toLowerCase().trim() !== ADMIN_EMAIL) {
       setView('profile');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Direct transition for profile and admin views to ensure immediate response
+    if (newView === 'profile' || newView === 'admin') {
+      setView(newView);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -150,7 +168,12 @@ const App: React.FC = () => {
     
     setActivityHistory(prev => {
       const updated = [newRecord, ...prev].slice(0, 200);
-      localStorage.setItem('calmrelax_activity_db', JSON.stringify(updated));
+      // Save to backend
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRecord)
+      }).catch(err => console.error("Failed to save record:", err));
       return updated;
     });
     
@@ -192,7 +215,12 @@ const App: React.FC = () => {
 
     setActivityHistory(prev => {
       const updated = [newActivity, ...prev].slice(0, 200);
-      localStorage.setItem('calmrelax_activity_db', JSON.stringify(updated));
+      // Save to backend
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newActivity)
+      }).catch(err => console.error("Failed to save record:", err));
       return updated;
     });
 
@@ -202,13 +230,94 @@ const App: React.FC = () => {
     setTimeout(() => setSaveStatus('idle'), 2500);
   };
 
+  const handleRecordBreath = async (durationSec: number) => {
+    if (!user) return;
+    const loc = await getGeoLocation();
+    const newActivity: ActivityRecord = {
+      email: user.email,
+      timestamp: new Date().toLocaleString(),
+      location: loc,
+      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node",
+      type: 'Breath' as any,
+      content: `${durationSec}s`
+    };
+
+    setActivityHistory(prev => {
+      const updated = [newActivity, ...prev].slice(0, 200);
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newActivity)
+      }).catch(err => console.error("Failed to save record:", err));
+      return updated;
+    });
+  };
+
+  const handleRecordMeditation = async (durationSec: number) => {
+    if (!user) return;
+    const loc = await getGeoLocation();
+    const newActivity: ActivityRecord = {
+      email: user.email,
+      timestamp: new Date().toLocaleString(),
+      location: loc,
+      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node",
+      type: 'Meditation' as any,
+      content: `${Math.floor(durationSec / 60)}m ${durationSec % 60}s`
+    };
+
+    setActivityHistory(prev => {
+      const updated = [newActivity, ...prev].slice(0, 200);
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newActivity)
+      }).catch(err => console.error("Failed to save record:", err));
+      return updated;
+    });
+  };
+
+  const toggleMeditation = () => {
+    if (isMeditating) {
+      if (medTimerRef.current) window.clearInterval(medTimerRef.current);
+      handleRecordMeditation(meditationTime);
+      setIsMeditating(false);
+      setMeditationTime(0);
+    } else {
+      setIsMeditating(true);
+      setMeditationTime(0);
+      medTimerRef.current = window.setInterval(() => {
+        setMeditationTime(prev => prev + 1);
+      }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (medTimerRef.current) window.clearInterval(medTimerRef.current);
+    };
+  }, []);
+
+  const addSchedule = (time: string, type: string) => {
+    const updated = [...meditationSchedules, { time, type }];
+    setMeditationSchedules(updated);
+    localStorage.setItem('calmrelax_schedules', JSON.stringify(updated));
+  };
+
+  const removeSchedule = (index: number) => {
+    const updated = meditationSchedules.filter((_, i) => i !== index);
+    setMeditationSchedules(updated);
+    localStorage.setItem('calmrelax_schedules', JSON.stringify(updated));
+  };
+
   const refreshLuckyNumbers = () => {
     const nums: number[] = [];
-    while (nums.length < 7) {
+    while (nums.length < 6) {
       const n = Math.floor(Math.random() * 49) + 1;
       if (!nums.includes(n)) nums.push(n);
     }
-    setLuckyNumbers(nums.sort((a, b) => a - b));
+    const sorted = nums.sort((a, b) => a - b);
+    console.log("Generating 6 lucky numbers:", sorted);
+    setLuckyNumbers(sorted);
   };
 
   if (!isLoggedIn || !user) {
@@ -413,7 +522,7 @@ const App: React.FC = () => {
 
         {view === 'explore' && (
           <div className="space-y-14 animate-in fade-in duration-500">
-             <BreathingExercise lang={lang} />
+             <BreathingExercise lang={lang} onComplete={handleRecordBreath} />
              <div className="space-y-10 pt-10 border-t border-stone-100">
                 <h2 className="text-4xl font-black text-stone-900 uppercase tracking-tighter text-center">{t.header_guide}</h2>
                 <div className="space-y-12">
@@ -440,6 +549,95 @@ const App: React.FC = () => {
                        </div>
                      );
                    })}
+                </div>
+             </div>
+          </div>
+        )}
+
+        {view === 'progress' && (
+          <div className="space-y-12 animate-in fade-in duration-500">
+             {/* Meditation Timer */}
+             <div className="bg-stone-950 rounded-[48px] p-10 text-white shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                   <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                </div>
+                <div className="relative z-10 text-center space-y-8">
+                   <h3 className="text-xl font-black uppercase tracking-[0.4em] text-white/40">Meditation Timer</h3>
+                   <div className="text-7xl font-black serif tabular-nums">
+                      {Math.floor(meditationTime / 60)}:{(meditationTime % 60).toString().padStart(2, '0')}
+                   </div>
+                   <button 
+                      onClick={toggleMeditation} 
+                      className={`px-16 py-6 rounded-full font-black text-xs uppercase tracking-[0.4em] transition-all active:scale-95 ${isMeditating ? 'bg-rose-500 text-white' : 'bg-white text-stone-950 shadow-xl'}`}
+                   >
+                      {isMeditating ? 'End Session' : 'Start Meditation'}
+                   </button>
+                </div>
+             </div>
+
+             {/* Schedule Section */}
+             <div className="bg-white rounded-[48px] p-10 border border-stone-50 shadow-sm space-y-10">
+                <div className="flex justify-between items-center">
+                   <h3 className="text-2xl font-black serif text-stone-900">My Schedule</h3>
+                   <button 
+                      onClick={() => {
+                         const time = prompt("Enter time (e.g. 08:00 AM):");
+                         const type = prompt("Enter activity (e.g. Morning Breath):");
+                         if (time && type) addSchedule(time, type);
+                      }}
+                      className="text-[10px] font-black uppercase tracking-widest text-emerald-500"
+                   >
+                      Add New
+                   </button>
+                </div>
+                <div className="space-y-4">
+                   {meditationSchedules.map((s, i) => (
+                      <div key={i} className="flex justify-between items-center p-6 bg-stone-50 rounded-3xl border border-stone-100 group">
+                         <div className="flex items-center space-x-6">
+                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-stone-400 shadow-sm">
+                               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div>
+                               <p className="text-sm font-black text-stone-800">{s.type}</p>
+                               <p className="text-[10px] font-black text-stone-300 uppercase tracking-widest mt-1">{s.time}</p>
+                            </div>
+                         </div>
+                         <button onClick={() => removeSchedule(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-400 hover:text-rose-600">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                         </button>
+                      </div>
+                   ))}
+                   {meditationSchedules.length === 0 && (
+                      <p className="text-center py-10 text-stone-300 serif italic">No scheduled sessions yet.</p>
+                   )}
+                </div>
+             </div>
+
+             {/* Personal Activity History */}
+             <div className="bg-white rounded-[48px] p-10 border border-stone-50 shadow-sm space-y-10">
+                <h3 className="text-2xl font-black serif text-stone-900">My Activity</h3>
+                <div className="space-y-6">
+                   {activityHistory.filter(r => r.email === user.email).slice(0, 10).map((record, i) => (
+                      <div key={i} className="flex items-start space-x-6 p-6 hover:bg-stone-50 rounded-3xl transition-colors">
+                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                            record.type === 'Entrance' ? 'bg-emerald-50 text-emerald-500' :
+                            record.type === 'Reflection' ? 'bg-indigo-50 text-indigo-500' :
+                            record.type === 'Breath' as any ? 'bg-amber-50 text-amber-500' :
+                            'bg-stone-50 text-stone-500'
+                         }`}>
+                            {record.type === 'Entrance' ? <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg> :
+                             record.type === 'Reflection' ? <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> :
+                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center mb-1">
+                               <p className="text-sm font-black text-stone-800 uppercase tracking-widest">{record.type}</p>
+                               <p className="text-[10px] font-black text-stone-300">{record.timestamp.split(',')[0]}</p>
+                            </div>
+                            <p className="text-[11px] text-stone-500 serif italic truncate">{record.content || 'Activity recorded'}</p>
+                         </div>
+                      </div>
+                   ))}
                 </div>
              </div>
           </div>
@@ -480,48 +678,98 @@ const App: React.FC = () => {
         {view === 'admin' && (
           <div className="space-y-12 animate-in fade-in duration-500">
              <div className="bg-white rounded-[48px] p-10 shadow-xl border border-stone-50">
-               <div className="flex justify-between items-center mb-10">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
                  <h2 className="text-3xl font-black serif text-stone-900">{t.db_status}</h2>
-                 <button onClick={() => { localStorage.removeItem('calmrelax_activity_db'); setActivityHistory([]); }} className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Wipe Data</button>
+                 <div className="flex flex-wrap gap-4">
+                   <button onClick={() => setAdminTab('logs')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'logs' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}>Logs</button>
+                   <button onClick={() => setAdminTab('progress')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'progress' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}>Progress</button>
+                   <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-rose-600 transition-all active:scale-95">Logout</button>
+                   <button onClick={() => { localStorage.removeItem('calmrelax_activity_db'); setActivityHistory([]); }} className="px-4 py-2 bg-stone-900 text-white/50 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all">Wipe Data</button>
+                 </div>
                </div>
-               <div className="overflow-x-auto">
-                 <table className="w-full text-left">
-                   <thead>
-                     <tr className="border-b border-stone-100">
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Seeker</th>
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Activity</th>
-                       <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Time / Location</th>
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y divide-stone-50">
-                     {activityHistory.map((record, i) => (
-                       <tr key={i} className="group hover:bg-stone-50 transition-colors">
-                         <td className="py-6">
-                           <div className="text-sm font-bold text-stone-800">{record.email}</div>
-                           <div className="text-[9px] text-stone-400 font-black uppercase tracking-widest mt-1">{record.device}</div>
-                         </td>
-                         <td className="py-6">
-                           <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md tracking-widest ${record.type === 'Entrance' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                             {record.type}
-                           </span>
-                           {record.content && (
-                             <div className="text-[11px] text-stone-500 italic serif mt-2 leading-tight max-w-xs break-words">
-                               "{record.content}"
-                             </div>
-                           )}
-                         </td>
-                         <td className="py-6">
-                           <div className="text-[11px] font-medium text-stone-500">{record.timestamp}</div>
-                           <div className="text-[9px] font-black text-emerald-500 mt-1 uppercase tracking-tighter">
-                             Node: {record.location}
-                           </div>
-                         </td>
+               
+               {adminTab === 'logs' ? (
+                 <div className="overflow-x-auto">
+                   <table className="w-full text-left">
+                     <thead>
+                       <tr className="border-b border-stone-100">
+                         <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Seeker</th>
+                         <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Activity</th>
+                         <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Time / Location</th>
                        </tr>
-                     ))}
-                   </tbody>
-                 </table>
-                 {activityHistory.length === 0 && <p className="text-center py-24 text-stone-300 serif italic">{t.no_records}</p>}
-               </div>
+                     </thead>
+                     <tbody className="divide-y divide-stone-50">
+                       {activityHistory.map((record, i) => (
+                         <tr key={i} className="group hover:bg-stone-50 transition-colors">
+                           <td className="py-6">
+                             <div className="text-sm font-bold text-stone-800">{record.email}</div>
+                             <div className="text-[9px] text-stone-400 font-black uppercase tracking-widest mt-1">{record.device}</div>
+                           </td>
+                           <td className="py-6">
+                             <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md tracking-widest ${record.type === 'Entrance' ? 'bg-emerald-100 text-emerald-700' : record.type === 'Reflection' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                               {record.type}
+                             </span>
+                             {record.content && (
+                               <div className="text-[11px] text-stone-500 italic serif mt-2 leading-tight max-w-xs break-words">
+                                 "{record.content}"
+                               </div>
+                             )}
+                           </td>
+                           <td className="py-6">
+                             <div className="text-[11px] font-medium text-stone-500">{record.timestamp}</div>
+                             <div className="text-[9px] font-black text-emerald-500 mt-1 uppercase tracking-tighter">
+                               Node: {record.location}
+                             </div>
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                   {activityHistory.length === 0 && <p className="text-center py-24 text-stone-300 serif italic">{t.no_records}</p>}
+                 </div>
+               ) : (
+                 <div className="space-y-8">
+                    <div className="grid grid-cols-1 gap-6">
+                       {Array.from(new Set(activityHistory.map(r => r.email))).map(email => {
+                          const userRecords = activityHistory.filter(r => r.email === email && r.type === 'Breath' as any);
+                          const last7Days = Array.from({length: 7}, (_, i) => {
+                             const d = new Date();
+                             d.setDate(d.getDate() - i);
+                             return d.toLocaleDateString();
+                          }).reverse();
+
+                          const dailyProgress = last7Days.map(date => {
+                             const dayRecords = userRecords.filter(r => new Date(r.timestamp).toLocaleDateString() === date);
+                             const totalSec = dayRecords.reduce((acc, r) => acc + parseInt(r.content || '0'), 0);
+                             return { date, totalSec };
+                          });
+
+                          return (
+                             <div key={email} className="bg-stone-50 rounded-3xl p-6 border border-stone-100">
+                                <div className="flex justify-between items-center mb-6">
+                                   <h4 className="text-sm font-black text-stone-800">{email}</h4>
+                                   <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">7-Day Breath Progress</span>
+                                </div>
+                                <div className="flex items-end justify-between h-32 px-2">
+                                   {dailyProgress.map((dp, idx) => {
+                                      const height = Math.min((dp.totalSec / 300) * 100, 100); // Max 5 mins for 100% height
+                                      return (
+                                         <div key={idx} className="flex flex-col items-center group relative">
+                                            <div className="absolute -top-8 bg-stone-900 text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                               {dp.totalSec}s
+                                            </div>
+                                            <div className="w-8 bg-emerald-500 rounded-t-lg transition-all duration-1000" style={{ height: `${height}%`, minHeight: dp.totalSec > 0 ? '4px' : '0px' }}></div>
+                                            <div className="text-[8px] font-black text-stone-300 uppercase tracking-tighter mt-2 rotate-45 origin-left">{dp.date.split('/')[1]}/{dp.date.split('/')[0]}</div>
+                                         </div>
+                                      );
+                                   })}
+                                </div>
+                             </div>
+                          );
+                       })}
+                    </div>
+                 </div>
+               )}
              </div>
           </div>
         )}
@@ -538,7 +786,7 @@ const App: React.FC = () => {
                       <p className="text-[12px] font-black uppercase tracking-widest text-stone-300 mt-1">{user.email}</p>
                    </div>
                 </div>
-                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-stone-100 text-stone-300 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-stone-50 hover:text-stone-900 transition-all active:scale-95">Terminate Session</button>
+                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-rose-100 text-rose-500 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm">Terminate Session</button>
              </div>
           </div>
         )}

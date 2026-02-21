@@ -51,4 +51,4 @@ export interface Course {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
-export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin' | 'journal' | 'calm' | 'premium';
+export type AppView = 'today' | 'library' | 'breathing' | 'sleep' | 'explore' | 'profile' | 'admin' | 'journal' | 'calm' | 'premium' | 'progress';
