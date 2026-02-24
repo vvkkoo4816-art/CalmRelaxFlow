@@ -7,7 +7,7 @@ export interface ActivityRecord {
   timestamp: string;
   location: string;
   device: string;
-  type: 'Entrance' | 'Reflection';
+  type: 'Entrance' | 'Reflection' | 'Comment';
   content?: string;
 }
 

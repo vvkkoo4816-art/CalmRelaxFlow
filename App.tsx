@@ -54,6 +54,8 @@ const App: React.FC = () => {
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [pendingView, setPendingView] = useState<AppView | null>(null);
   const [isSavingJournal, setIsSavingJournal] = useState(false);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [isSavingComment, setIsSavingComment] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
   // Tab Switch Ad Trigger
@@ -162,6 +164,12 @@ const App: React.FC = () => {
       return;
     }
 
+    if (provider === 'Email' && !inputPassword.trim()) {
+      setAuthError(t.error_password);
+      setIsAuthenticating(false);
+      return;
+    }
+
     if (!isValidEmail(finalEmail)) {
       setAuthError(t.error_email);
       setIsAuthenticating(false);
@@ -239,6 +247,40 @@ const App: React.FC = () => {
 
     setNewJournalText('');
     setIsSavingJournal(false);
+    setSaveStatus('success');
+    setTimeout(() => setSaveStatus('idle'), 2500);
+  };
+
+  const handleSaveComment = async () => {
+    if (!newCommentText.trim() || !user) return;
+    setIsSavingComment(true);
+    
+    const loc = await getGeoLocation();
+    const textSnapshot = newCommentText;
+
+    await new Promise(r => setTimeout(r, 1000));
+
+    const newActivity: ActivityRecord = {
+      email: user.email,
+      timestamp: new Date().toLocaleString(),
+      location: loc,
+      device: /Android|iPhone/i.test(navigator.userAgent) ? "Mobile Node" : "Desktop Node",
+      type: 'Comment',
+      content: textSnapshot
+    };
+
+    setActivityHistory(prev => {
+      const updated = [newActivity, ...prev].slice(0, 200);
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newActivity)
+      }).catch(err => console.error("Failed to save record:", err));
+      return updated;
+    });
+
+    setNewCommentText('');
+    setIsSavingComment(false);
     setSaveStatus('success');
     setTimeout(() => setSaveStatus('idle'), 2500);
   };
@@ -486,6 +528,31 @@ const App: React.FC = () => {
                  <button onClick={() => handleViewChange('library')} className="bg-white/10 text-white px-10 py-5 rounded-full font-black text-[10px] uppercase tracking-widest backdrop-blur-md hover:bg-white/20 transition-all">The Sanctum</button>
                </div>
             </div>
+
+            <div className="bg-white rounded-[32px] p-8 border border-stone-50 shadow-sm space-y-6">
+               <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-xs">
+                     {user.name[0]}
+                  </div>
+                  <h3 className="text-lg font-black serif text-stone-900">{t.comment_title}</h3>
+               </div>
+               <div className="space-y-4">
+                  <textarea 
+                    value={newCommentText} 
+                    onChange={(e) => setNewCommentText(e.target.value)} 
+                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-sm outline-none focus:border-emerald-200 transition-all min-h-[100px] serif italic" 
+                    placeholder={t.comment_placeholder}
+                  />
+                  <button 
+                    onClick={handleSaveComment} 
+                    disabled={isSavingComment}
+                    className="w-full bg-stone-900 text-white py-4 rounded-full font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isSavingComment ? 'Sharing...' : saveStatus === 'success' ? t.comment_success : t.comment_save}
+                  </button>
+               </div>
+            </div>
+
             <AdSlot />
           </div>
         )}
@@ -719,7 +786,12 @@ const App: React.FC = () => {
                              <div className="text-[9px] text-stone-400 font-black uppercase tracking-widest mt-1">{record.device}</div>
                            </td>
                            <td className="py-6">
-                             <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md tracking-widest ${record.type === 'Entrance' ? 'bg-emerald-100 text-emerald-700' : record.type === 'Reflection' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                             <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md tracking-widest ${
+                                record.type === 'Entrance' ? 'bg-emerald-100 text-emerald-700' : 
+                                record.type === 'Reflection' ? 'bg-indigo-100 text-indigo-700' : 
+                                record.type === 'Comment' ? 'bg-emerald-100 text-emerald-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
                                {record.type}
                              </span>
                              {record.content && (

@@ -86,7 +86,12 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: 'Cancel',
     confirm: 'Confirm',
     social_google: 'Initiate with Google',
-    social_facebook: 'Initiate with Facebook'
+    social_facebook: 'Initiate with Facebook',
+    comment_title: 'Community Vibes',
+    comment_placeholder: 'Leave a peaceful comment...',
+    comment_save: 'Post Comment',
+    comment_success: 'Comment Shared',
+    error_password: 'Password is required'
   },
   'zh-Hans': {
     nav_today: '今日',
@@ -172,7 +177,12 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: '取消',
     confirm: '确认',
     social_google: '使用 Google 登录',
-    social_facebook: '使用 Facebook 登录'
+    social_facebook: '使用 Facebook 登录',
+    comment_title: '社区氛围',
+    comment_placeholder: '留下宁静的评论...',
+    comment_save: '发布评论',
+    comment_success: '评论已分享',
+    error_password: '需要密码'
   },
   'zh-Hant': {
     nav_today: '今日',
@@ -258,6 +268,11 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: '取消',
     confirm: '確認',
     social_google: '使用 Google 登入',
-    social_facebook: '使用 Facebook 登入'
+    social_facebook: '使用 Facebook 登入',
+    comment_title: '社區氛圍',
+    comment_placeholder: '留下寧靜的評論...',
+    comment_save: '發佈評論',
+    comment_success: '評論已分享',
+    error_password: '需要密碼'
   }
 };
