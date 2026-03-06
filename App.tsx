@@ -114,15 +114,7 @@ const App: React.FC = () => {
 
   const handleViewChange = (newView: AppView) => {
     if (newView === 'admin' && user?.email.toLowerCase().trim() !== ADMIN_EMAIL) {
-      setView('profile');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    // Direct transition for profile and admin views to ensure immediate response
-    if (newView === 'profile' || newView === 'admin') {
-      setView(newView);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      handleViewChange('profile');
       return;
     }
 
@@ -214,6 +206,9 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     setIsAuthenticating(false);
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
+    
+    // Trigger ad interstitial on login
+    setIsShowingAd(true);
   };
 
   const handleSaveReflection = async () => {
