@@ -926,7 +926,7 @@ const App: React.FC = () => {
               </div>
               <div className="pt-6 border-t border-stone-50 text-center">
                 <p className="text-[10px] font-black uppercase tracking-widest text-stone-300">Direct Support</p>
-                <p className="text-sm font-bold text-stone-800 mt-1">vvkkoo4816@gmail.com</p>
+                <a href="mailto:vvkkoo4816@gmail.com" className="text-sm font-bold text-stone-800 mt-1 hover:text-emerald-600 transition-colors block">vvkkoo4816@gmail.com</a>
               </div>
             </div>
           </div>
