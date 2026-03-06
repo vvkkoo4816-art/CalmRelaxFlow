@@ -476,6 +476,8 @@ const App: React.FC = () => {
            <div className="flex space-x-8">
               <a href="/privacy.html" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Privacy</a>
               <a href="/terms.html" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Terms</a>
+              <button onClick={() => handleViewChange('contact')} className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Contact</button>
+              <button onClick={() => handleViewChange('insights')} className="text-[10px] font-black uppercase tracking-widest text-stone-300 hover:text-emerald-500 transition-colors">Insights</button>
            </div>
            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-stone-200">© 2024 CalmRelaxFlow</p>
         </footer>
@@ -876,6 +878,57 @@ const App: React.FC = () => {
                   <span>Terminate Session</span>
                 </button>
              </div>
+          </div>
+        )}
+
+        {view === 'insights' && (
+          <div className="space-y-12 animate-in fade-in duration-500 px-4">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl font-black serif text-stone-900">{t.insights_title}</h2>
+              <p className="text-stone-500 serif italic max-w-xl mx-auto">{t.insights_subtitle}</p>
+            </div>
+            <div className="space-y-10">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-[40px] p-10 border border-stone-50 shadow-xl space-y-6">
+                  <h3 className="text-2xl font-black serif text-stone-900">{t[`article_${i}_title`]}</h3>
+                  <p className="text-stone-600 serif leading-relaxed text-lg">
+                    {t[`article_${i}_content`]}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view === 'contact' && (
+          <div className="space-y-12 animate-in fade-in duration-500 px-4">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl font-black serif text-stone-900">{t.contact_title}</h2>
+              <p className="text-stone-500 serif italic">{t.contact_subtitle}</p>
+            </div>
+            <div className="bg-white rounded-[48px] p-10 border border-stone-50 shadow-2xl space-y-8 max-w-xl mx-auto">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">{t.contact_name}</label>
+                  <input type="text" className="w-full bg-stone-50 border border-stone-100 rounded-2xl px-6 py-4 outline-none focus:border-emerald-200 transition-all" placeholder="John Doe" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">{t.contact_email}</label>
+                  <input type="email" className="w-full bg-stone-50 border border-stone-100 rounded-2xl px-6 py-4 outline-none focus:border-emerald-200 transition-all" placeholder="john@example.com" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">{t.contact_message}</label>
+                  <textarea className="w-full bg-stone-50 border border-stone-100 rounded-2xl px-6 py-4 outline-none focus:border-emerald-200 transition-all min-h-[150px]" placeholder="How can we help?" />
+                </div>
+                <button onClick={() => alert(t.contact_success)} className="w-full bg-stone-900 text-white py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                  {t.contact_send}
+                </button>
+              </div>
+              <div className="pt-6 border-t border-stone-50 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-stone-300">Direct Support</p>
+                <p className="text-sm font-bold text-stone-800 mt-1">vvkkoo4816@gmail.com</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
