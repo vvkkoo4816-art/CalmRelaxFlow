@@ -46,7 +46,7 @@ const ZenAdInterstitial: React.FC<ZenAdInterstitialProps> = ({ isVisible, onComp
 
   return (
     <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-300 overflow-y-auto">
-      <div className="w-full max-w-lg space-y-10 flex flex-col items-center py-10">
+      <div className="w-full max-w-lg space-y-6 flex flex-col items-center py-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center relative">
@@ -61,20 +61,20 @@ const ZenAdInterstitial: React.FC<ZenAdInterstitialProps> = ({ isVisible, onComp
           </p>
         </div>
 
-        <div className="w-full bg-stone-50 rounded-[48px] border-2 border-stone-100 p-10 shadow-2xl min-h-[320px] flex flex-col items-center justify-center relative overflow-hidden transition-all text-center group">
-            <p className="text-stone-600 serif italic text-xl leading-relaxed px-4 mb-10">
+        <div className="w-full bg-stone-50 rounded-[48px] border-2 border-stone-100 p-8 shadow-2xl min-h-[260px] flex flex-col items-center justify-center relative overflow-hidden transition-all text-center group">
+            <p className="text-stone-600 serif italic text-xl leading-relaxed px-4 mb-6">
                "{quote}"
             </p>
             
-            <div className="w-full max-w-sm mt-4">
-              <AdSlot className="min-h-[100px]" />
+            <div className="w-full max-w-sm mt-2">
+              <AdSlot className="min-h-[80px]" />
             </div>
 
             <div className="absolute top-4 right-8 text-[8px] font-black text-stone-200 uppercase tracking-widest">Architectural Pause</div>
         </div>
 
-        <div className="text-center space-y-8 w-full">
-          <div className="flex flex-col items-center space-y-8">
+        <div className="text-center space-y-4 w-full">
+          <div className="flex flex-col items-center space-y-4">
             {!canResume ? (
               <div className="flex flex-col items-center space-y-4">
                 <div className="w-64 h-1.5 bg-stone-100 rounded-full overflow-hidden">
