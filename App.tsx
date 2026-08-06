@@ -742,10 +742,18 @@ const App: React.FC = () => {
                   {isSavingJournal ? 'Capturing...' : saveStatus === 'success' ? 'Reflection Captured' : t.journal_save}
                 </button>
              </div>
-             <div className="pt-6">
+             <div className="pt-6 space-y-4">
                <a href="/icon1.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                  <span>{t.apk_download}</span>
+               </a>
+               <a href="/icon2.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
+                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                 <span>{t.apk_download2}</span>
+               </a>
+               <a href="/icon3.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
+                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                 <span>{t.apk_download3}</span>
                </a>
                <p className="text-center mt-4 text-[9px] font-black text-stone-300 uppercase tracking-widest">Architectural Package Node V1.3.4</p>
              </div>
