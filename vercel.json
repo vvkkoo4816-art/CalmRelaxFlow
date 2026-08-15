@@ -1,7 +1,7 @@
 
 {
   "version": 2,
-  "rewrites": [
+ "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -18,8 +18,8 @@
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
-  ]
- "redirects": [
+  ],
+  "redirects": [
     {
       "source": "/:path*",
       "has": [
