@@ -19,9 +19,7 @@
       ]
     }
   ]
-}
-{
-  "redirects": [
+ "redirects": [
     {
       "source": "/:path*",
       "has": [
@@ -34,4 +32,5 @@
       "permanent": true
     }
   ]
+
 }
