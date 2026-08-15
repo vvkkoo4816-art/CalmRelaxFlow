@@ -20,3 +20,18 @@
     }
   ]
 }
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "calm-relax-flow.vercel.app"
+        }
+      ],
+      "destination": "https://www.calmrelaxflow.online/:path*",
+      "permanent": true
+    }
+  ]
+}
