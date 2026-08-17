@@ -84,6 +84,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUserStr = localStorage.getItem('calmrelax_active_user');
+    const loginTimestampStr = localStorage.getItem('calmrelax_login_timestamp');
     
     // Fetch from backend
     fetch('/api/records')
@@ -92,9 +93,19 @@ const App: React.FC = () => {
       .catch(err => console.error("Failed to fetch records:", err));
     
     const activeUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-    if (activeUser?.isLoggedIn) {
+    const loginTime = loginTimestampStr ? parseInt(loginTimestampStr, 10) : 0;
+    const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000; // 12 hours timeout
+    const isSessionExpired = !loginTime || (Date.now() - loginTime > TWELVE_HOURS_MS);
+
+    if (activeUser?.isLoggedIn && !isSessionExpired) {
       setUser(activeUser);
       setIsLoggedIn(true);
+    } else if (activeUser?.isLoggedIn && isSessionExpired) {
+      // Clear expired session
+      localStorage.removeItem('calmrelax_active_user');
+      localStorage.removeItem('calmrelax_login_timestamp');
+      setUser(null);
+      setIsLoggedIn(false);
     }
   }, []);
 
@@ -206,6 +217,7 @@ const App: React.FC = () => {
     setIsLoggedIn(true);
     setIsAuthenticating(false);
     localStorage.setItem('calmrelax_active_user', JSON.stringify(mockUser));
+    localStorage.setItem('calmrelax_login_timestamp', Date.now().toString());
     
     // Trigger ad interstitial on login
     setIsShowingAd(true);
@@ -742,20 +754,20 @@ const App: React.FC = () => {
                   {isSavingJournal ? 'Capturing...' : saveStatus === 'success' ? 'Reflection Captured' : t.journal_save}
                 </button>
              </div>
-             <div className="pt-6 space-y-4">
-               <a href="/icon1.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+             <div className="pt-4 space-y-2 max-w-sm mx-auto">
+               <a href="/icon1.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2.5">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                  <span>{t.apk_download}</span>
                </a>
-               <a href="/icon2.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+               <a href="/icon2.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2.5">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                  <span>{t.apk_download2}</span>
                </a>
-               <a href="/icon3.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 rounded-[32px] font-black text-[13px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+               <a href="/icon3.apk" download className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2.5">
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                  <span>{t.apk_download3}</span>
                </a>
-               <p className="text-center mt-4 text-[9px] font-black text-stone-300 uppercase tracking-widest">Architectural Package Node V1.3.4</p>
+               <p className="text-center mt-2 text-[8px] font-bold text-stone-300 uppercase tracking-widest">Architectural Package Node V1.3.4</p>
              </div>
           </div>
         )}
@@ -768,7 +780,7 @@ const App: React.FC = () => {
                  <div className="flex flex-wrap gap-4">
                    <button onClick={() => setAdminTab('logs')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'logs' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}>Logs</button>
                    <button onClick={() => setAdminTab('progress')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${adminTab === 'progress' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}>Progress</button>
-                   <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-rose-600 transition-all active:scale-95">Logout</button>
+                   <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); localStorage.removeItem('calmrelax_login_timestamp'); setIsLoggedIn(false); setView('today'); }} className="px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-rose-600 transition-all active:scale-95">Logout</button>
                    <button onClick={() => { localStorage.removeItem('calmrelax_activity_db'); setActivityHistory([]); }} className="px-4 py-2 bg-stone-900 text-white/50 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all">Wipe Data</button>
                  </div>
                </div>
@@ -876,7 +888,7 @@ const App: React.FC = () => {
                       <p className="text-[12px] font-black uppercase tracking-widest text-stone-300 mt-1">{user.email}</p>
                    </div>
                 </div>
-                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-rose-100 text-rose-500 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm flex items-center justify-center space-x-3">
+                <button onClick={() => { localStorage.removeItem('calmrelax_active_user'); localStorage.removeItem('calmrelax_login_timestamp'); setIsLoggedIn(false); setView('today'); }} className="w-full py-6 rounded-[32px] border-2 border-rose-100 text-rose-500 font-black uppercase text-[12px] tracking-[0.6em] hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 shadow-sm flex items-center justify-center space-x-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                   <span>Terminate Session</span>
                 </button>
