@@ -1,6 +1,6 @@
 {
   "packageId": "com.clam.relax.app",
-  "host": "calm-relax-flow.vercel.app",
+  "host": "www.calmrelaxflow.online",
   "name": "CalmRelaxFlow",
   "launcherName": "CalmRelaxFlow",
   "display": "standalone",
@@ -12,25 +12,26 @@
   "backgroundColor": "#10B981",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://calm-relax-flow.vercel.app/icon.png",
-  "maskableIconUrl": "https://calm-relax-flow.vercel.app/icon.png",
+  "iconUrl": "https://www.calmrelaxflow.online/icon.png",
+  "maskableIconUrl": "https://www.calmrelaxflow.online/icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "C:\\Users\\cti88\\Desktop\\CalmRelaxFlow\\CalmRelaxFlow\\calmrelax.keystore",
     "alias": "CalmRelaxKey"
   },
-  "appVersionName": "1.3.1",
-  "appVersionCode": 131,
+  "appVersionName": "1.3.5",
+  "appVersionCode": 135,
+  "targetSdkVersion": 34,
   "shortcuts": [
     {
       "name": "Daily Zen",
       "shortName": "Daily Zen",
-      "url": "https://calm-relax-flow.vercel.app/?view=today",
-      "chosenIconUrl": "https://calm-relax-flow.vercel.app/icon.png"
+      "url": "https://www.calmrelaxflow.online/?view=today",
+      "chosenIconUrl": "https://www.calmrelaxflow.online/icon.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://calm-relax-flow.vercel.app/manifest.json",
+  "webManifestUrl": "https://www.calmrelaxflow.online/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {
@@ -43,7 +44,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://calm-relax-flow.vercel.app/",
+  "fullScopeUrl": "https://www.calmrelaxflow.online/",
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [
@@ -52,6 +53,7 @@
     }
   ],
   "additionalTrustedOrigins": [
-    "https://calm-relax-flow.vercel.app"
+    "https://www.calmrelaxflow.online",
+    "https://calmrelaxflow.online"
   ]
 }
